@@ -1,0 +1,46 @@
+README Doris 5.0.0 beta version
+
+This is a beta version, intended to be tested internally at TU Delft, as well as by a limited number of known beta-testers. From beta-testers we request feedback which will help us to develop the Doris 5 stable version. For your information, we are currently working on the further development of the software regarding processing flow (input control, distributed processing, logging, error handling). Therefore, your feedback on the algorithmic part of the implementation will be most useful.
+
+The new Doris version consists of 2 parts:
+-	The Doris core, which is similar to the original Doris code and is written in C. This code is mainly used to create individual interferograms based on different steps. 
+-	Additional python scripts (currently put in the sentinel1 directory), which are mainly used for administrative purposes to be able to read in data from different sensors and modes. Currently this is mainly focused on TOPS mode for Sentinel 1 data. The functionality of these scripts should be further extended.
+
+In this manual we assume that you have installed the Doris core, which can be found in the src directory. To use the sentinel1 python scripts you will need to install the following packages:
+-	numpy, scipy (for calculations)
+-	matplotlib (visualization)
+-	gdal, gdal-dev, shapely, fiona, pyproj (GIS)
+-	xml, re (data readers)
+-	shutil, collections, os, sys, copy, datetime, time, math (general packages)
+
+To install these packages we advise to use anaconda. This package comes with de Spyder IDE, which can be used to do some editing of the code. When you want a better insight in the overall project structure we recommend you install PyCharm as an additional IDE.
+
+The sentinel1 scripts are divided over three subfolders with several python scripts. These include a test folder with a test script, a main_code folder with the main scripts and a functions folder with some several auxiliary functions. Within this code the Doris core is called via the command line. Currently there is no in depth description available of the different algorithms used in the code, but the main steps are explained in the test code, which can be found in the test folder. In a later release we will provide a step by step guide for the code.
+
+For the first test case you may use data for the Netherlands (see test_code.py in test directory). To run the test script you should first download the following datasets:
+
+Acquired on 10-03-2016
+S1A_IW_SLC__1SDV_20160310T172410_20160310T172437_010310_00F422_AD7C
+S1A_IW_SLC__1SDV_20160310T172435_20160310T172502_010310_00F422_7D38
+S1A_IW_SLC__1SDV_20160310T172500_20160310T172527_010310_00F422_3B8C
+
+Acquired on 22-03-2016
+S1A_IW_SLC__1SDV_20160322T172449_20160322T172516_010485_00F908_D2FD
+S1A_IW_SLC__1SDV_20160322T172424_20160322T172451_010485_00F908_A137
+S1A_IW_SLC__1SDV_20160322T172359_20160322T172426_010485_00F908_327C
+
+The setup assumes that these files are stored in the same data directory and are unzipped (resulting in .SAFE directories). (In the future, we may apply unzipping on the fly.)
+
+The DEM file that is used will be send to you separately by Wetransfer. 
+
+The script uses a shape file to determine which sub-swaths and bursts should be selected. The shape file for the Netherlands is located in the shape_netherlands folder. 
+
+To run the test script, you will have to set the paths at the beginning of the script. Furthermore, you will have to set the path to the DEM in the input.dembased and input.comprefdem files, which can be found in the input_files_netherlands directory. 
+
+An image of the result after removing the reference phase can be found in the test directory.
+
+In case you have any question you can contact me via 
+g.mulder-1@tudelft.nl
+
+Gert Mulder
+04-07-2016

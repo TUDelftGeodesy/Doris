@@ -1,0 +1,88 @@
+#!/bin/csh -f
+### ascii2ascii_UTM -- Use proj to transform doris output phi/lam/hei to utm x,y,h
+##  ascii 3 column file input to ascii 3 column file output.
+### Example script to generate x,y,h
+### next call could be ascii2postscript for plotting with GMT
+### Bert Kampes, 14-Aug-2003
+### $Id: ascii2ascii_UTM,v 1.2 2003/08/14 13:56:28 kampes Exp $
+################################################################
+set PRG    = `basename "$0"`
+set VER    = "v1.0 Doris software"
+set AUT    = "bert kampes, (c)1999-2003"
+echo "$PRG $VER, $AUT"
+echo " " 
+
+
+
+### Handle wrong input
+set WRONG    = "0"
+set WGSFILE  = "$1"
+set ZONE     = "$2"
+set OUTFILE  = "$3"
+if ( $#argv < 3 ) set WRONG = "1"
+#---------------------------
+if ( $WRONG == "1" ) then
+cat << __EOFHD
+
+  USAGE:
+      $PRG  ascii3column  +zone=utmzone
+
+  This program transforms the WGS84 "longitude  latitude  height" 3 column
+  ascii file of Doris (created with philamh2ascii) to UTM coordinates
+  using proj.  (longitude=lambda, latitude=phi)
+  First use program lonlathei2ascii to create the 3 column ascii input file.
+
+  THe UTM zone needs to be specified as in the example.
+  Alternatively, one could specify +lon_0=-114 for example (see proj manual).
+
+  This script can serve as an example.  If you want to have another projection,
+  see the manual of proj and cs2cs how to do this.
+
+  EXAMPLE:
+      $PRG lonlathei.dat +utm_zone=33  xyz_utm.dat
+
+  See also: http://www.remotesensing.org/proj
+
+__EOFHD
+  exit 1
+endif
+
+
+
+
+### call proj, no datum shift for utm
+# order is lon lat by default, use -r to change to lat/lon
+#To convert the wgs84 coordinates lat=52.00 lon=14.00 to utm zone33
+#x,y coordinates use (zone automatically deterrmined, else e.g., +zone=32):
+#proj +proj=utm +zone=33 +ellps=WGS84 << EOF
+#14.0 52.0
+#EOF
+
+
+
+######################################
+#set INFILE  = temp.lonlat.wgs
+#set OUTFILE = temp.xy.utm
+#echo "creating $INFILE with awk"
+#awk '{print $1, $2}' $XYZFILE > $INFILE
+# above is not necessary, seems proj copies other columns.  brilliant.
+set INFILE = $WGSFILE
+echo "creating $OUTFILE with proj"
+proj +proj=utm +ellps=WGS84 $ZONE $INFILE > $OUTFILE
+#set OUTFILE2 = temp.xyz.utm
+#echo "creating $OUTFILE2 with paste"
+
+#paste $OUTFILE `awk '{print $3}' $XYZFILE` > $OUTFILE2
+#awk '{print $3}' $XYZFILE > $OUTFILE2.tmp
+#paste $OUTFILE $OUTFILE2.tmp > $OUTFILE2
+#rm -f $OUTFILE2.tmp
+
+
+### now you can offer this xyz file for plotting with GMT!
+echo " "
+#echo "Created: $XYZFILE   (3 column ascii wgs84 lon lat hei)"
+echo "Created: $OUTFILE  (3 column ascii UTM   x   y   hei)"
+
+
+### EOF.
+

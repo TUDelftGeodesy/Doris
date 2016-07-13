@@ -1,0 +1,1592 @@
+#!/bin/sh
+##!/bin/ksh
+# processor.helpfile
+# simulate man like help for processor options
+# 
+# History
+# 03/03/99      Initial version  - [BK] Bert Kampes
+# 19/03/99	Added troff and printout   
+# 03/11/00      Changed to /usr/bin/ksh for Linux default (?)
+# 07/02/02      Changed to /usr/sh for Cygwin
+# 15/10/11      less escape code fix [MA]
+# 15/10/11      Fixed some old comments [MA]
+#
+## RCS at end of file #####
+#######################
+# expand tabs before formatting.
+# . .IP " " -2
+
+# .TH "$bn " "1" "$line"
+# .ds )H $sswname
+# .ds ]W Release 0.0: March 1999
+
+# select printer, default geodesy 4th floor
+if   [ "X$PRINTER" != "X" ]; then
+  THEPRINTER="$PRINTER"
+elif [ "X$LPDEST" != "X" ]; then
+  THEPRINTER="$LPDEST"
+else
+  THEPRINTER="d5simx4de"
+fi
+
+VERSION="3.6++"
+bn=`basename $0`		# name of this file
+swname="Doris (Delft Object-oriented Radar Interferometric Software) - TU Delft"
+sswname="Doris"			# short software name
+##################################################################################
+BERTLINE()
+  {
+  echo " +---------------+-----------------------------------------------+---------- "
+  }
+
+BERTLINES()
+  {
+  echo .RE 1
+  echo 
+  echo 
+  echo $line
+  echo " keyword        #arg                                      default (man/opt)"
+  echo $line
+  }
+line=`BERTLINE`			# function to print line
+lines=`BERTLINES`		# function to print lines
+
+
+##################################################################################
+MANPG() {
+   cat << MANEOF
+
+.DA
+
+"$bn" \- find out options for processor software; print it out. Version: $VERSION  - TUDelft
+
+Usage:
+.RS 3
+.B
+$bn 
+[
+.ul
+word
+/
+.B
+-p
+]
+.br
+.B
+processor -h
+.ul
+[word]
+
+
+.RS 3.2
+.ul
+word	 
+start $bn with searching for 
+.ul
+word.
+.br
+.B
+-p	
+print this helpfile to printer: $THEPRINTER.
+
+
+.RS 3
+press 
+.B
+h 
+for help on pager (search, mark, forward, backwards, etc.)
+
+
+
+$lines
+.ul
+   General cards
+
+.TP 4
+.B
+c		0					opt
+.B
+.br
+.B
+C
+.br
+.B
+comment
+.br
+.B
+COMMENT
+.br
+.B
+#
+.br
+.B
+//
+.br
+Any text after these keys is ignored.
+
+
+.TP 4
+.B
+BEEP		1				WARNING         \\
+Controls level of beeping. Options are:
+.br
+.ul
+ERROR	
+only beeps on error.
+.br
+.ul
+WARNING	
+beeps on errors and warnings.
+.br
+.ul
+PROGRESS
+beeps on errors, warnings and progress.
+.br
+.ul
+ON
+Enables beeping, level is highest (PROGRESS).
+.br
+.ul
+OFF
+disables beeping.
+
+.TP 4
+.B
+PREVIEW		1				OFF             \\
+Controls generation of SUNraster preview files (uses cpxfiddle system call).
+.br
+.ul
+ON
+Enables preview generation.  SUNraster files are created after most steps where it is
+appropriate.  This is done by writing a small shell script in the current directory,
+which then is executed.  This script can later be executed by the user again.
+.br
+.ul
+XV
+Same as ON, but additionally calls the program xv to view the results.
+.br
+.ul
+OFF
+disables preview generation.
+
+.TP 4
+.B
+SCREEN		1				debug           \\
+Controls level of output to standard out.
+.br
+.ul
+ERROR	
+only error are written to stout.
+.br
+.ul
+WARNING	
+errors and warnings.
+.br
+.ul
+PROGRESS
+errors, warnings and progress.
+.br
+.ul
+INFO	
+errors, warnings, progress and info.
+.br
+.ul
+DEBUG	
+errors, warnings, progress, info, debug.
+.br
+.ul
+TRACE	
+errors, warnings, progress, info, debug, trace.
+tracing shows all visited functions.
+If you compile a debug version of doris, a lot more is traced,
+also in the matrix class.
+
+
+
+.TP 4
+.B
+BATCH		0 or 1				off             \\
+Specifies non-interactive processing.
+.br
+If 
+.ul
+ONLYPROCESS
+mode then always in batch.
+.br
+If (only 1)
+.ul
+PROCESS
+card then this card is signifiant.
+.br
+.ul
+ON	
+do non-interactive processing, except when problems are signalled.
+.br
+.ul
+OFF	
+do interactive processing.
+
+
+.TP 4
+.B
+LISTINPUT		0 or 1				on              \\
+copying inputoptionsfile to logfile.
+.br
+.ul
+ON	
+do copy the input file to the logfile.
+.br
+.ul
+OFF	
+do not copy the input file to the logfile.
+
+
+.TP 4
+.B
+OVERWRITE		0 or 1				off             \\
+Overwrite existing data output files if they exist.
+.br
+.ul
+ON	
+overwrite.
+.br
+.ul
+OFF	
+do not overwrite.
+
+
+.TP 4
+.B
+ELLIPSOID            	1 or 2				wgs84
+Change ellipsoid.
+NOT OK in version $VERSION
+.br
+.ul
+WGS84	
+use wgs84.
+.br
+.ul
+GRS80	
+use grs80.
+.br
+.ul
+BESSEL	
+use bessel.
+.br
+.ul
+a b	
+use specified semi major/minor.
+
+
+.TP 4
+.B
+MEMORY		        1			250             \\
+Specify available memory (integer MB).
+
+
+.TP 4
+.B
+ORB_INTERP		2			POLYFIT deg    \\ 
+Interpolation method for orbits.  Default polynomial fit of
+maximum degree (interpolation).  If there are more than 6
+datapoints the degree is 5 by default.  Optionally with 
+the second argument the degree can be given.  Alternatively
+SPLINE can be used (natural cubic splines).
+
+
+.TP 4
+.B
+DUMPBASELINE		2			0 0             \\
+Dump the baseline parameters as INFO variables to stdout
+evaluated on a grid of x lines and y pixels 
+(dimensions of current master).
+Also write a 2d model of degree 1 to stdout for perpendicular baseline.
+This is only done if the precise orbits are available.
+
+
+.TP 4
+.B
+LOGFILE		        1			log.out         \\
+Name of log output file.
+
+
+.TP 4
+.B
+M_RESFILE		1			master_result.out      \\
+Name of result master output file.
+
+
+.TP 4
+.B
+S_RESFILE		1			slave_result.out        \\
+Name of result slave output file.
+
+
+.TP 4
+.B
+I_RESFILE		1			interferogram.out       \\
+Name of result interferogram output file.
+
+
+.TP 4
+.B
+ONLYPROCESS		1			opt/man                 \\
+Only process a specified step.
+.br
+A ONLYPROCESS or PROCESS card is mandatory.
+
+.ul
+M_READFILES	
+Read parameters from volume, leader, data file (null file) for Master.
+.br
+.ul
+S_READFILES	
+Read parameters from volume, leader and data file (null) for Slave
+.br
+.ul
+M_CROP	
+Read in slc data file, write data to pixel interleaved internal format (raster).      
+.br
+.ul
+S_CROP	
+Read in slc data file, write data to pixel interleaved internal format (raster).
+.br
+.ul
+M_PORBITS	
+Compute precise orbits with getorb for Master.
+.br
+.ul
+S_PORBITS	
+Compute precise orbits with getorb for Slave.
+.br
+.ul
+M_FILTAZI	
+Filter master image in azimuth direction.  
+.br
+.ul
+S_FILTAZI	
+Filter slave image in azimuth direction.   
+.br
+.ul
+COARSEORB	
+Coarse coregistration based on precise orbits. 
+.br
+.ul
+COARSECORR	
+Coarse coregistration based on correlation. 
+.br
+.ul
+FINE		
+Fine coregistration.                     
+.br
+.ul
+COREGPM		
+Compute coregistration parameters.
+.br
+.ul
+RESAMPLE	
+Interpolate slave image to master grid.
+.br
+.ul
+FILTRANGE	
+Adaptive range filter master/slave (after resampling).
+.br
+.ul
+INTERFERO	
+Compute complex interferogram;
+Subtract reference phase here or later.           
+Optionally use oversampling.
+.br
+.ul
+COMPREFPHA	
+Compute reference interferogram of mathematic body (ellipsoid),
+model this with a 2d polynoial.         
+.br
+.ul
+COHERENCE	
+Compute complex coherence image.                 
+Subtract reference phase here or later.           
+Possible use complex interferogram.
+.br
+.ul
+SUBTRREFPHA	
+Subtract reference phase computed in step COMPREFPHA
+from complex intereferogram.
+.br
+.ul
+COMPREFDEM	
+Compute reference interferogram of DEM.
+for now gtopo30 only.
+.br
+.ul
+SUBTRREFDEM	
+Subtract reference interferogram of DEM (step COMPREFDEM)
+from complex interferogram.
+.br
+.ul
+FILTPHASE	
+Filter interferogram.
+.br
+.ul
+UNWRAP		
+Unwrap interferogram .
+For now use external routines, e.g., Ghiglia/Pritt , Snaphu
+.br
+.ul
+DINSAR	
+Differential interferometry (3 or 4 pass).
+.br
+.ul
+SLANT2H		
+Convert to height system.
+.br
+.ul
+GEOCODE	
+Put in xyz system.
+
+
+.TP 4
+.B
+PROCESS		1				opt/man         \\
+Process the specified step, see ONLYPROCESS.
+.br
+(more than one PROCESS card may be specified).
+.br.
+(cards are overwritten by ONLYPROCESS).                  
+
+
+.TP 4
+.B
+STOP			0				man     \\
+End interpretation inputoptionsfile.
+
+
+$lines
+.ul
+   step reading files
+   Mandatory for *_READFILES
+                                                                                  
+.TP 4
+.B
+M_IN_METHOD		1				ERS     \\
+identifyer what is to be read ASAR, Radarsat 1/2, ERS1/2, Envisat ASAR,
+JERS, ALOS, Terrasar-X and Cosmoskymed.
+JERS and ALOS uses ERS programs.
+
+.TP 4
+.B
+M_IN_VOL		1				man     \\
+Filename of volumefile master (not used for ASAR).
+
+.TP 4
+.B
+M_IN_LEA		1				man     \\
+Filename of leaderfile master (not used for ASAR).
+
+.TP 4
+.B
+M_IN_NULL		1				man     \\
+Filename of nullfile master (not used for ASAR).
+.br
+(may be dummy name, not actually used).
+
+.TP 4
+.B
+M_IN_DAT		1				man     \\
+Filename of datafile master.
+
+
+.TP 4
+.B
+S_IN_VOL		1                                       \\
+see
+.ul
+M_IN_VOL                                           
+
+.TP 4
+.B
+S_IN_LEA		1                                       \\
+see
+.ul
+M_IN_LEA
+
+.TP 4
+.B
+S_IN_NULL		1                                       \\
+see 
+.ul
+M_IN_NULL
+
+.TP 4
+.B
+S_IN_DAT		1                                       \\
+see
+.ul
+M_IN_DAT
+
+
+
+$lines
+.ul 1
+   step conversion SLC format to internal format on disk
+   Mandatory for *_CROP
+                                                                                  
+.TP 4
+.B
+M_CROP_ID		1				step01  \\
+Identification of this step.
+This card does nothing.
+
+
+.TP 4
+.B
+M_CROP_IN		1				man     \\
+Filename of input data in slc format.
+
+
+.TP 4
+.B
+M_CROP_OUT		1				man     \\
+Filename of output in raw format.
+
+
+.TP 4
+.B
+M_DBOW		4				total image
+(Master database output window)
+.br
+min line, max line, min pix, max pix.
+.br
+line=1: first line.
+
+
+.TP 4
+.B
+S_CROP_ID		1
+see
+.ul 1
+M_CROP_ID
+
+.TP 4
+.B
+S_CROP_IN		1
+see
+.ul 1
+M_CROP_IN
+
+
+.TP 4
+.B
+S_CROP_OUT		1
+see
+.ul 1
+M_CROP_OUT
+
+
+.TP 4
+.B
+S_DBOW		4
+see
+.ul 1
+M_DBOW
+
+
+
+$lines
+.ul
+   step Precise Orbits (Uses getorb DEOS).
+   Mandatory for proces *_PORBITS
+                                                                                  
+.TP 4
+.B
+M_ORBDIR		1				man     \\
+Name of directory for ODR precise orbit files (getorb).
+
+.TP 4
+.B
+M_ORB_INTERVAL	1				1
+Time interval between ephemerides in seconds.
+                                                                                  
+.TP 4
+.B
+M_ORB_EXTRATIME	1				3
+Time in seconds before first and after last line to get ephemerides.
+Natural splines are used to interpolate the orbits,
+therefor some points before and after are required for
+good interpolation.
+                                                                                  
+.TP 4
+.B
+M_ORB_DUMP		1				0.1
+Dump interpolated ephemerides to file "masterorbit.dat" with 
+specified delta t in seconds.
+
+.TP 4
+.B
+S_ORBDIR		1				man     \\
+see
+.ul 1
+M_ORBDIR
+
+
+$lines
+.ul
+   step azimuth filtering
+   mandatory for proces: M_FILTAZI and S_FILTAZI
+
+.TP 4
+.B
+AF_BLOCKSIZE		1				1024
+fftlength per buffer. (power of 2, the larger the better).
+
+.TP 4
+.B
+AF_HAMMING		1				0.75
+De-weight and re-weight spectrum at new Doppler centroid freq.
+
+.TP 4
+.B
+AF_OVERLAP		1				BLOCK/8
+Overlap in azimuth direction between buffers.
+
+.TP 4
+.B
+AF_OUT_MASTER	1				"master.afiltered"
+Output data file name (mph complex r4) for master.
+
+.TP 4
+.B
+AF_OUT_SLAVE		1				"slave.afiltered"
+Output data file name (mph complex r4) for slave.
+
+.TP 4
+.B
+AF_OUT_FORMAT	1				cr4
+Output format either cr4 or ci2.
+ci2 introduces an error (?) but reduces size of file by factor 2.
+
+
+$lines
+.ul 1
+   coarse coregistration based on precise orbits.
+   Mandatory for proces COARSEORB
+
+.TP 4
+.B
+No Options for this step
+
+
+
+$lines
+.ul 1
+   coarse correlation (coregistration)
+   Mandatory for proces COARSECORR
+                                                                                  
+.TP 4
+.B
+CC_METHOD		1				MAGFFT  \\
+.ul 1
+MAGFFT	
+correlation in spectral domain based on fft's.
+.br
+.ul 1
+MAGSPACE	
+correlation in space domain.
+
+
+.TP 4
+.B
+CC_NWIN		1				10
+Number of windows for correlation
+
+.TP 4
+.B
+CC_IN_POS		1				opt
+Filename with positions of windows for computation (line,pixel)
+at each line.
+If this card is specified, CC_NWIN is ignored.
+
+
+.TP 4
+.B
+CC_WINSIZE	2					64 64
+Number of lines pixels of correlation windows
+.br
+NOT TRUE: for MAGFFT: defaults to 1024, 1024              
+
+
+.TP 4
+.B
+CC_ACC	2					40 10
+Search accuracy lines pixels.
+.br
+for MAGFFT: automatically .5*WINSIZE           -L/2,L/2
+
+.TP 4
+.B
+CC_INITOFF		2				0 0
+Initial offset lines pixels.
+.br
+.ul 1
+ORBIT or orbit
+requests to read initial offset from file (placed there by coarseorb).  
+
+
+
+$lines
+.ul
+   step fine coregistration
+   Mandatory for proces FINE
+                                                                                  
+.TP 4
+.B
+FC_METHOD		1				MAGFFT
+.ul 1
+MAGFFT	
+coherence in spectral domain with fft's of magnitude images.         
+.ul 1
+MAGSPACE	
+coherence in space domain.              
+
+
+.TP 4
+.B
+FC_NWIN		1				101
+Number of windows for correlation.
+
+.TP 4
+.B
+FC_IN_POS		1				opt
+Filename with positions of windows for computation (line,pixel)
+at each line.
+If this card is specified, FC_NWIN is ignored.
+
+
+.TP 4
+.B
+FC_WINSIZE		2				32 32
+Number of lines pixels of correlation windows.
+
+.TP 4
+.B
+FC_ACC		2				4 4
+Search accuracy lines pixels.
+.br
+for ???FFT: automatically -L/2,L/2                        
+
+.TP 4
+.B
+FC_INITOFF		2				0 0
+Initial offset lines pixels.
+.br
+.ul 1
+COARSECORR
+requests to read initial offset from file (placed there by coarsecorr).  
+
+
+.TP 4
+.B
+FC_OSFACTOR		2				16
+Oversampling factor for interpolation of correlation.
+
+
+
+$lines
+.ul
+   step computation of coregistration parameters. 
+   mandatory for proces: COREGPM
+                                                                                  
+
+.TP 4
+.B
+CPM_THRESHOLD		1				0.3
+Threshold correlation for selection windows.
+
+
+.TP 4
+.B
+CPM_DEGREE			1				1
+Degree of model.
+
+
+.TP 4
+.B
+CPM_WEIGHT			1				none
+Select a priori covariance matrix.
+.br
+.ul 1
+NONE        no weighting is applied.
+.br
+.ul 1
+LINEAR      correlation is used for weighting.
+
+
+.TP 4
+.B
+CPM_MAXITER			1				10
+Maximum number of windows to remove automatically with outlier tests.
+
+
+.TP 4
+.B
+CPM_NOPLOT		0				false
+If present no plots are made.
+
+
+$lines
+.ul
+   step computation of reference interferogram (flat earth correction)
+   mandatory for proces: COMPREFPHA (f.k.a. FLATEARTH)
+                                                                                  
+
+.TP 4
+.B
+FE_METHOD		1				porbits
+Method selector for computations.
+.br
+.ul 1
+PORBITS     use precise orbits
+.br
+.ul 1
+METHOD2     use ???
+
+
+.TP 4
+.B
+FE_DEGREE		1				5
+Degree of 2D-polynomial.
+
+
+.TP 4
+.B
+FE_NPOINTS		1				501
+Number of points for estimation of polynomial
+
+
+
+$lines
+.ul 1
+   step: resampling of slave to master grid
+   mandatory for proces: RESAMPLE
+
+
+.TP 4
+.B
+RS_METHOD		1				cc4p
+Method selector for computations.
+.br
+.ul 1
+RECT
+.br
+.ul 1
+TRI
+.br
+.ul 1
+CC4P
+.br
+.ul 1
+CC6P
+.br
+.ul 1
+TS6P
+.br
+.ul 1
+TS8P
+.br
+.ul 1
+TS16P
+
+
+.TP 4
+.B
+RS_OUT_FILE	1					s_resampled.raw
+Name of output file resampled slave.
+
+
+.TP 4
+.B
+RS_OUT_FORMAT	1				cr4
+Output format either cr4 or ci2.
+ci2 introduces an error but reduces size of file by factor 2.
+
+
+.TP 4
+.B
+RS_DBOW		4			entire overlap
+Database output window.
+.br
+arguments: min.line  max.line  min.pixel  max.pixel
+in original master system.
+If specified window is outside overlap master, zeros are written in the slave.
+
+
+.TP 4
+.B
+RS_SHIFTAZI		1				ON
+Switch to shift the azimuth spectrum of the data to zero freq.
+before resampling, and back to its Doppler Centroid frequency 
+after resampling.
+
+
+$lines
+.ul
+   step range filtering of (complex) master and slave (resampled)
+   mandatory for proces: FILTRANGE
+
+
+.TP 4
+.B
+RF_METHOD		1					adaptive
+Method selector for rangefiltering.
+either adaptive or porbits.
+.br
+
+
+.TP 4
+.B
+RF_SLOPE		1					0.0
+Mean terrain slope for method porbits.
+.br
+
+
+.TP 4
+.B
+RF_FFTLENGTH		1					64
+Length of adaptive block with constant slope.
+Resolution in range is for ERS approximately 20 meters.
+Default for method orbit is 1024.
+.br
+
+
+.TP 4
+.B
+RF_NLMEAN		1 (odd)					15
+Number of lines for taking mean powerspectrum of complex interferogram
+to reduce noise for better peak estimation.
+Only for method adaptive.
+.br
+
+
+.TP 4
+.B
+RF_HAMMING		1					0.75
+Alpha of hamming function for weighting.
+An alpha of 1.0 yields a rectangular filter,
+an alpha of 0. gives more power to the low frequencies.
+.br
+
+
+.TP 4
+.B
+RF_THRESHOLD		1					5.0
+Threshold for range filtering on SNR of peak estimation.
+SNR is defined as fftlength*power of peak divided 
+by the power of the other frequencies.
+Only for method adaptive.
+.br
+
+
+.TP 4
+.B
+RF_OVERSAMPLE		0 or 1			ON
+Perform oversampling of master and slave before computing interferogram.
+Only for method adaptive.
+.br
+.ul
+ON	
+do oversampling.
+.br
+.ul
+OFF	
+do not do oversampling.
+
+
+.TP 4
+.B
+RF_WEIGHTCORR		0 or 1				OFF
+Optionally weight the powerspectrum of complex interferogram
+to account for decreasing number of overlapping frequencies
+for higher frequencies.
+The (Hamming) shape of the spectrum is not acounted for.
+The effect of this card may be neglible.
+Only for method adaptive.
+.br
+.ul
+ON	
+do weight.
+.br
+.ul
+OFF	
+do not weight.
+
+
+.TP 4
+.B
+RF_OUT_MASTER	80char				master.rfilter
+Data output file name for filtered slave.
+.br
+
+
+.TP 4
+.B
+RF_OUT_SLAVE		80char				slave.rfilter
+Data output file name for filtered slave.
+.br
+
+
+.TP 4
+.B
+RF_OUT_FORMAT	80char				cr4 | ci2
+Data output format either complex real4 values or casted to short integers.
+(for both output files)
+.br
+
+
+
+
+$lines
+.ul
+   step computation of (complex) interferogram
+   mandatory for proces: INTERFERO
+
+
+.TP 4
+.B
+INT_METHOD		1					man
+Method selector: old or oversample.
+The latter is not implemented yet.
+.br
+
+.TP 4
+.B
+INT_OUT_CINT		1					opt
+Filename of complex data output file complex interferogram.
+.br
+(This file can be viewed with dismph).
+
+
+.TP 4
+.B
+INT_OUT_FE		1					opt
+Filename of real data output file interferogram (phase) of
+  correction/ reference phase (flatearth correction).
+ This is the unwrapped fase, 
+  evaluated at the points of the multilooked grid.
+.br
+If this card is present it flags to save this file.
+
+
+.TP 4
+.B
+INT_OUT_INT		1					opt
+Filename of real data output file containing the 
+ (wrapped) phase of complex interferogram.
+.br
+If this card is present it flags to save this file.
+
+
+.TP 4
+.B
+INT_MULTILOOK	2					5 1
+Multilooking factors in azimuth (line) and 
+range (pixel) direction.
+
+
+
+$lines
+.ul
+   step subtraction of reference interferogram (flat earth correction)
+   mandatory for proces: SUBTRREFPHA
+
+.TP 4
+.B
+SRP_METHOD		1				polynomial
+Method selector for subtraction.
+Either compute ref. phase here or evaluate polynomail
+from step COMPREFPHA.
+
+.TP 4
+.B
+SRP_OUT_CINT		1				cint.minrefpha.raw
+Output file name for complex interferogram.
+
+.TP 4
+.B
+SRP_MULTILOOK 	1 or 2				1 1
+Multilook factors in azimuth and range direction.
+Default is equal factors.
+
+.TP 4
+.B
+SRP_OUT_CINT		1				cint.minrefpha.raw
+Output file name for complex interferogram.
+
+
+$lines
+.ul
+   step phase filtering of complex interferogram
+   mandatory for proces: FILTPHASE
+
+.TP 4
+.B
+PF_METHOD		1				goldstein
+Method selector for phase filtering
+(goldstein or spatialconv or spectral),
+
+
+.TP 4
+.B
+PF_BLOCKSIZE		1				32
+Size per block.
+For goldstein method.
+
+
+.TP 4
+.B
+PF_ALPHA		1				0.2
+Weighting factor for spectrum [0,1] <-> [no,max].
+Sf = S*(A/max(A)).^PF_ALPHA
+Where Sf is the complex filtered spectrum,
+S is the complex spectrum of the interferogram,
+and A is the real smoothed amplitude of S.
+The result is the ifft2d of Sf.
+For goldstein method.
+
+
+.TP 4
+.B
+PF_OVERLAP		1				3
+Use 2*PF_OVERLAP the same data for consecutive blocks/buffers.
+For goldstein method.
+
+
+.TP 4
+.B
+PF_KERNEL		var.				3 1 1 1
+KERNEL function for goldstein and spatialconv method.
+First specify the number of arguments, then the values.
+Kernel is always normalized by Doris.
+Default kernel for goldstein is [1 2 3 2 1], 
+and default for spatialconv is [1 1 1].
+For goldstein's method this kernel is used to smooth the
+amplitude of the spectrum, by which the original spectrum
+is weighted (by smoothamplspectrum.^alpha, see PF_ALPHA).
+To avoid weighting, use kernel [1].
+
+
+.TP 4
+.B
+PF_IN_KERNEL2D		1				filename
+File name for ascii file with 2D KERNEL function.
+For spatialconv and spectral method.
+A header line should precede the kernel, containing:
+height width scale, e.g.,
+3 3 0.1111111
+
+1 1 1
+
+1 1 1
+
+1 1 1
+
+
+.TP 4
+.B
+PF_OUT_FILE		1				cint.gf.alpha
+output file name.
+For method spatialconv, default is cint.filtered.
+
+
+.TP 4
+.B
+PF_IN_FILE		2				filename numlines
+Perform filtering on this file (complex float, mph) that
+has N lines.
+
+
+$lines
+.ul
+   step computation of reference DEM (phase)
+   mandatory for proces: COMPREFDEM
+   Most information can be found in de .HDR file of the gtopo30 DEM.
+
+.TP 4
+.B
+CRD_METHOD    	1			gtopo30
+Method selector. 
+not used in version $VERSION.
+
+.TP 4
+.B
+CRD_IN_DEM 		1				man
+File name of input DEM (gtopo30 only).
+
+.TP 4
+.B
+CRD_IN_FORMAT 	1			i16
+Format specifier for DEM used.
+Either i16, r4, or r8 for shorts, floats or doubles.
+
+.TP 4
+.B
+CRD_IN_SIZE 		2		  	  6000 4800
+Number of rows/cols of input DEM.
+
+.TP 4
+.B
+CRD_IN_DELTA 	1 or 2 			0.00833333333333333333
+Grid spacing of input DEM in decimal degrees.
+
+.TP 4
+.B
+CRD_IN_UL 		2		     89.995833333333333 -19.995833333333333333333
+WGS84 coordinates of leftupper corner.
+In decimal degrees, latitude longitude.
+
+.TP 4
+.B
+CRD_IN_NODATA  		1			 -9999
+Identifier which number to regard as Not a Number in input DEM.
+
+.TP 4
+.B
+CRD_INCLUDE_FE  		1			OFF
+Card to switch on to include 'flat earth' in this step.
+
+.TP 4
+.B
+CRD_DENSE       	1				4
+Factor for extra dense oversampling of DEM.
+
+.TP 4
+.B
+CRD_OUT_DEM     1					opt
+If specified,
+a short file is dumped containing cut out of input DEM.
+
+.TP 4
+.B
+CRD_OUT_DEMI    1					opt
+If specified, a float file is dumped containing bicubic interpolated dem.
+
+.TP 4
+.B
+CRD_OUT_FILE  	1				refdem.raw
+Filename of output file containing reference DEM.
+
+
+$lines
+.ul
+   step subtraction of reference DEM (phase)
+   mandatory for proces: SUBTRREFDEM
+
+.TP 4
+.B
+SRD_OUT_CINT	1						cint.minrefdem.raw
+Output file name for complex interferogram.
+
+
+
+
+
+
+$lines
+.ul
+   step computation of (complex) coherence image
+   mandatory for proces: COHERENCE
+
+
+.TP 4
+.B
+COH_METHOD	1							man
+Method selector: old or new.
+The latter is not implemented yet.
+.br
+
+.TP 4
+.B
+COH_OUT_CCOH	1							opt
+Filename of complex data output file coherence.
+.br
+If this card is present it flags to save this file.
+
+
+.TP 4
+.B
+COH_OUT_COH	1							opt
+Filename of real data output file coherence image.
+.br
+If this card is present it flags to save this file.
+
+
+.TP 4
+.B
+COH_MULTILOOK	2						10 2
+Multilooking factors in azimuth (line) and 
+range (pixel) direction.
+
+
+.TP 4
+.B
+COH_WINSIZE	2						coh_multilook
+Windowsize for coherence computation.
+
+
+
+$lines
+.ul
+   step unwrap
+   mandatory for proces: UNWRAP
+
+
+.TP 4
+.B
+UW_METHOD   1                                               ??
+Method selector: not implemented in doris v1.2
+
+.TP 4
+.B
+UW_???
+???
+
+
+$lines
+.ul 1
+   step differential interferometry
+   Mandatory for DINSAR
+                                                                                  
+.TP 4
+.B
+DI_OUT_FILE		1				differentialinterf.raw
+File name of output with differential phase (complex)
+
+.TP 4
+.B
+DI_IN_TOPOSLAVE	1				man
+
+.TP 4
+.B
+DI_IN_TOPOINT	1				man
+
+.TP 4
+.B
+DI_IN_TOPOMASTER	1				same as defo
+
+.TP 4
+.B
+DI_OUT_SCALED	1				opt
+
+
+
+$lines
+.ul
+   step slant to height conversion
+   mandatory for proces: SLANT2H
+
+
+.TP 4
+.B
+S2H_METHOD   1                                               ambiguity
+Method selector: ambiguity, schwabisch or rodriguez
+
+
+.TP 4
+.B
+S2H_NPOINTS  1                                               200
+schwabisch method: Number of points to be used for estimation of 2d polynomial.
+
+
+.TP 4
+.B
+S2H_DEGREE1D 1						2
+schwabisch method: Degree of 1d polynomial.
+.br
+
+
+.TP 4
+.B
+S2H_NHEIGHTS 1						s2h_degree1d+1
+schwabisch method: number of heights to evaluate reference phase on.
+.br
+Overdetermined problem if Nheights > degree1d+1.
+
+
+.TP 4
+.B
+S2H_DEGREE2D 1						5
+schwabisch method: Degree of 2d polynomial for the coefficients of 1d polynomial.
+.br
+
+
+
+.TP 4
+.B
+S2H_OUT_HEI  1						hei.raw
+File name of data output file with heights.
+
+.TP 4
+.B
+S2H_OUT_PHI  1						phi.raw
+ambiguity method: File name of data output file with heights.
+
+.TP 4
+.B
+S2H_OUT_LAM  1                                               lam.raw
+ambiguity method: File name of data output file with heights.
+
+
+
+$lines
+.ul
+   step geocoding (interpolation to regular grid?)
+   mandatory for proces: GEOCODE
+
+
+.TP 4
+.B
+GEO_OUT_LAM  1                                               lambda.raw
+Filename of outputfile longitude.
+.br
+
+.TP 4
+.B
+GEO_OUT_PHI  1                                               phi.raw
+Filename of outputfile latitude.
+.br
+
+
+
+
+
+
+.SS Files
+?
+
+.SS See also
+rm_err_??.c
+.br
+plotscript
+.br
+expand()
+.br
+run
+.br
+checklist.tex
+.br
+less
+.br
+?
+
+MANEOF
+}
+
+##################################################################################
+# -b only for debugging, ... comment out
+#if [ "$1" = "-b" ]; then
+#  #echo "man2ps should be invoked or something."
+#  #printout to ps and exit
+#  MANPG | nroff -man | more
+#  exit 1
+#fi
+#
+# Print out this helpfile with keywords
+if [ "$1" = "-p" ]; then
+  MANPG | nroff -man -Tlj | lp -d$THEPRINTER -onb -od -oA4
+  exit 1
+fi
+
+# Find out pager
+if [ "X$PAGER" = "X" ]; then
+  echo "Please set environment variable PAGER.  For example in csh:"
+  echo "  setenv PAGER more"
+  PAGER="more"
+  if [ ! "X$1" = "X" ]; then
+    PAGER="$PAGER +/$1" 
+  fi
+fi
+
+if [ "$PAGER" = "less" ]; then
+  if [ "$1" = "" ]; then
+    PAGER="less -d -e -i -r -# .8 "
+  else
+    PAGER="less -d -e -i -r -p$1"
+  fi
+fi
+
+#if [ ! -x `whence $PAGER` ]; then
+#  echo "$PAGER not found or environment variable PAGER not set"
+#  exit 1
+#fi
+
+# Print to screen
+MANPG | nroff -man | $PAGER
+
+exit 0
+# END
+
+## RCS info #####
+# $Source: /users/kampes/DEVELOP/DORIS/bin/RCS/helpdoris,v $
+# $Revision: 3.10 $
+# $Author: kampes $
+# $Date: 2003/08/28 14:17:09 $
+# $Log: helpdoris,v $
+# Revision 3.10  2003/08/28 14:17:09  kampes
+# *** empty log message ***
+#
+# Revision 3.9  2003/08/14 08:45:58  kampes
+# added jers info
+#
+# Revision 3.8  2003/06/24 08:32:38  kampes
+# release version
+#
+# Revision 3.7  2003/06/16 07:04:51  kampes
+# v3.6
+#
+# Revision 3.6  2003/04/14 07:10:29  kampes
+# added screen trace, m_in_method ers
+#
+# Revision 3.5  2003/04/14 06:35:15  kampes
+# doris release 3.5
+#
+# Revision 1.1  2003/04/14 06:04:40  kampes
+# Initial revision
+#
+# Revision 1.25  2000/12/07  13:53:36  13:53:36  kampes (B.M.Kampes)
+# release 3
+# 
+# Revision 1.24  2000/10/24  13:46:10  13:46:10  kampes (B.M.Kampes)
+# doris2.6
+# 
+# Revision 1.17  2000/04/05  11:37:07  11:37:07  kampes (B.M.Kampes)
+# range filtering
+# 
+# Revision 1.16  2000/02/16  17:44:33  17:44:33  kampes (B.M.Kampes)
+# new cards, refdem, check release 2.2
+# 
+# Revision 1.15  2000/02/09  11:22:29  11:22:29  kampes (B.M.Kampes)
+# new cards
+# 
+# Revision 1.12  99/12/13  16:49:25  16:49:25  kampes (B.M.Kampes)
+# small 
+# 
+# Revision 1.10  99/12/02  11:34:43  11:34:43  kampes (B.M.Kampes)
+# place to space.
+# 
+# Revision 1.8  99/11/02  11:41:11  11:41:11  kampes (B.M.Kampes)
+# doris v1.2 s2h geocoding
+# 
+# Revision 1.6  99/10/06  16:14:47  16:14:47  kampes (B.M.Kampes)
+# proces to process
+# 
+# Revision 1.5  99/09/21  09:11:31  09:11:31  kampes (B.M.Kampes)
+# removed cmplx to mag for fine
+# 
+# Revision 1.4  99/09/15  14:56:46  14:56:46  kampes (B.M.Kampes)
+# deleted section geocoding etc.
+# 
+# Revision 1.3  99/09/15  14:46:46  14:46:46  kampes (B.M.Kampes)
+# updated print option
+# 
+# Revision 1.2  99/09/13  16:00:32  16:00:32  kampes (B.M.Kampes)
+# initial check in
+# 

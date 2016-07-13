@@ -1,0 +1,47 @@
+Here we have 4 c programs to handle ENVISAT data.
+-------------------------------------------------
+envisat_dump_header simply reads in the header and dumps it.
+envisat_dump_header2doris.csh is a simple csh program that
+                    calls envisat_dump_header and then uses
+		    awk command to create a result section for
+		    doris.
+envisat_dump_data   creates a "raw" pixel interleaved short
+                    complex file, major row order, in the 
+		    host byte order.  possibly a crop.
+
+envisat_dump_data_HH Similarly dumps HH polarization band "MDS1"
+                     from alternating polarization products.
+envisat_dump_data_VV Similarly dumps VV polarization band "MDS2"
+                     from alternating polarization products.  
+
+The library function from the epr_api c functions distributed
+by ESA under the public domain type licence are used to access
+the data.  
+
+To compile the programs, perform a "make" and a "make install".
+Make sure to specify the correct c compiler (gcc by default)
+and installation directory (/usr/local/bin)
+
+TU Delft, 06-Jun-2011
+
+
+History
+------
+
+#%// TU Delft 06-Jan-2011 [MA]
+Change from epr_api 2.0.1 to 2.2 for full 64-bit support
+see epr_api 2.2 Change.txt for more information
+
+#%// TU Delft 19-Oct-2010 [MA]
+Tweak epr_api so it handles ERS1/2 in Envisat format
+
+#%// BK 16-Apr-2004
+It seems on some systems these programs act a bit strangely.
+We took out -O3 for compilation.
+Could also have to do with the script envisat2doris.csh, that some
+awk is wrong there on linux and not on SUN??
+
+#%// BK 24-Nov-2003
+There are also 2 simple programs that extract HH and VV from alternating
+polarization products.  These are extreme simple hacks.
+They actually simply dump the records named "MDS1" and "MDS2".

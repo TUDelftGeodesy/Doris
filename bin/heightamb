@@ -1,0 +1,64 @@
+#!/usr/bin/csh -f
+#%// BK 25-May-2000
+#%// $Revision: 1.1 $  $Date: 2005/07/28 09:27:00 $
+
+
+### Initialize center pixel #########################
+set lambda = 0.0565646
+set R      = 850000.0
+set theta  = 23.0
+
+
+
+### Info ############################################
+set PRG    = `basename "$0"`
+set VER    = "v1.1, BK software"
+set AUT    = "Bert Kampes, (c)1999-2000"
+echo "$PRG $VER, $AUT"
+echo " "
+echo "  Computes indicative height ambiguity for flat terrain"
+echo "  as function of perpendicular baseline.  A larger Bperp"
+echo "  yields more sensitivity to height, i.e., a decreasing"
+echo "  height ambiguity (the height difference corresponding"
+echo "  to a 2pi phase difference (a fringe))."
+echo " "
+echo "Program parameters (ERS):"
+echo "-------------------------"
+echo "  lambda:         $lambda [m]"
+echo "  R1:             $R [m]"
+echo "  theta:          $theta [deg]"
+set theta = `echo "(a(1.0)/45.0)*$theta" | bc -l`
+echo "  theta:          $theta [rad]"
+echo "  terrain slope:  0.0 [rad]"
+echo " "
+echo "EXAMPLES:"
+echo "  $PRG"
+echo "  $PRG 100"
+echo "  $PRG 25 50 100 200 400 800"
+
+
+
+### Check interactive or batch ######################
+if ( $#argv == 0 ) then
+  echo " "
+  echo "Input perp. Baseline [m]: "
+  #sin is not known in standard awk
+  #  awk '{ \
+  #    ha=('$lambda' * '$R' * sin( '$theta' )/(-2.0 * $1 ) ) \
+  #    print "Height ambiguity  = " ha "\n"\
+  #    }'
+  set b = $<
+  set ha = `echo "$lambda * $R * s ( $theta ) / ( -2.0 * $b )" | bc -l`
+  echo " "
+  echo "Bperp = $b [m] --->  Height ambiguity = $ha [m/2pi]"
+### Handle input arguments.
+else
+  foreach b ( $* )
+    set ha = `echo "$lambda * $R * s ( $theta ) / ( -2.0 * $b )" | bc -l`
+    echo " "
+    echo "Bperp = $b [m] --->  Height ambiguity = $ha [m/2pi]"
+  end
+  echo " "
+endif
+
+### EOF

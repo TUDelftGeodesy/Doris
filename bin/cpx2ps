@@ -1,0 +1,646 @@
+#!/bin/csh -f
+###
+# Script to plot magnitude/or phase of complex file (pix interleaved)
+# (major row order, pixel interleaved, 2B=short) with GMT
+# based on scripts by: Falk Amelung, Ramon Hanssen.
+# requires:            c++ program cpxfiddle
+# scheme:
+#  1. echo binary file to screen, pipe to xyz2grd
+#  2. xyz2grd  (gmt)
+#  3. grdimage (gmt)
+#  4. scalebar (psscale gmt)
+#  5. title filename (psxy gmt)
+### RCS ###
+# $Revision: 3.5 $  $Date: 2003/04/14 06:25:52 $
+# BK 10-May-2000
+#
+# option for float file, simple plot only, use cat, -fr4
+# TODO: -C input cpt file ipv. output name...
+#%// BK 19-Jun-2000
+# TODO: magnitude image: histeq, also in bg plot plotoffsets
+#%// BK 09-Apr-2001
+###
+set PRG    = `basename "$0"`
+set VER    = "v2.1, FMR software"
+set AUT    = "Bert Kampes, (c)1999-2000"
+echo "$PRG $VER, $AUT" \\n
+
+
+### Set defaults, check later
+set FIRSTLINE  = "1"            # -l default
+set FIRSTPIXEL = "1"            # -L default
+set LASTLINE   = "0"	        # -p correct later if not user set
+set LASTPIXEL  = "0"		# -P correct later if not user set
+set EXP        = "1.0"          # -e default
+set SCALE      = "1.0"          # -s default
+set FFORMAT    = "cr4"		# -f default mph file
+set OUTPUT     = "mag"		# -q do magnitude
+set XSUB       = "1"		# -X sub sampling factor default
+set YSUB       = "1"		# -Y sub sampling factor default
+set XMULTILOOK = "1"		# -M multilook factor default
+set YMULTILOOK = "1"		# -M multilook factor default
+set MIRROR     = ""		# -m default none passed to prog
+set VERBOSE    = "0"		# -V
+set DEBUG      = ""		# -V passed to progs
+@ LINELENGTH   = 0
+
+# GMT
+gmtset MEASURE_UNIT cm \
+       PAPER_MEDIA a4+ \
+       PAGE_ORIENTATION portrait \
+       ANOT_FONT Helvetica \
+       ANOT_FONT_SIZE 10p \
+       ANOT_OFFSET 0.2c \
+       BASEMAP_AXES WeSn \
+       LABEL_FONT Helvetica \
+       LABEL_FONT_SIZE 10 \
+       UNIX_TIME_POS -2c/-2c
+
+
+
+#set TITLE     = "none"	        # -T title
+set TITLE      = ""	        # -T title 
+set XSIZE      = "16"		# -z largest paper size in cm (?)
+set YSIZE      = "0"		# -z largest paper size in cm (?)
+set CPTNAME    = "0" 		# -C cpt lookup name
+set CPTZ       = ""		# -Z discontinuous table by default
+set SCALEBAR   = "0"		# -S largest paper size in cm (?)
+set LEAVEOPEN  = "0"		# -K
+set ONLYONEGMT = "1"		# default only grdimage
+set TIMESTAMP  = "0"		# -U
+
+# Script variables
+set CALLGV     = "1"		# -g default gv
+set PSFILE     = "$$.eps"	# -o postscript output (default)
+set GRDFILE    = "$$.grd"	# -G netCDF grd file (default)
+set CPTFILE    = "$$.cpt"      	# created (default)
+
+### Handle input.
+set HELP       = "0"
+set OPTIONS    = "w:e:s:l:L:p:P:f:q:F:G:c:C:o:z:T:m:M:hKSUVZg"
+set argv       = `getopt $OPTIONS $*`
+# Check any input, getopts ok?
+if ( "$?argv" == "0" ) then
+  echo "Sorry, no input or parse error."
+  exit 1
+endif
+
+# Process commandline arguments
+while ( "$1" != "--" )
+  switch ( $1 )
+    # Help
+    case '-h':
+      set HELP = "1"
+      breaksw
+    # linelength,width
+    case '-w':
+      @ LINELENGTH = "$2"
+      shift
+      breaksw
+    # exponent
+    case '-e':
+      set EXP = "$2"
+      shift
+      breaksw
+    # scale
+    case '-s':
+      set SCALE = "$2"
+      shift
+      breaksw
+    # firstline
+    case '-l':
+      set FIRSTLINE = "$2"
+      shift
+      breaksw
+    # lastline
+    case '-L':
+      set LASTLINE = "$2"
+      shift
+      breaksw
+    # firstpixel
+    case '-p':
+      set FIRSTPIXEL = "$2"
+      shift
+      breaksw
+    # lastpixel
+    case '-P':
+      set LASTPIXEL = "$2"
+      shift
+      breaksw
+    # input format
+    case '-f':
+      set FFORMAT = "$2"
+      if ( "$FFORMAT" != "ci2" & \
+	   "$FFORMAT" != "r4" & \
+	   "$FFORMAT" != "cr4" & \
+	   "$FFORMAT" != "cr8" ) then
+	echo " +++ "WARNING: -f \"$FFORMAT\" not recognized, continuing with \"cr4\"
+	set FFORMAT = "cr4"
+      endif
+      shift
+      breaksw
+    # what to output
+    case '-q':
+      set OUTPUT = "$2"
+      if ( "$OUTPUT" != "mag"   & \
+	   "$OUTPUT" != "phase" & \
+	   "$OUTPUT" != "real"  & \
+	   "$OUTPUT" != "imag"  & \
+	   "$OUTPUT" != "normal" ) then
+	echo " +++ "WARNING: -q \"$OUTPUT\" not recognized, continuing with \"mag\"
+	set OUTPUT = "mag"
+      endif
+      shift
+      breaksw
+    # subsampling -Fx/y
+    case '-F':
+      set XSUB = `echo "$2" | cut -f1 -d'/'`
+      set YSUB = `echo "$2" | cut -f2 -d'/'`
+      shift
+      breaksw
+    # multilooking -Mx/y
+    case '-M':
+      set XMULTILOOK = `echo "$2" | cut -f1 -d'/'`
+      set YMULTILOOK = `echo "$2" | cut -f2 -d'/'`
+      shift
+      breaksw
+    # color table
+    case '-c':
+      set CPTNAME = "$2"
+      shift
+      breaksw
+    # mirroring
+    case '-m':
+      set MIRROR = "-m $2"
+      if ( "$MIRROR" != "-m YX" & \
+	   "$MIRROR" != "-m XY" & \
+	   "$MIRROR" != "-m X"  & \
+	   "$MIRROR" != "-m Y" ) then
+	echo " +++ "WARNING: \"$MIRROR\" not recognized, continuing with no mirroring.
+	set MIRROR = ""
+      endif
+      shift
+      breaksw
+    # color table
+    case '-Z':
+      set CPTZ = "-Z"
+      breaksw
+    # paper size
+    case '-z':
+      set XSIZE = "$2"
+      shift
+      breaksw
+    # scale bar
+    case '-S':
+      set SCALEBAR = "1"
+      set ONLYONEGMT = "0"
+      breaksw
+    # leave eps open after finish
+    case '-K':
+      set LEAVEOPEN = "1"
+      breaksw
+    # title
+    case '-T':
+      #set TITLE = "$TITLE $2"
+      set TITLE = $2
+      set TITLE = "-B/:.${TITLE}:"
+      shift
+      breaksw
+    # timestamp
+    case '-U':
+      set TIMESTAMP = "1"
+      breaksw
+    # verbose
+    case '-V':
+      set VERBOSE = "1"
+      set DEBUG   = "-V"
+      echo " *** Verbose set"
+      breaksw
+    # postscript file name (output)
+    case '-o':
+      set PSFILE = $2
+      shift
+      breaksw
+    # grd file name (output)
+    case '-G':
+      set GRDFILE = $2
+      shift
+      breaksw
+    # cpt file name (output)
+    case '-C':
+      set CPTFILE = $2
+      shift
+      breaksw
+    # dogv
+    case '-g':
+      set CALLGV = "0"
+      breaksw
+    # not recognized pass to GMT
+    default:
+      echo option: $1
+      echo " +++ non existing option, I will give help later."
+      set HELP="1"
+  endsw
+  shift         # next flag
+end             # while
+shift           # skip the --
+set CPXFILE = $1
+if ( "$HELP" == "0" & "X$CPXFILE" == "X" ) then 
+  echo " +++ WARNING: infile missing"
+  set HELP = "1"
+endif
+if ( "$HELP" == "0" ) then
+  if ( ! -e $CPXFILE ) then
+    echo " +++ WARNING: CPXFILE: $CPXFILE cannot be found"
+    set HELP = "1"
+  endif
+endif
+# Mandatory options
+if ( "$HELP" == "0" & $LINELENGTH == 0 ) then 
+  echo " +++ WARNING: -w width option missing"
+  set HELP = "1"
+endif
+
+
+
+### Set internal script variables
+# Check user input -c
+if ( "$CPTNAME" == "0" ) then			# not specified by user
+  if ( "$OUTPUT" == "mag" ) then
+    set CPTNAME    = "gray" 			# cpt lookup name
+  else if ( "$OUTPUT" == "phase" ) then
+    #set CPTNAME    = "sealand"                  # cpt lookup name
+    set CPTNAME    = "rainbow"                  # cpt lookup name
+  else						# real/imag
+    #set CPTNAME    = "sealand"                  # default
+    set CPTNAME    = "rainbow"                  # default
+  endif
+endif
+
+
+# Check if help is asked
+if ( "$HELP" == "1" ) then
+#cat << __EOFHD | more -de
+cat << __EOFHD | more
+
+  PROGRAM: $PRG -- Produce various eps codes from complex data files.
+
+  SYNOPSIS:
+    $PRG -w width [-f format==$FFORMAT] [-q out==$OUTPUT] [-e exp==$EXP] [-s sc==$SCALE]
+         [-l 1] [-L alllines] [-p 1] [-P width] [-M$XMULTILOOK/$YMULTILOOK | -F$XSUB/$YSUB]
+         [-m mirror] [-T title] [-c cptname==$CPTNAME] [-z size==$XSIZE]
+         [-o epsfile] [-G grdfile] [-C cptfile]
+         [-gKSUVZ] [-h elp] [--] cpxfile
+
+      cpxfiddle options:
+        -w width      of complexfile in complex pixels
+        -f format     of complex input file.
+                      ci2|cr4|cr8 ($FFORMAT is default)
+                      r4 now also possible, though it limites other options.
+                      do not use subsampling, mirroring etc, file is cat-ed.
+        -q output     what is to be computed
+                      mag|phase|real|imag|normal ($OUTPUT is default)
+        -e exp        compute scale*output^exp
+        -s scale      compute scale*output^exp
+        -l firstline  cut out complexfile from firstline
+        -L lastline   cut out complexfile upto lastline
+        -p firstpixel cut out complexfile from firstpixel
+        -P lastpixel  cut out complexfile upto lastpixel
+        -m X Y XY     mirror option.
+        -M 1/1        multilook factor in X/Y direction
+        -F 1/1        subsample Factor in X/Y direction
+
+      GMT options:
+        -T title      title to plot (one word only for now)
+                      default no title
+        -c colortable name of color table (see grd2cpt)
+                      if -q mag then gray table is default
+                      if -q other then $CPTNAME table is default
+        -S            add a scale bar (psscale)
+        -Z            continuous color table (grd2cpt)
+        -K            Leave postscript file open after last call to GMT
+        -z cm         largest size of paper
+        -U            Place UNIX time stamp and filename in output
+
+      General options:
+        -g            Do not call gv to view result.
+        -o            output postscript file, default=$$.eps (pid)
+        -G            output grd file, default=$$.eps (pid)
+                      If specified, file is not removed at end
+                      If file exists, prompted for reuse.
+        -C            output cpt file, default=$$.cpt (pid)
+                      If specified, file is not removed at end
+                      If file exists, prompted for reuse.
+        -V erbose     give verbose information
+        -h elp        this help
+        complexfile   inputfile, major row order pixel interleaved
+
+  EXAMPLES:
+    Generate a postscript file with phase of complex interferogram
+    in file cpxint.raw (complex 2x4B floats) that has 998 range pixels:
+      $PRG -w 998 -qphase -fcr4 -- cpxint.raw
+
+    The same but with a scale bar, timestamp, and no title:
+      $PRG -w 998 -qphase -fcr4 -Tnone -U -S -- cpxint.raw
+
+    To plot the magnitude to the power 0.3 of a file in the format
+    complex short integers (2x2B) use:
+      $PRG -w 998 -qmag -fci2 -e0.3 -- cpxint.raw
+
+    To see a large file it is convenient to set a large size (-z).
+    This file cannot be printed, but viewing it with gv is nice:
+      $PRG -w 998 -qphase -z200 -- cpxint.raw
+
+    To plot the phase of a hgt file, first create a tmp file with
+    the program hgt2file (hgtfile infile linelength tmpfile [ampflag])
+    Next, run $PRG with appropriate flags for a float file, e.g.
+    (Note that this limits some options in scaling etc.):
+      $PRG -w 998 -crainbow -fr4 -- tmpfile
+
+  BUGS:
+    When mirroring and multilooking/subsampling sometimes
+    the number of lines/pixels of the output is computed
+    incorrectly. Simply don't use multilooking/subsampling...
+
+    Please mail bugs/comments to kampes@geo.tudelft.nl
+
+  SEE ALSO:
+    cpxfiddle, GMT
+
+__EOFHD
+  exit 1
+endif
+
+
+
+if ( $VERBOSE ) then
+  echo " *** Color table name: $CPTNAME (-c option, grd2cpt)" 
+endif
+
+
+# cpxfiddle internal variables 
+set OFORMAT    = "-o float"		# binary to stdout
+
+
+### Check files
+set REUSEGRD = "0"
+set REUSECPT = "0"
+if ( -e $PSFILE ) then
+  if ( $VERBOSE ) \
+  echo " *** Removing existing postscript output: $PSFILE"
+  rm -f $PSFILE
+endif
+if ( -e $GRDFILE ) then
+  echo " --- Press enter to remove grd file: $GRDFILE"\\n\
+       "r to reuse it"\\n\
+       "CTRL-C to quit"
+  set key = $<
+  if ( "$key" == "r" ) then
+    if ( $VERBOSE ) echo " *** Re-using grdfile: $GRDFILE"
+    set REUSEGRD = "1"
+  else
+    if ( $VERBOSE ) echo " *** Removing grdfile: $GRDFILE"
+    rm -f $GRDFILE
+  endif
+endif
+if ( -e $CPTFILE ) then
+  echo " --- Press enter to remove cpt file: $CPTFILE"\\n\
+       "r to reuse it"\\n\
+       "CTRL-C to quit"
+  set key = $<
+  if ( "$key" == "r" ) then
+    if ( $VERBOSE ) echo " *** Re-using cptfile: $CPTFILE"
+    set REUSECPT = "1"
+  else
+    if ( $VERBOSE ) echo " *** Removing cptfile: $CPTFILE"
+    rm -f $CPTFILE
+  endif
+endif
+
+
+### Compute dimensions paper/file
+# sizes file
+set BYTES = "8"				# bytes per pixel (re+im)
+if ( "$FFORMAT" == "ci2") then
+  set BYTES = "4"			# bytes per pixel (re+im)
+else if ( "$FFORMAT" == "cr8") then
+  set BYTES = "16"			# bytes per pixel (re+im)
+else if ( "$FFORMAT" == "r4") then
+  set BYTES = "4"			# bytes per pixel, use cat
+endif
+set FSIZE = `ls -l $CPXFILE | awk '{print $5}'`
+@ FILELINES = `echo "scale=0; $FSIZE/$LINELENGTH/$BYTES" | bc -l`
+if ( $VERBOSE ) then
+  echo " *** LINELENGTH: $LINELENGTH  FILESIZE: $FSIZE"
+  echo " *** BYTES per cpx pixel: $BYTES  FILELINES computed: $FILELINES"
+endif
+#
+# Check user input or set default
+if ( "$LASTLINE" == "0" ) then
+  set LASTLINE   = "$FILELINES"		# default
+endif
+if ( "$LASTPIXEL" == "0" ) then
+  set LASTPIXEL   = "$LINELENGTH"	# default
+endif
+#
+
+
+### Set program variables.
+set PROG       = "cpxfiddle"
+set PROGOPTS   = "-w$LINELENGTH -e$EXP -s$SCALE -S$XSUB/$YSUB -M$XMULTILOOK/$YMULTILOOK -l$FIRSTLINE -L$LASTLINE -p$FIRSTPIXEL -P$LASTPIXEL -f$FFORMAT $OFORMAT -q$OUTPUT $MIRROR $DEBUG $CPXFILE"
+#
+if ( $VERBOSE ) echo " *** Options for ${PROG}:"\\n $PROGOPTS
+
+# Set GMT options, difference in subsampling/multilook for numpix.
+if ( "$XMULTILOOK" != "1" ) then
+  if ( "$XSUB" != "1" ) then
+    echo " +++ WARNING: Sorry, not possible multilooking and subsampling."
+    exit
+  endif
+  set XSUB = "$XMULTILOOK"
+endif
+if ( "$YMULTILOOK" != "1" ) then
+  if ( "$YSUB" != "1" ) then
+    echo " +++ WARNING: Sorry, not possible multilooking and subsampling."
+    exit
+  endif
+  set YSUB = "$YMULTILOOK"
+endif
+
+set INC        = "-I$XSUB/$YSUB"
+set IFORMAT     = "-Zf"			# binary float values
+# add lowerleft?? for real plot?
+# can be done with grdedit -A
+#
+# correct for GMT, subsampling output = ceil ((P-p+1)/sub)
+# correct for GMT, multilook output = floor ((P-p+1)/ml)
+#set RANGE      = "-R$FIRSTPIXEL/$LASTPIXEL/$FIRSTLINE/$LASTLINE"
+# outputlines after subsampling = ceil((P-p+1)/sub)
+# outputlines after multilooking = floor((P-p+1)/sub)
+#%// BK 02-Oct-2000
+# functions ceil and floor have to be used?, ceil!=floor+1 !!!
+# but ceil == floor(b-1/sub)+1 ??? (where b=$2-$1+1) (?)
+# Seems that some csh (linux) do not like it if `` goes over eol. with \
+#%// BK 11-Dec-2000
+set NUMX  = `echo "$FIRSTPIXEL $LASTPIXEL $XSUB" | awk '{b=$2-$1+1}{if (int(b/$3)==b/$3){print int(b/$3)}else {print(int(b/$3))+1}}'`
+set NUMY  = `echo "$FIRSTLINE  $LASTLINE  $YSUB" | awk '{b=$2-$1+1}{if (int(b/$3)==b/$3){print int(b/$3)}else {print(int(b/$3))+1}}'`
+if ( "$XMULTILOOK" != "1" ) then
+  set NUMX  = `echo "$FIRSTPIXEL $LASTPIXEL $XSUB" | awk '{print int(($2-$1+1)/$3)}'`
+endif
+if ( "$YMULTILOOK" != "1" ) then
+  set NUMY  = `echo "$FIRSTLINE  $LASTLINE  $YSUB" | awk '{print int(($2-$1+1)/$3)}'`
+  #set NUMY  = `echo "$FIRSTLINE  $LASTLINE  $YSUB" | awk '{printf "%i", (($2-$1+1)/$3)}'`
+endif
+#%// BK 02-Oct-2000
+set EAST  = `echo "$FIRSTPIXEL+($NUMX-1)*$XSUB" | bc -l`
+set NORTH = `echo "$FIRSTLINE+($NUMY-1)*$YSUB" | bc -l`
+#
+#BK 16MAY better use actual papersize, not file dimensions (cut out allowed)
+@ OUTPUTLINES = $NUMY
+@ OUTPUTWIDTH = $NUMX
+# size paper, largest size $XSIZE
+#if ( $FILELINES > $LINELENGTH ) then
+if ( $OUTPUTLINES > $OUTPUTWIDTH ) then
+  if ( $VERBOSE ) echo " *** More output lines than pixels"
+  set YSIZE = $XSIZE
+  set XSIZE = `echo "scale=3; $OUTPUTWIDTH/$OUTPUTLINES*$YSIZE" | bc -l`
+else
+  if ( $VERBOSE ) echo " *** More output pixels than lines"
+  set YSIZE = `echo "scale=3; $OUTPUTLINES/$OUTPUTWIDTH*$XSIZE" | bc -l`
+endif
+if ( $VERBOSE ) echo " *** Papersize: XSIZE: $XSIZE  YSIZE: $YSIZE"
+
+#
+# BK 18-May-2000
+if ( "$OUTPUT" == "normal" ) then
+  set EAST  = `echo "2*($FIRSTPIXEL+($NUMX-1)*$XSUB)" | bc -l`
+endif
+set RANGE = "-R$FIRSTPIXEL/$EAST/$FIRSTLINE/$NORTH"
+
+
+### Prog binary dumps to stdout, xyz2grd makes grd file for GMT.
+if ( $REUSEGRD ) then
+  if ( $VERBOSE ) echo " *** Using existing grd file: $GRDFILE"
+else
+  if ( $VERBOSE ) echo " *** Creating new grd file: $GRDFILE"
+  if ( "$FFORMAT" == "r4") then
+    if ( $VERBOSE ) echo " *** Catting float file to xyz2grd"
+    cat $CPXFILE | xyz2grd -G$GRDFILE $RANGE $INC $IFORMAT
+  else
+    if ( $VERBOSE ) echo " *** Options for xyz2grd:"\\n -G$GRDFILE $RANGE $INC $IFORMAT
+    $PROG $PROGOPTS | xyz2grd -G$GRDFILE $RANGE $INC $IFORMAT
+  endif
+endif
+set ZMIN = `grdinfo -C $GRDFILE | cut -f6`
+set ZMAX = `grdinfo -C $GRDFILE | cut -f7`
+set NINTERVALS = "4"				# actually n+1... user input?
+set ZINT = `echo "$ZMIN $ZMAX $NINTERVALS" | awk '{printf "%10.2g", ($2-$1)/$3}'`
+if ( $VERBOSE ) then
+  echo " *** zmin zmax #intervals zinterval: $ZMIN $ZMAX $NINTERVALS $ZINT"
+endif
+
+### grdhisteq
+if ( "$OUTPUT" == "mag" ) then
+  echo "consider doing grdequalize here?"
+endif
+
+### grd2cpt
+# Select color table (loop index, select from 10?).
+set CPTS = ""
+if ( $REUSECPT ) then
+  if ( $VERBOSE ) echo " *** Using existing cpt file: $CPTFILE"
+else
+  if ( $VERBOSE ) echo " *** Creating new cpt file: $CPTFILE"
+  ### use -S if phase?
+  if ( "$OUTPUT" == "phase" ) then
+    ### 40 intervals
+    set PI   = "3.1416"
+    set CPTS = "-S-$PI/$PI/0.157"
+  endif
+  ### BK 4-apr-2001: cut off mag>threshold
+  ### but it seems to work fine asis, so leave it...
+#  if ( "$OUTPUT" == "mag" ) then
+#    ### threshold = -LZMIN/ZMEAN*XXX/NN intervals
+#    set PI   = "3.1416"
+#    set CPTS = "-S-$PI/$PI/0.157"
+#  endif
+  if ( $VERBOSE ) echo " *** Calling: grd2cpt $GRDFILE $CPTZ $CPTS -C$CPTNAME $DEBUG"
+  grd2cpt $GRDFILE $CPTZ $CPTS -C$CPTNAME $DEBUG >! $CPTFILE
+endif
+
+### GMT general flags
+if ( $TIMESTAMP ) then
+  set TIMESTAMPLLX = "-0.5"
+  set TIMESTAMPLLY = "-0.5"
+  # place timestamp little lower if also scalebar
+  if ( $SCALEBAR ) set TIMESTAMPLLY = "-2.0"
+  #set TIMESTAMP = -U/-0.5/-1.5/\"${CPXFILE:t}\"
+  set TIMESTAMP = -U/$TIMESTAMPLLX/$TIMESTAMPLLY/\"${PRG}\:_${CPXFILE:t}\"
+  if ( $VERBOSE ) echo " *** Timestamp: $TIMESTAMP"
+else
+  set TIMESTAMP = ""
+endif
+set GMTFIRST  = "-K"		# append more later
+set GMTMIDDLE = "-K -O"		# append more later and overlay
+set GMTCLOSE  = "-O" 		# overlay
+set GMTFLAGS  = "$GMTFIRST $DEBUG"
+if ( "$LEAVEOPEN" == "0" & "$ONLYONEGMT" == "1" ) \
+  set GMTFLAGS = "$DEBUG"
+
+### grdimage
+### Consider using -Iamp.grd for magnitude/phase display
+if ( $VERBOSE ) echo " *** Grdimage creates postscript file: $PSFILE"
+if ( $VERBOSE ) echo " *** Title: $TITLE"
+set SIZE = "-JX$XSIZE/$YSIZE"	# bounding box size
+grdimage $GRDFILE $SIZE -C$CPTFILE $TITLE -P $GMTFLAGS $TIMESTAMP >! $PSFILE
+set GMTFLAGS = "$GMTMIDDLE $DEBUG"
+
+
+### add ?
+#pwd | psxy $RANGE $SIZE -X0 -Y0 -K  >> $PSFILE
+
+
+### psscale this must be the last call to GMT
+if ( ! $LEAVEOPEN ) set GMTFLAGS = "$GMTCLOSE $DEBUG"
+if ( $SCALEBAR ) then
+  if ( $VERBOSE ) echo " *** Adding scale bar (psscale)."
+  set SCBOPTS     = " "			# 
+  set SCBLENGTH   = `echo "scale=0; $YSIZE*0.6" | bc -l`
+  set SCBWIDTH    = "0.25h"		# horizontal bar 0.25 cm
+  set SCBLLX      = `echo "scale=1; $XSIZE*0.45" | bc -l`
+  set SCBLLY      = "-0.4"
+  #set SCBANNOT    = "-B${ZINT}:magnitude:/:mag:"
+  set SCBANNOT    = "-B${ZINT}:magnitude:"
+  if ( "$OUTPUT" == "phase" ) set SCBANNOT = "-B3.14:phase:/:rad:"
+  set SCBOPTS     = "-L"			# equal sized
+  # lower left corner position wrt. frame?
+  #set SCBPOS='-D3/-0.5/6/0.25h'
+  set SCBPOS = "-D$SCBLLX/$SCBLLY/$SCBLENGTH/$SCBWIDTH"
+  #ok: set ANNOT='-B50::/:m:'
+  psscale -C$CPTFILE $SCBPOS $SCBANNOT $SCBOPTS $GMTFLAGS >> $PSFILE
+endif
+
+
+### View.
+if ( $CALLGV ) then
+  echo " *** View with gv: $PSFILE"
+  gv -bg white -fg black $PSFILE &
+endif
+
+
+### Tidy up
+if ( "$GRDFILE" == "$$.grd" ) then
+  if ( $VERBOSE ) echo " *** Removing tmp grdfile: $GRDFILE"
+  rm -f $GRDFILE
+endif
+if ( "$CPTFILE" == "$$.cpt" ) then
+  if ( $VERBOSE ) echo " *** Removing tmp cptfile: $CPTFILE"
+  rm -f $CPTFILE
+endif
+if ( $VERBOSE ) then
+  echo " *** Ouput postscript in: $PSFILE"
+  echo \\n" *** Thank you for using $PRG"
+endif
+
+### EOF
+

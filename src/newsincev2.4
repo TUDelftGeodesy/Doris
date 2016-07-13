@@ -1,0 +1,432 @@
+new since release 2.4
+---------------------
+added some include files for compilation on Linux x86
+card: FE_IN_POS
+module: SRP_METHOD exact
+card: M_ORB_DUMP
+removed: calls to script untar and getodr.
+assumed is that the ODR files are untarred in ORBDIR.
+#%// BK 04-Jul-2000
+step1routines: added function ntohl to 
+ ensure proper byte order interpretation, step readfiles.
+ this is important if type is B4 in slc format description
+orbit bugfix if dt != 1 routine splintvel
+card M_ORB_INTERVAL added
+card M_ORB_ESTRATIME added
+card M_ORB_DUMP added
+card S_ORB_DUMP added
+changed way orbit interpolation is called.
+#%// BK 06-Jul-2000
+card DUMPBASELINE added
+#%// BK 07-Jul-2000
+bugfix: linuxx86, version? ifile.open(ios::ate)
+ not ok, fixed to seekg(0,ios::end)
+ in routines filesize, readfile, fileci2tomatcr4
+bugfix: linux86, reading slc data file: htons for byteswap
+ added define __X86PROCESSOR__
+#%// BK 13-Jul-2000
+added verbose output of input file with 'writearg' function
+#%// BK 14-Jul-2000
+orbit class created
+readleader: some changes for reading ESA.RAW instead of ESA.SLC format.
+#%// BK 18-Jul-2000
+resample: changed resample routine to write 0 lines if DBOW is specified.
+#%// BK 21-Aug-2000
+
+v3.0 because of new filter steps.
+
+FILTAZI
+FILTRANGE + orbit
+FILTPHASE
+debuged RESAMPLE
+
+v3.0.2
+added more output to resfile step readfiles.
+added covariance matrices output to log file.
+changed implementation va_arg function to compile under redhat7.0 g++ distr.
+(repaired/added to run/plotcpm/etc)
+
+22-mar-2001
+Added output modelling bperp to ref. ellipsoid.
+Added output modelling theta to ref. ellipsoid.
+Added output modelling range to ref. ellipsoid.
+Changed use of real4 -> real8 matrices coreg. estimates.
+Warning summary added
+
+26-mar-2001
+bugfix: processing structure after range filtering:
+Processing order should be either
+i)  filter based on orbits -> resample -> interf; or
+ii) resample -> filter based on fr.freq. -> interf;
+The bug was that when filtering based on orbits was requested,
+the input for the interferogram generation was the filtered image,
+NOT the resampled one. thanks to Rens Swart.
+
+
+#%// BK 19-Apr-2001
+changed install_doris.csh -> configure
+and included test for endianness.
+
+
+#%// BK 20-Apr-2001
+added scalebar -b option in cpxfiddle
+
+#%// BK 26-Apr-2001
+bugfix line 2416 filtering.c fftlength
+
+#%// BK 04-May-2001
+changed input format of dem to short/real4/real8.
+(not tested properly)
+
+#%// BK 07-Feb-2002
+installation on Cygwin under Windows XP.
+changed shell for run script, helpdoris
+changed configure script
+added PREVIEW card
+added BEEP card
+
+#%// BK 13-Apr-2002
+added verbose output for step COMPREFDEM
+checked code, documentation step COMPREFDEM
+
+#%// BK 16-Apr-2002
+bug report from Bruno: nextpow2 function was wrong.  (not used in Doris)
+#%// BK 26-Oct-2002
+bug report Raffaele: spectrum strange with shift aziumth spectrum 
+resampling.  changed it to shift kernel in azimuth.
+#%// BK 01-Nov-2002
+Added snaphu method system call for unwrapping.
+changed source code filenames to .cc instead of .c for clarity.
+changed source code system include filenames for new compiler gcc3.2 (?):
+iostream.h  ---> iostream
+strstream.h ---> strstream
+fstream.h   ---> fstream
+iomanip.h   ---> iomanip
+time.h      ---> ctime
+string.h    ---> cstring
+stdio.h     ---> cstdio
+stdlib.h    ---> cstdlib
+ctype.h     ---> cctype
+
+#%// BK 03-Apr-2003
+1) For new compiler, it seems ios::nocreate and ios::noreplace are not supported.
+Therefore, this has been removed from the code.  Mainly used to check if files
+were opened OK, and to prevent files from being overwritten (OVERWRITE OFF)
+It seems the new version handles nocreate correctly, i.e., it does not
+create an input file if it does not exist.
+2) strandard namespace used
+3) assert renamed to bk_assert, since it gave problems as a known function.
+4) floor(int/int) is considered illegal, so i removed that, since int division
+is already a floor.  (but less readable in my opinion)
+
+
+#%// BK 08-Apr-2003
+added define __NO_IOS_BINARY__ for SGI old compiler
+not very nice code, probably change this one day to a define IOSBIN "| ios::binary"
+so it can be easily replaced in file open constructions.
+
+#%// BK 11-Apr-2003
+Added a new class for messages, since new compiler seems to have some
+problem with static old global definition.  see bk_messages.h
+Added a new level: "TRACE"
+
+
+#%// BK 13-Apr-2003
+SARtools added cpxfiddle option for real files
+added preview for unwrapped ifg hgt and real4 format
+added preview for slant2h real4 format
+added extensive debugging options for matrixclass/general tracing
+fixed bug in matrixclass allocated bytes tracing with static totalallocated
+added debug option in configure script
+
+#%// BK 16-Jun-2003
+Added envisat processing capability.
+step READFILES with card method=ASAR now performs a system call
+to program envisat_dump_header2doris.csh that relies on
+envisat_dump_header.c program i wrote.
+The only input file for this method is the asar IMS file, use
+card M_IN_DAT to specify filename.
+step CROP recognizes it was ASAR automatically.
+Improved azimuth filter: percentage counter and output format description.
+small bugfix if RS_DBOW and format CI2, and required to write
+zero lines at start.
+Added orbit interpolation/approximation with polynomial (LS) fit.
+
+
+----release v3.6-------------------------------------------------------
+bugfix: plotoffsets: line counting in awk somehow disappeared.
+#%// BK 09-Jul-2003
+bugfix: readinput.cc::checkcomprefdem: added check for big endian short 
+format after report of Daniel.
+
+#%// BK 14-Aug-2003
+fixed cpxfiddle a bit after report flip in X for r4 data
+added JERS format as input method.  i think it is ceos?
+the method thus simply thus the exact same as for ERS, for read_files and crop steps
+slcimage.cc recognizes ERS, ASAR, RSAT, JERS as substrings in product type specifier.
+
+added check in coherence if master or slave amplitude  > 0.0
+
+automated coregistration.  remove outlier windows if wtests is rejected, until
+done or max_iter is reached.
+#%// BK 28-Aug-2003
+
+run script added -s9 -e9 quicklook processing.  unfortunately, step1 will crash due
+to cdrom name in batch, but user will understand.
+#%// BK 12-Sep-2003
+cpxfiddle: skip header bytes and added more real input formats.
+doris: added format checks somewhere.
+doris: GPL release prepared by adding copyright notice to each file.
+#%// BK 17-Oct-2003
+added ./ to path for preview generation to prevent errors if "." is not in
+path of inexperienced user and preview scritp cannot be executed without it.
+Note that this si a unix separator.
+Also, changed in coregistration.cc the automated selection of outlier window
+to be the sq.sum of the wtests.
+#%// BK 21-Oct-2003
+Added check for RBW, RSR if they are ginven in MHZ in leaderfile for
+atlantis processed data.
+#%// BK 28-Oct-2003
+Added some checks for configure to use strptime function
+Added debug info for getorb strptime function.
+#%// BK 21-Nov-2003
+Added example programs for envisat alternating pol. data extraction.  Z.Perski tested this.
+One program with input handling may have been nicer, but I don;t know the format well
+enough to do this, and lack of time.  But they work.
+#%// BK 24-Nov-2003
+added check in ioroutines for strptime and endianness on the fly.
+they still need to be defined via the configure script.
+#%// BK 28-Nov-2003
+bug report Mark Warren: outer product definition (was not used in doris)
+new input card CROP_GEO with geograph. lat/lon cropping.
+#%// BK 15-Dec-2003
+bugfix coregistration automated outlier detection.
+tested doris with JERS, seems to work. see www. only bandwidths 
+could not be found in CEOS product, and orbit is terrible.
+Added logging of leader file by B.Cassee for calibration purposes.
+(incidence angle of first pix.  in next version this may be written
+to resultfile and used as parameter)
+// BK 16-Dec-2003
+added knab interpolator kernels for bandlimited signal interpolation
+see ieee 41 (5) pp1105-1110 Migliaccio
+RS_METHOD KNAB4P
+          KNAB6P
+          KNAB8P
+          KNAB10P
+          KNAB16P
+// BK 22-Dec-2003
+Raffaele Nutricato offered his oversampling routines.
+Doris now can perform an extra step oversampling (in range only for now)
+// BK 20-Jan-2004
+
+Added HEIGHT card for average terrain height used in crop geo.
+Bugfix envisat tools, several improvements with them for CROP data.
+Have to add still range_timing_error, azimuth_timing_error one day.
+INCREASE/DECREASE problem signalled, not fixed.
+UNWRAP TIEPOINT card for integration constant.
+#%// Bert Kampes, 13-May-2004
+
+Introduced range timing error and azimuth timing error general cards.
+M_RG_T_ERROR t [s]
+M_AZ_T_ERROR t [s]
+S_RG_T_ERROR t [s]
+S_AZ_T_ERROR t [s]
+In future, we may want to set the generalinput.rg_t_error to a 
+value based on e.g., processor version, PAF, etc.
+We can then do this in step1routines, changing this variable, and not
+via user input.
+#%// Bert Kampes, 27-May-2004
+
+Method RADARSAT for readfiles step implemented:
+Added radarsat support: reading leader/volume file in CEOS,
+reading info in dat file for timing.  Still unclear is how to 
+convert the orbit state vectors from inertial to earth centered
+earth fixed, and also how to interpolate the orbit with doris, ie., 
+they are given as an arc of 15*8 minutes, which is much too long
+for interpolation with say a polynomial.  This is ignored for now.
+Also implemented is the cropping routine for the datafile.  All this
+must be tested however, ie. regarding the DECREASE time indicator.
+It should be the case that when readfiles is run, the product identifier
+signifies that it is radarsat, and then automatically in the cropping
+step this is recognized and used.
+#%// Bert Kampes, 04-Aug-2004
+
+matrixspecs.cc: added DEBUGMAT2 around FFTW execute plan statement to prevent lots
+of output, e.g., in rangefilt.  seems that was forgotten.
+ioroutines.cc: changed ctime argument to a time_t type, see man ctime.
+#%// Bert Kampes, 03-Sep-2004
+
+bugfix coherence2 routine, check zero division to avoid NaN in coherence image
+bugfix goldstein routine: seemed kernel was not placed correctly
+update adaptive range filter: use last know shift of spectra if a clear
+ peak cannot be detected
+fleefix adaptive range filter: verbose output reduced if not in debug mode
+update compcoherence: strange zero starting lines removed.
+ i am sure I placed it there to fix some other situation, but the 
+ code as it was did not create the correct size image if the coherence
+ window was larger than the multilook window.
+added a function openfstream to have a singel function handling
+ opening in/out binary files to avoid duplicate code.
+#%// Bert Kampes, 13-Sep-2004
+
+updated viewanddel script to use gv first. On cygwin this works fine now.
+#%// Bert Kampes, 20-Sep-2004
+fixed small bug in configure if byte order was incorrectly detected
+reported by Mladen Zivcic
+#%// Bert Kampes, 23-Jan-2005
+Fixed bug in fDC computation cubic term for shifting kernel when interpolation.
+new function: real8 fDC=pix2fdc(pixel,image);
+#%// Bert Kampes, 02-Mar-2005
+.Added conversion functions like line2ta to slcimage.h class members
+because this is more logical.  Should still change it to private 
+members with access over public functions.  Also, the products class
+or orbit class should have a function that computes Bperp, etc.
+because then it would be easy to change things like using a polynomial
+for modeling, or baseline improvement based on residual fringes.
+.changed names of include files from .h to .hh (c++ standard)
+#%// Bert Kampes, 05-Mar-2005
+added a try block to catch math errors in processor.cc
+started class BASELINE in bk_baseline.hh to avoid multiple implementation
+of same functionality and improve speed in future by modeling the 
+baseline, etc.  This could also lead to easier correction of residual 
+reference phase due to bad orbit data.
+#%// Bert Kampes, 31-Mar-2005
+checked Atlantis processed data read correctly
+added constructor to slcimage class
+added trilinear interpolation to be used with comprefdem
+added is_initialized() for orbits
+changed try.catch memory allocation to be default also for GNU compiler.
+#%// Bert Kampes, 08-Apr-2005
+debugged trilinear new COMPREFDEM, using extradense = 0.25, ca 44 MB for 1000x1000;
+reasonably fast.
+#%// Bert Kampes, 08-Apr-2005
+added fasttrig.cc fasttrig.hh to be used in matrix class etc. for 
+complex mulitplication.  to be tested gain in speed of time, acc. is <0.1degree
+added key SAR_PROCESSOR ATLANTIS | VMP | TUD
+written in readvolume(); read by fill_slc_image(); used in crop()
+#%// Bert Kampes, 13-Apr-2005
+added CRD_OUT_DEM_LP card to dump external DEM height in meters
+in radar coordinates.  Request of Zbigniew Perski, goal is to
+geocode these heights again, so lat/lon of a displacement interferogram
+is obtained.  Option needs to be documented still by someone.
+#%// Bert Kampes, 16-Apr-2005
+Changed exceptions.cc to be more precise about the signal caught
+Improved filtazi to check if constant Doppler can be assumed for the image.
+#%// Bert Kampes, 20-Apr-2005
+removed warnings from snaphu coherence window size, should be ok.
+#%// Bert Kampes, 22-Apr-2005
+added heightamb utility to bin dir
+added raised cosine interpolation kernel for interpolation.
+(new argument "RC_6" and "RC_12" for card RS_KERNEL)
+see paper cho05; needs to be tested better, but is now default method in run script;
+added DEBUG output of kernel.  Normalized kernel for resampling.
+added [deg] for check for stepsize of DEM to be more verbose.
+removed function updateslcimageML and integrated reading oversampling factor
+for slc in the default function updateslcimage;
+getoffset: changed to use the average of the most coherent windows in COARSE CORR;
+#%// Bert Kampes, 28-Jul-2005
+added azimuth oversampling method.
+#%// Bert Kampes, 01-Aug-2005
+added kernel az and rg for resampling.  since e.g., rc kernel has oversampling
+ratio, which can be different for az and rg.  Moreover, it would be faster
+to have the lookup table in range, since that does not change.
+-ovs step: normalized kernel in range (sinc);  i think it would be better
+to use a 6 point rc kernel in range too, but I left the original code.
+#%// Bert Kampes, 12-Aug-2005
+-added method for fine coreg "OVERSAMPLE" that first oversamples
+the complex data by a factor two before cross-correlating the magnitude patches.
+-in fine coreg first performed a local peak search, then oversample locally;
+this allows to handle images with different prf etc. in principle.
+-speed improvement using new routine crosscorrelate.  this routine
+uses ffts smartly to get correlation for shifted matrices.
+#%// Bert Kampes, 13-Aug-2005
+changed name of file "step1routines" to readdata.cc
+#%// Bert Kampes, 19-Aug-2005
+Added a delete after new matrix in resample routine;  this may be incorrect.
+#%// Bert Kampes, 24-Aug-2005
+Added WIN32 define so Doris compiles under windows.  I do not support compilation
+problems.  And do not advice Doris to be run under windows (gmt, getorb, snaphu, etc.
+interfaces).  However, people seem to want this, and there are only a few defines.
+-DWIN32
+In processor.cc there also is -DWINDOWS and in the .hh files
+there is a check for -DMSC_VER > 1000  I dont know why.
+#%// Bert Kampes, 24-Aug-2005
+Added #define spotrf spotrf_ in matrixspecs.hh ie., from now on the fortran
+version of the lapack lib is used by default (most users seem to use this).
+#%// Bert Kampes, 24-Aug-2005
+normalized BASELINE class polynomial computation after report of some
+strange error.  I cannot explain the report, but it definitely is more stable now.
+#%// Bert Kampes, 25-Aug-2005
+Bugfix interp_trilinear: type-->incorrect formula used (comprefdem outliers)!
+#%// Bert Kampes, 25-Aug-2005
+Added range time error for ERS as -1.9325e-7 sec to two-way time based
+on radarcoding of precise corner reflector positions using TIEPOINT card.
+#%// Bert Kampes, 20-Sep-2005
+added fast_sin(); fast_cos(); fast_atan(); fast_atan2(); fast_arg() using
+look-up tables also for matrix class + fast_angle(); fast_angle2cmplx;
+fast_dotmultconjphase().  fast_min_sin();
+these functions are used in products.cc for complex subtraction of ref.phase, etc.
+and in coregistration::resample() for kernel spectrum centering around fdc.
+error max. 1/1000 or max 0.003 rad for angles.
+it seems LUT is factor 5 to 20 faster for fast machines than std::sin()
+#%// Bert Kampes, 04-Oct-2005
+change size of lut of coregistration to power of two 128, could be more
+memory suitable (from 101).
+#%// Bert Kampes, 04-Oct-2005
+removed refsystems.hh conversion.hh conversion.cc and put some routines
+in ellips class, others in utilities.
+#%// Bert Kampes, 05-Oct-2005
+improved geocoding, for large heights there likely was an 
+offset in lat/lon geocoded coordinates.
+#%// Bert Kampes, 06-Oct-2005
+added pointer for faster operator *, matTxmat, matxmatT in matrix class
+added transpose to matrix class
+added tests for these functions in matrixbk_test.cc
+still unclear why in class some are friends, like transpose, sqrt, some are not;
+i think sqrt and transpose shoudl be moved to matrixbk.cc as template
+function
+#%// Bert Kampes, 13-Oct-2005
+tested new template<> template<class> for g++-4.0 compilers.
+the code now compiles using this compiler.  Use -O max. optimization.
+#%// Bert Kampes, 13-Oct-2005
+----released v3.17-------------------------------------------------------
+
+New features:
+
+1) Handling of file sizes larger than 4GB on both 32-bit and 64-bit
+   platforms.
+2) Processing for TerraSAR-X data. See Appendix B.1.4 for installation
+guidelines.
+3) Improvement of the master-slave overlap calculation. The new
+   algorithm should prevent segmentation faults as sometimes
+   experienced in the past.
+4) Improvement and speed-up of COMPREFDEM based on a two-step
+   approach. First, the complete DEM is radarcoded and written to a
+   file. Second, the radarcoded DEM is interpolated to the master image
+   geometry using Delaunay triangulation. The overlapping buffers, as in
+   previous versions of Doris, are prevented.
+5) Simulation of master amplitude image based on DEM (M_SIMAMP).
+6) Estimation of master timing error based on correlation between
+   master amplitude and simulated master amplitude (M_TIMING).
+7) Estimation of relative timing error between master and slave image
+   (RELTIMING).
+8) DEM assisted coregistration (DEMASSIST). For optimal performance,
+   apply after M_SIMAMP, M_TIMING and RELTIMING.
+9) Coherence estimation after DEM subtraction (default).
+10) Utility construct_dem.sh to download, merge and fill voids of SRTM
+   data.
+11) Utility doris.process-reset.sh to reset and clean up the
+   processing entries in Doris result files allowing to easily re-run a
+   step or multiple steps.
+12) Option to output height-to-phase conversion factors (H2PH) based
+   on flat earth (SUBTRREFPHA) or DEM (COMPREFDEM).
+13) During COARSECORR and FINE coregistration NaN (not-a-number)
+   correlation values, which are mainly due to no data regions at the
+   border of the scene, are eliminated automatically, but the whole list
+   of windows are kept in the doris.log file.
+14) Coherence output is properly scaled between 0 to 1 range with new
+   option -r of cpxfiddle.
+
+#%// TUDelft DEOS Radar, 15-April-2009
+----released v4.01-------------------------------------------------------
+

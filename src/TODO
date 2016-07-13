@@ -1,0 +1,185 @@
+This file describes things that still need to be done to improve
+the Doris software.  It may not be complete, but it focuses on the
+most important general aspects.
+TUDelft, July 2001-2010.
+
+
+Mahmut ideas:
+
+1) report precise orbital model in .res file like dgm-0e4
+  Example entry in .res:  Start_precise:   (model name)
+
+2) ERS put info in .res if it is nominal replica: CEOS reader modification required
+
+remove wrong error msgs for ALOS
+
+3) put fdc to coarse orbits results.
+
+4) cpxfiddle: logo for [processed by Doris] 
+
+5) ellipsodial parameters revisit. i.e. WGS84, GRS80
+
+6) Revist OVS code
+
+7) Resampling: in .res put width and height of the rsmp slave
+
+8) Finalize Radarsat-2 reader
+
+9) Plot scripts to be updated for GMT and internal consistancy: plotoffsets, plotcpm etc.
+
+10) mtiming: Get # of cpu cores + distribute nwindows 
+
+11) log getorb call and Warnings to .log file using scratchlogfile("scratchlogcallsandwarnings")
+
+
+
+
+
+==================================================
+
+
+0) check accuracy of geocoding.
+compute wavelength from radar frequency, do not use annotated wavelength.
+compute prf again from (t_end-t_start)/#bins, do not use annotated prf.
+
+
+1) add method for readfiles: "asar"    done 200X [BK]
+2) add method for crop:      "asar"    done 200X [BK]
+3) add method for unwrap:    "snaphu"  done 200X [BK]
+
+
+
+A) Phase Unwrapping module.
+*Delft users:
+integrate the DLR MCF algorithm with Doris.  (mostly file conversions,
+system call from within Doris, input cards, output to resultfiles.)
+*For users outside Delft.
+This should either be an integration with an existing software,
+or implemented by someone.  If we implement it ourselves it cannot
+be as good as other software.
+*Curtis Cheng's "snaphu" statistical MCF algorithm was released to the
+public domain.  Make an interface with this software.
+
+done 200X [BK]
+
+
+
+B) Improve external DEM subtraction module.
+With the shuttle mission data, and general for eg. 'permanent scatterers' method.
+Interpolation to a regular grid in WGS84 (GRS80) orbit system in a sufficient
+spatial resolution with Matlab or GMT.
+Coregistration of the radarcoded DEM to the complex IFG.
+
+still requires some work
+#%// Bert Kampes, 10-Mar-2005
+
+
+
+C) Usage of ground control points (GCP).
+-geolocation, bias, trend correction
+-baseline parameter improvement (Massonet's algorithm).
+
+still needs to be done
+#%// Bert Kampes, 10-Mar-2005
+
+
+
+D) Improve usersmanual.
+
+add a FAQ with "best" answers from yahoo group.
+
+
+E) ellipsoid card for other orbit system/extern DEM. (+transformation routines,
+or use proj (program see d4 disk).
+
+
+
+---- #%// Bert Kampes, 10-Mar-2005 ---
+--------------------------------------
+<> GEOID subtraction of model used for SRTM-C band dem
+<> speed improvement: fDC as constant per image;
+    implement this in member function slcimage.get_fdc(pixel)
+    if max diff in fdc < 0.5*(PRF-ABW)
+    This will speed up the resampling step probably quite a bit.
+<> class for input handling
+<> class for parameter pool handling (read/write, no update)
+<> class for products: add bperp ?  think about classes:
+   image::master
+   image::slave
+   product::interferogram (etc.)
+             is function of images
+   orbit::masterorbit  <--- should inherit from image ? be part of image?
+   orbit::slaveorbit
+
+   then interferogram.getbperp() <--- images <--- orbits
+
+implement smarter way of getbperp(), e.g., use a polynomial;
+
+<> algorithm eineder for dem2phase
+
+<> ps processing: convert DEM to master grid in meters.
+
+<> class polynomial (2d,1d, etc.) (is in matrix class?, but why is
+   fdc_coefficients not part of it)
+
+<> add method for interpolation of scatterered data to regular grid
+   use this to, e.g., interpolate the COMPREFDEM phase in line,pixel
+   buffers (alternatively implement quickly an linear interpolation)
+   also use this to map other DEMs to regular grid in WGS84 etc.
+<> this can be easily implemented at line
+"~/DEVELOP/DORIS/doris/src/referencephase.cc" [readonly] line 1115 of 1384 --80%-- col 7
+sqrdistance: closest_one, next_closest; third_closest;
+and to use those three (unique points) to interpolate to integer l,p;
+
+this is a small change that really will improve results and speed,
+since also extradense is not important than anymore.  still, of course, the input
+dem should contain all peaks of the data.
+
+<> add UTM class, conversions to WGS84, DEM etc.
+<> add RD class, conversions to WGS84, DEM etc.
+
+<> check concept of memory mapping;  this could save time when relatively small overlapping
+   buffers need to be loaded from disk;
+   A memory map is a virtual access (IDL associate?) Matlab (template???)  
+   to a file.  it does not cost memory, but you can treat a file as a single matrix.
+   Only when you access the data it is actually read from disk.
+
+<> make a class for fasttrig (a lookup table for sin/cos of 2K length or so)
+   expected to be factor 10 faster or so cmp to std:sin()
+
+<> BASELINE class:: add functions (3d polynomials) for 
+phi=f(lat,lon,hei)
+line=f(lat,lon,hei)
+pixel=f(lat,lon,hei)
+---> use these in comprefdem directly as alternative method.
+
+hei=f(phi,l,p)
+---> use this in slant2h my_method (cmp schwaebisch)
+
+lat=f(hei,l,p)
+lon=f(hei,l,p)
+---> use these in geocode (however, geocode is already fast and now "exact")
+
+<> use strings instead of strstr in bk_message class, to parse inputfile.
+
+<> use class to read records in ceos format
+
+
+cpxfiddle: option invert/negative:  seems amplitude image is quite nice if negative
+ovs: check BW is not changed.
+
+
+matrixclass: reorganize, good testprogram;
+oversample: avoid copying of data to oversample a real4 matrix.
+fft: avoid changing plan if fft size changes
+
+
+check matrix class:
+-what is faster A[i][j] or A(i,j) or is it the same.
+currently in matmult, etc. A(i,j) is used, so if Veclib
+is not available, it is important.  furthermore, i changed
+it to be operator() (const uint &l, const uint &p)
+but maybe better to inline somehow.
+-use BLAS library for matmult, particularly for resampling this may be faster.
+
+

@@ -1,0 +1,501 @@
+#!/bin/csh -f
+# Changed this to csh -f. The -f option has been added after a 
+# report that this script failed for a tcsh user who had a .cshrc file.
+# For Cygwin users, link your tcsh to csh, i.e., ln -s /bin/tcsh /bin/csh,
+# or obtain a regular csh from somewhere.
+#%// BK 27-Apr-2002
+#
+#   plotoffsets for gmt3-3
+# used by Doris software for plotting of offset vectors after fine.
+#  plotting magnitude background may require some diskspace
+#  (subx, suby..)
+#  bg assumed to be in one file, size=(width*height); width=pN-p0+1
+# BK 16-May-2000
+# sleeps & calls viewanddel instead of gv, for Doris software.
+#%// BK 19-Jul-2000
+### RCS info #####
+#%// BK 17-May-2000
+#%// $Revision: 3.15 $  $Date: 2005/08/26 08:54:00 $
+# Developers:
+# Bert Kampes
+# Lennert van den Berg
+################
+################
+
+# TODO:
+# -plot unit offset vectors
+#  (this is pretty difficult, since normalized, what to plot, added it 
+#   in plotcpm for error vectors, bk 15 mar01)
+#%// BK 19-Jul-2000
+
+### Handle input.
+# give doris time to write result file
+sleep 1
+set PRG    = `basename "$0"`
+set VER    = "v1.0, part of Doris InSAR software"
+set AUT    = "TUDelft, (c)1999-2010"
+echo "$PRG $VER, $AUT"
+echo " "
+
+###
+set USAGE     = "0"	                #synopsis
+set HELP      = "0"	                #exit afterwards
+set IFILE     = "interferogram.out"     # arg 1 default
+# args 2:5 (default) file dimension (plot dim.)
+@ L0 = 1
+@ LN = 25000
+@ P0 = 1
+@ PN = 4900
+set THRESHOLD = "0.4"		        # arg6 default
+set SLCFILE   = ""                      # arg7 optional
+set SLCFORMAT = ""
+set DOBG      = "0"		        # default (not possible w/o l0,lN,p0,pN
+
+switch ( $#argv )
+  case '7':
+    set DOBG = "1"
+    set SLCFILE = "$7"
+    # ||| fall through |||
+    #
+  case '6':
+    set THRESHOLD = "$6"
+    # ||| fall through |||
+    #
+  case '5':
+    @ L0 = $2
+    @ LN = $3
+    @ P0 = $4
+    @ PN = $5
+    # ||| fall through |||
+    #
+  case '2':
+  case '1':
+    set IFILE = $1
+    breaksw
+    # --- no fall through ---
+    #
+  default:
+    set HELP  = "1"
+endsw
+if ( $#argv == 2) set THRESHOLD = "$2"
+# Check input
+if ( ! -r "$IFILE" ) then
+  echo  " input file: $IFILE cannot be read."
+  set HELP = "1"
+endif
+
+# Check if something went wrong
+set MORE = more;
+less >& /dev/null
+if ( $status == 0 ) set MORE = 'less -de'
+echo "Using as pager program: $MORE"
+if ( $HELP ) set USAGE = "1"
+if ( $USAGE ) then
+#cat << __EOF_USAGE | more -d
+cat << __EOF_USAGE | $MORE
+
+-----------------------------------------------------------------------
+
+  $PRG  --  Program to plot offset vectors from Doris
+            Position, correlation, and background image can be plotted.
+
+  SYNOPSIS:
+    $PRG ifile [linelo hi pixlo hi [threshold [slcfile]]]
+     
+      ifile:      Resultfile from Doris [mandatory arg]
+      linelo:     First azimuth line.   [default: 1]
+      linehi:     Last azimuth line.    [default: 25000]
+      pixlo:      First range pixel.    [default: 1]
+      pixhi:      Last range pixel.     [default: 4900]
+      threshold:  Only plot estimated with correlation above threshold.
+		  [default: 0.4]
+      slcfile:    Complex raw file.  Magnitude is used as background image. 
+		  (format can be complex real4 or short int.)
+
+  EXAMPLE:
+    $PRG interferogram.out 1 25000 1 4900 0.4 slcfile.raw
+
+  PROG may depend on gawk or nawk and not work with std awk...
+
+-----------------------------------------------------------------------
+
+__EOF_USAGE
+endif
+if ( $HELP ) then
+#cat << __EOF_HELP | more -de
+cat << __EOF_HELP | $MORE
+
+  ifile is the interferogram result file from the Doris software, see
+  this script for details.  Somewhere the fine output section should be
+  present, containing lines such as:
+
+  *******************************************************************
+  *_Start_fine_coreg
+  *******************************************************************
+  Initial offsets (l,p):                  212, 18
+  Window size for correlation (l,p):      80, 80
+  Max. offset that can be estimated:      40
+  Peak search ovs window (l,p):           16, 16
+  Oversampling factor:                    32
+  Number_of_correlation_windows:          101
+  Number  posL    posP    offsetL offsetP correlation
+     0    27    27    241.06      3.19   0.42
+     1    27   127    241.36      3.29   0.72
+  ...
+    99  4733   971    241.86      3.50   0.48
+
+  *******************************************************************
+  * End_fine_coreg:_NORMAL
+  *******************************************************************
+
+  See also: cpxfiddle, GMT.
+
+__EOF_HELP
+  exit -1
+endif
+
+
+### Initialize variables
+set TMPDIR = "."
+if ( ! -w "$TMPDIR" ) then
+  set TMPDIR = "/tmp"
+endif
+if ( ! -w "$TMPDIR" ) then
+  echo "Sorry, directory $TMPDIR seems not writable, exiting."
+  exit -2
+endif
+set PSFILE  = $TMPDIR/tmpplot.ps
+set TMPFILE = $TMPDIR/tmpdata.plot
+rm -f $PSFILE $TMPFILE
+
+### ifile is transformed to tmpfile with columns:
+# 1: window number
+# 2: location x
+# 3: location y
+# 4: offset x
+# 5: offset y
+# 6: correlation
+
+
+### Create tmpfile with only data: grep fine section with awk and
+### remove trailing comment lines (5) and tailing comment (2)
+### 
+###1:    *_Start_fine_coreg
+###2:    *******************************************************************
+###3:    Oversampling factor:            16
+###4:    Number_of_correlation_windows:  100
+###5:    Number  posL    posP    offsetL offsetP correlation
+###6:       0    27    27    241.06      3.19   0.42
+###      ... 
+###x:      99  4733   971    241.06      3.50   0.41
+###x+1:
+###x+2:  *******************************************************************
+###x+3:  * End_fine_coreg:_NORMAL
+###x+4:  *******************************************************************
+###
+#
+######################################################################
+### find out if nawk is available, since awk seems not to know atan2?
+set AWK = awk;
+echo 1 | /usr/xpg4/bin/awk '{print 1}' >& /dev/null
+if ( $status == 0 ) set AWK = '/usr/xpg4/bin/awk'
+echo 1 | gawk '{print 1}' >& /dev/null
+if ( $status == 0 ) set AWK = 'gawk'
+echo 1 | nawk '{print 1}' >& /dev/null
+if ( $status == 0 ) set AWK = 'nawk'
+echo "Using as awk program: $AWK"
+
+
+
+######################################################################
+### 1. Grep between start stop pair:
+echo "TMPFILE BEING GENERATED: step1"
+$AWK '/Start_fine/, /End_fine/' $IFILE >! $TMPFILE.$$ 
+### 2. Get number of points (starting at window 0):
+@ NUMPOINTS = `$AWK '/Number_of/ {print $2}' $TMPFILE.$$`
+#### 3. Reduce file only to data:
+#tail -n +6 $TMPFILE.$$ | head -n $NUMPOINTS >! $TMPFILE
+#### 4. Remove above threshold (here is most easy...)
+#$AWK -v t=$THRESHOLD '$6>=t' $TMPFILE >! $TMPFILE.$$ 
+#mv -f $TMPFILE.$$ $TMPFILE
+#
+#%// BK 25-Sep-2001: following bug report by Irek Baran.
+echo "TMPFILE BEING GENERATED: step2"
+#$AWK -v n=$NUMPOINTS -v t=$THRESHOLD '{if(NR>5&&NR<n+6){if ($6>t){print $0}}}' $TMPFILE.$$ > $TMPFILE
+#rm -f $TMPFILE.$$
+
+#test how to pass arguments.  failsave seems to be: #echo 111 | $AWK '{print '$t'}'
+#%// BK 16-Jun-2003
+#$AWK '{if(NR>5&&NR<'$NUMPOINTS'+6){if ($6>'$THRESHOLD'){print $0}}}' $TMPFILE.$$ > $TMPFILE
+# v3.16: more info lines in resfile, skip more.
+$AWK '{if(NR>10&&NR<'$NUMPOINTS'+11){if ($6>'$THRESHOLD'){print $0}}}' $TMPFILE.$$ > $TMPFILE
+rm -f $TMPFILE.$$
+echo "TMPFILE GENERATED"
+
+
+
+### Check if we have points ##########################################
+@ NP = `$AWK '{l=NR};END{print l}' $TMPFILE`
+echo "$NP points above coherence threshold $THRESHOLD found."
+if ( $NP < 1 ) then 
+  echo "exiting..."
+  rm -f $TMPFILE
+  exit
+endif
+
+
+
+######################################################################
+### Plot: location of windows / wtests
+# plotted are:
+#  - normalized observations (offsets)
+#  - optionally background of magnitude image
+#  - correlation as circles (legenda... o=1), thickness arrow?
+
+
+######################################################################
+echo "Setting GMT defaults"
+#       PAPER_MEDIA a4+ \
+gmtset MEASURE_UNIT cm \
+       PAPER_MEDIA a4 \
+       PAGE_ORIENTATION portrait \
+       ANOT_FONT Helvetica \
+       ANOT_FONT_SIZE 10p \
+       ANOT_OFFSET 0.2 \
+       BASEMAP_AXES WeSn \
+       LABEL_FONT Helvetica \
+       LABEL_FONT_SIZE 10 \
+       UNIX_TIME_POS -2/-2 \
+       D_FORMAT %lg
+
+
+
+######################################################################
+### Labeling of axis.
+echo " +++ Plotting the observed offset vectors (normalized) +++"
+set TITLE  = "Offset_vectors_(Corr_>_$THRESHOLD)"
+set XLABEL = "Azimuth"
+set YLABEL = "Range"
+# height=y=azimuth, assume 5*stretched
+@ WIDTH    = ( ( $PN - $P0 ) + 1)
+@ HEIGHT   = ( ( $LN - $L0 ) + 1)
+set SLCFORMAT = "cr4"
+if ( $DOBG ) then
+  # filewidth should be used, but is equal...
+  #@ SIZECI2 = $WIDTH * $HEIGHT * 4
+  #@ SIZECR4 = $WIDTH * $HEIGHT * 8
+  set SIZECI2 = `awk 'BEGIN{print '$WIDTH' * '$HEIGHT' * 4 }'`  # MA avoid integer overflow
+  set SIZECR4 = `awk 'BEGIN{print '$WIDTH' * '$HEIGHT' * 8 }'`
+  set FSIZE   = `ls -l $SLCFILE | $AWK '{print $5}'`
+  if ( $FSIZE == $SIZECI2 ) then
+    echo " *** File format ${SLCFILE}: complex short."
+    set SLCFORMAT = ci2
+  else if ( $FSIZE == $SIZECR4 ) then
+    echo " *** File format ${SLCFILE}: complex float."
+    set SLCFORMAT = cr4
+  else
+    echo " *** Sorry, no background, file format could not be determined."
+    set DOBG = "0"
+  endif
+endif
+
+
+
+######################################################################
+# GMT options
+@ TICKSL   = $HEIGHT / 7
+@ TICKSP   = $WIDTH  / 7
+set RANGE  = "-R$P0/$PN/$L0/$LN"
+set GENOPT = "-P -: "
+set FRAME  = "-B"$TICKSP":"$YLABEL":/"$TICKSL":"$XLABEL"::."$TITLE":"
+set XSIZE  = "16"
+set YSIZE  = "0" 
+@ NUMPIXS  = ( $WIDTH * $HEIGHT )
+# size paper, largest size $XSIZE
+# actually should go to landscape in that case...
+# strict stretching ERS1/2 only...
+set RATIO = "5"
+@ HEIGHT = $HEIGHT / $RATIO
+if ( $HEIGHT > $WIDTH ) then
+  set YSIZE = $XSIZE
+  #%// Bert Kampes, 31-Mar-2005: changed to awk from bc
+  #set XSIZE = `echo "scale=3; $WIDTH/$HEIGHT*$YSIZE" | bc -l`
+  set XSIZE = `echo "$WIDTH $HEIGHT $YSIZE" | $AWK '{printf "%f", $1 / $2 * $3}'`
+else
+  #%// Bert Kampes, 31-Mar-2005: changed to awk from bc
+  #set YSIZE = `echo "scale=3; $HEIGHT/$WIDTH*$XSIZE" | bc -l`
+  set YSIZE = `echo "$HEIGHT $WIDTH $XSIZE" | $AWK '{printf "%f", $1 / $2 * $3}'`
+endif
+echo " *** Size plot (x,y): $XSIZE $YSIZE"
+set SIZE = "-JX$XSIZE/$YSIZE"
+
+
+######################################################################
+### First plot background if requested.
+# for now, otherwize error
+set GRDFILE = $$.grd
+set CPTFILE = $$.cpt
+if ( $DOBG ) then
+  echo " *** Making background plot..."
+  set SUBX = "1"
+  set SUBY = "1"
+  # try to limit tmp GRDFILE to 10MB (2.500.000 binary float pixels)
+  if (      $NUMPIXS > 10000000 ) then # eg. 25.000 * 5.000
+    set SUBY = "15"				     # else > 10MB tmpfile
+    set SUBX = "3"				     # else > 10MB tmpfile
+  else if ( $NUMPIXS >  5000000 ) then # eg. 10.000 * 5000
+    set SUBY = "10"				     # else > 10MB tmpfile
+    set SUBX = "2"				     # else > 10MB tmpfile
+  else if ( $NUMPIXS >  1250000 ) then # eg. 1500 * 5000
+    set SUBY = "5"
+  endif
+  echo " *** Subsampling data with factors (x,y): $SUBX $SUBY"
+  #
+  # assume total file has to be plotted (call from Doris...)
+  #echo \\n"   Mirroring in horiz, rather do it with GMT, but how?" : -Jx/-y !
+  set PROG = "cpxfiddle -w$WIDTH -f$SLCFORMAT -qmag -e0.2 -ofloat -M$SUBX/$SUBY -- $SLCFILE"
+
+  # correct for GMT, subsampling output = ceil ((P-p+1)/sub)
+  # outputlines after subsampling = ceil((P-p+1)/sub)
+  #subsampling
+  #set NUMX    = `echo "$P0 $PN $SUBX" | $AWK '{printf "%i", ($2-$1)/$3+1}'`
+  #set NUMY    = `echo "$L0 $LN $SUBY" | $AWK '{printf "%i", ($2-$1)/$3+1}'`
+  #multilooking
+  set NUMX  = `echo "$P0 $PN $SUBX" | $AWK '{print int(($2-$1+1)/$3)}'`
+  set NUMY  = `echo "$L0 $LN $SUBY" | $AWK '{print int(($2-$1+1)/$3)}'`
+  echo " *** Number of output pixels (x,y): $NUMX $NUMY"
+
+  #set EAST    = `echo "$P0+($NUMX-1)*$SUBX" | bc -l`
+  #set NORTH   = `echo "$L0+($NUMY-1)*$SUBY" | bc -l`
+  #%// Bert Kampes, 31-Mar-2005: changed to awk from bc
+  set EAST  = `echo "$P0 $NUMX $SUBX" | $AWK '{printf "%f", $1 + ( $2 - 1 ) * $3}'`
+  set NORTH = `echo "$L0 $NUMY $SUBY" | $AWK '{printf "%f", $1 + ( $2 - 1 ) * $3}'`
+  set BKRANGE = "-R$P0/$EAST/$L0/$NORTH"
+  echo " *** GMT range: $BKRANGE"
+
+  set GRDFILE = $$.grd
+  set INC     = "-I$SUBX/$SUBY"
+  set IFORMAT = "-Zf"                 # binary float values
+  echo "   Calling:   $PROG | xyz2grd -G$GRDFILE $BKRANGE $INC $IFORMAT"
+  $PROG | xyz2grd -G$GRDFILE $BKRANGE $INC $IFORMAT
+  #
+  set CPTFILE = $$.cpt
+  set CPTNAME = gray
+  echo "   Calling:   grd2cpt $GRDFILE -C$CPTNAME -Z >! $CPTFILE"
+  grd2cpt $GRDFILE -C$CPTNAME -Z >! $CPTFILE
+  #
+  # lower left is O of coord. system, while upperleft for grd file -> mirror horiz.
+  #OK.. grdimage $GRDFILE $SIZE -C$CPTFILE -P -K -T >! $PSFILE
+  # T slow, large: grdimage $GRDFILE $SIZE -C$CPTFILE -P -K -T >! $PSFILE
+  set BKSIZE = "-JX$XSIZE/-$YSIZE"
+  echo "   Calling:   grdimage $GRDFILE $BKSIZE -C$CPTFILE -P -K >! $PSFILE"
+  grdimage $GRDFILE $BKSIZE -C$CPTFILE -P -K >! $PSFILE
+  # Tidy tidy tidy
+  echo "   removing grdfile, cptfile: $GRDFILE $CPTFILE"
+  rm -f $GRDFILE
+  rm -f $CPTFILE
+
+  # Set Overlay for next if this was first, else initialize new plot system
+  set GMTFLAGS = "-K -O -N $GENOPT $RANGE $FRAME $SIZE -U -Sc -W6/255/0/0"
+else
+  set GMTFLAGS = "-K -N $GENOPT $RANGE $FRAME $SIZE -U -Sc -W6/255/0/0"
+endif
+
+
+
+######################################################################
+### Plot the location circles, where correl=size.
+echo " +++ Plotting location circles, size (cm) is correlation +++"
+$AWK '{print $2, $3, $6}' $TMPFILE | psxy $GMTFLAGS >> $PSFILE
+#
+set GMTFLAGS = "-K -O -N $GENOPT $RANGE $SIZE -Sc -W6/255/0/0"
+echo " +++ Plotting legenda circle +++"
+echo "$L0 $P0 1.0" | psxy -X-1.0 -Y-1.0  $GMTFLAGS >> $PSFILE
+echo "$L0 $P0 0.5" | psxy        -Y-0.25 $GMTFLAGS >> $PSFILE
+#pstext:(x, y, size, angle, fontno, justify, text)
+set GMTFLAGS = "-K -O -N $GENOPT $RANGE $SIZE"
+echo "$L0 $P0 12 0 0 CM correlation" | pstext -Y1.0  $GMTFLAGS >> $PSFILE
+echo "$L0 $P0 12 0 0 LM 1.0" | pstext   -X0.5 -Y-0.5 $GMTFLAGS >> $PSFILE
+echo "$L0 $P0 12 0 0 LM 0.5" | pstext         -Y-0.5 $GMTFLAGS >> $PSFILE
+
+
+
+######################################################################
+### Plot normalized offset vectors.
+# -G fill
+# -Sv arrowwidth/headlength/headwidth [0.075c/0.3c/0.25c]
+set GMTFLAGS = "-N -O -K -X0.5 -Y1.25 $GENOPT $RANGE $SIZE -Sv0.04/0.25/0.125 -G0/0/255 -W2/0/0/255"
+#
+echo "START STDL computation"
+set MINL  = `$AWK 'NR==1{m=$4}$4<m{m=$4}END{print m}'<$TMPFILE`
+set MAXL  = `$AWK 'NR==1{m=$4}$4>m{m=$4}END{print m}'<$TMPFILE`
+set MEANL = `$AWK '{s  += $4}END{printf "%f", s/NR}'<$TMPFILE`
+# set MEANL = $MINL # Lennert
+set STDL  = `$AWK '{sq += ( $4 - '$MEANL' ) * ( $4 - '$MEANL' )};END{printf "%f", sq / ( NR - 1 )}'<$TMPFILE`
+#set STDL  = `$AWK -v m=$MEANL '{sq+=($4-m)*($4-m)};END{print sq/(NR-1)}'<$TMPFILE`
+#
+echo "START STDP computation"
+set MINP  = `$AWK 'NR==1{m=$5}$5<m{m=$5}END{print m}'<$TMPFILE`
+set MAXP  = `$AWK 'NR==1{m=$5}$5>m{m=$5}END{print m}'<$TMPFILE`
+set MEANP = `$AWK '{s  += $5}END{printf "%f", s / NR}'<$TMPFILE`
+# set MEANP = $MINP # Lennert
+set STDP  = `$AWK '{sq += ( $5 - '$MEANP' ) * ( $5 - '$MEANP' )};END{printf "%f", sq / ( NR - 1 )}'<$TMPFILE`
+#set STDP  = `$AWK -v m=$MEANP '{sq+=($5-m)*($5-m)};END{print sq/(NR-1)}'<$TMPFILE`
+echo " *** min, max, mean, std (line):  $MINL $MAXL $MEANL $STDL"
+echo " *** min, max, mean, std (pixel): $MINP $MAXP $MEANP $STDP"
+
+
+
+######################################################################
+### Normalize vectors by subtracting mean-2:
+### plot arrows as they are, normalized by max length ? (always longest==3cm?)
+#no cause then offset 1000 <> 1001 is no difference while it is the same as 10<>11
+# thus scale length by l-max
+echo " *** Normalizing offset line  by subtracting: $MEANL - 1"
+echo " *** Normalizing offset pixel by subtracting: $MEANP - 1"
+#
+#$AWK -v wl=$MEANL -v wp=$MEANP 				\
+#    '{							\
+#     {l=$4-wl-1.}					\
+#     {p=$5-wp-1.}					\
+
+echo "start psxy vector drawing"
+#     {dir=57.3*atan2(l,p)}                              \
+# possibly gawk or nawk define atan2, not standard awk...
+$AWK '{{l = $4 - '$MEANL' - 1.0 }{p = $5 - '$MEANP' - 1.0 }		\
+     {l = l + 0.0000001} {p = p + 0.0000001} 		\
+     {dir = 57.3 * atan2(l,p)}                          \
+     {scale = 1.5}                                      \
+     {len   = scale * sqrt ( l * l + p * p )}           \
+     {printf "%.1f %.1f %.1f %.1f\n", $2, $3, dir, len} \
+     }'                                                 \
+     $TMPFILE |                                         \
+     psxy $GMTFLAGS >> $PSFILE
+echo "...finished psxy vector drawing"
+
+
+### Print info on points as text (# offl offp).
+set GMTFLAGS = "-M -Wo -D0/2.5 -O -N -K $GENOPT $RANGE $SIZE"
+echo "> $LN $P0 8 0 0 LB 0.4 15 l" >! $TMPFILE.2
+$AWK '{printf "@;255/0/0; @:10: %4.0i @;0/0/0; @:8: (%4.2f;%4.2f) - \n", $1,$4,$5}' $TMPFILE >> $TMPFILE.2
+# Avoid overflow with head.
+head -n 60 $TMPFILE.2 | pstext $GMTFLAGS >> $PSFILE
+rm -f $TMPFILE.2
+
+
+### Add the window numbers (last overlay, no -K (close plot system)).
+#pstext: (x, y,  size(pts), angle(ccw),  fontno,  justify,  text)
+set GMTFLAGS = "-O -N -G0/0/0 $GENOPT $RANGE $SIZE"
+echo "   Calling:   pstext $GMTFLAGS >> $PSFILE"
+#green, 14pts, RightTop BottomLeft
+$AWK '{printf "%.1f %.1f 10 0 0 RT %s\n", $2, $3, $1}' $TMPFILE | pstext $GMTFLAGS >> $PSFILE
+
+
+# calls from Doris, cannot interactive...
+#%// BK 19-Jul-2000
+echo "   Calling:   viewanddel"
+rm -f $TMPFILE $GRDFILE $CPTFILE
+viewanddel $PSFILE
+
+### EOF
+

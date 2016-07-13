@@ -1,0 +1,228 @@
+#########################################################################
+#########################################################################
+#                                                                       #
+# This is an example Makefile.  It is for a big endian platform (e.g.,  #
+# SUN/HP, not a PC).  It does not use external libraries.  It assumes   #
+# the g++ compiler.  Finally, installation is in directory              #
+# "/usr/local/bin".                                                     #
+#                                                                       #
+# In principle, create your own Makefile by executing the script        #
+# "configure" which is also in this directory.                          #
+#                                                                       #
+# Further see the files README and INSTALLATION                         #
+#                                                                       #
+#########################################################################
+### Options used with configure script ##################################
+#########################################################################
+# Creating Makefile for:                                                #
+# compiler:       g++                                                   #
+# fftw:           n                                                     #
+# veclib:         n                                                     #
+# lapack:         n                                                     #
+# Little endian:  n                                                     #
+# DEBUG version:  n                                                     #
+# Install in dir: /usr/local/bin                                        #
+#########################################################################
+#########################################################################
+### Usage ### 								#
+# The command: "make" creates and optimized version of doris.		#
+# The command: "make install" installs it andcleans up.			#
+# If this does not work, try a more controlled approach by:		#
+#									#
+# 0. inspect set up of this Makefile					#
+# 1. set CC DEFS LIBS etc., first set these to debug values		#
+#    (read NOTE there if problems)					#
+# 2. compile software sources to *.o:     "make swobjs"			#
+# 3. link object together to executable:  "make doris"			#
+# 4. install executable:                  "make install"		#
+# 5. remove object files:                 "make clean"			#
+#									#
+# BTW. "make" does "swobjs doris" by default.				#
+#									#
+###        								#
+# Successfully tested for compilers/platforms:				#
+#  GNU g++ version 2.7.2.2 on HP-UX B.10.20 A 9000/785			#
+#  GNU g++ version 2.95.2  on HP-UX B.10.20 A 9000/785			#
+#  HP  aCC version A.01.07 on HP-UX B.10.20 A 9000/785			#
+#  GNU g++ version ?       on Linux X86					#
+#  SGI ?								#
+#########################################################################
+###################################################################
+###################################################################
+# Please change if required: DEF[1-6], CC, CFLAGS, LIBDIR,      ###
+###################################################################
+### The shell we're using ###
+SHELL   = /bin/sh
+
+### Specify compiler/installation directory ###
+INSTALLDIR = /usr/local/bin
+CC	   = g++
+SCRIPTSDIR = ../bin
+
+### Define statements controlling compilation ###
+# Comment out DEF[1-8] statements when appropriate.
+DEF1    = -D__DEBUGMAT1	# 		-1- range checking in matrix class
+DEF2    = -D__DEBUGMAT2	# 		-2- info matrix class (debug only)
+DEF3    = -D__DEBUG #			-3- debug for other files
+#DEF9     = -D__NO_IOS_BINARY__ # -9- comment out if you ios::binary (most will)
+#
+### Do not change following 2, simply comment DEF1-8 above
+DEFSDEBUG 	= $(DEF1) $(DEF2) $(DEF3)
+DEFS		=    
+
+### NOTE ###
+# If you get warnings like the following (I got them with g++, not with aCC)
+# then use define __GNUC__ to define these functions
+#%// BK 15-Aug-2000
+#In file included from matrixbk.h:38,
+#		 from processor.cc:23:
+#constants.h: In method `real8 cn::dist(cn) const':
+#constants.h:106: implicit declaration of function `int sqr(...)'
+### END NOTE ###
+
+
+
+### CFLAGS ###
+# Compiler options flag ###
+# Specify compiler flags (I selected these for g++)
+CFLAGSDEBUG 	= $(DEFS) $(DEFSDEBUG)
+CFLAGSOPT 	= -O $(DEFS)
+#CFLAGSOPT 	= -O2 $(DEFS)   # this crashed doris! (?)
+#CFLAGSOPT 	= -O3 $(DEFS)   # this crashed doris! (?)
+
+### CCNOTE ###
+### Change here ###
+### set CFLAGS depending on if you compile debug version or working version ###
+#CFLAGS 	= $(CFLAGSDEBUG)
+CFLAGS 	= $(CFLAGSOPT)
+### END CCNOTE ###
+
+
+### Library locations flag ###
+### -lcl is used for veclib -lm is used for fftw
+LFLAGS  =  
+#####################################################
+### No need to change anything below here... ####
+#####################################################
+EXECUTABLE = 	doris
+
+SWSRCS	=	processor.cc \
+		utilities.cc \
+		ioroutines.cc \
+		conversion.cc \
+		readinput.cc \
+		step1routines.cc \
+		coregistration.cc \
+		filtering.cc \
+		referencephase.cc \
+		products.cc \
+		geocode.cc \
+		unwrap.cc \
+		matrixspecs.cc
+SWOBJS	=	$(SWSRCS:.cc=.o)
+
+### scripts of doris.tar in SCRIPTSDIR, used at make install
+SCRIPTS	=	helpdoris \
+		baseline.doris \
+		coregpm.doris \
+		phasefilt.doris \
+		plotcpm \
+		plotoffsets \
+		run \
+		viewanddel \
+		cpx2ps \
+		lonlathei2ascii \
+		ascii2ascii_UTM \
+		ascii2ps
+#		philamh2ps
+
+
+
+#####################################################
+### And no need to change anything below here... ####
+#####################################################
+### what to do if make w/o arguments ###
+# first make all object files, then link them together
+default:        $(EXECUTABLE)
+
+
+### how to compile object code .o from C++ source files .cc (general rule) ###
+# space between -o and filename for SUN make (BK 7 july 2000)
+.cc.o:		
+		$(CC) $(CFLAGS) -c -o $(@) $<
+
+#####################################################
+### Make object code from source ###
+swobjs:		$(SWOBJS)
+
+
+### Load objects to executable ###
+### The added .cc files contain class definitions
+### matrixclass is explicitly included
+### in the source code since we had some problems finding out how to do that
+### here, since compilers treat the template class differently than normal classes.
+### BK 07-Feb-2002
+$(EXECUTABLE):	$(SWOBJS) tmp_strptime.cc slcimage.cc productinfo.cc orbitbk.cc
+		$(CC) $(CFLAGS)\
+		tmp_strptime.cc $(SWOBJS)\
+		slcimage.cc productinfo.cc orbitbk.cc\
+		$(LFLAGS) -o $@
+		@echo " "
+		@echo "*******************************"
+		@echo "* ...Compilation finished...  *"
+		@echo "*******************************"
+		@echo " "
+
+
+### Install executable in installdir ###
+install:	$(EXECUTABLE)
+		@echo "* Installing $(EXECUTABLE) in: $(INSTALLDIR)"
+		@cp -f $(EXECUTABLE) $(INSTALLDIR)/.
+		( cd $(SCRIPTSDIR); cp -f $(SCRIPTS) $(INSTALLDIR)/. )
+		$(MAKE) cleaner
+		@echo " "
+		@echo "*******************************"
+		@echo "* ...Installation finished... *"
+		@echo "*******************************"
+		@echo " "
+
+
+
+#####################################################
+### Testers ###
+test:		testdoris
+testdoris:	$(EXECUTABLE)
+		@echo " "
+		@echo "* Executing command: $(EXECUTABLE) -v"
+		$(EXECUTABLE) -v
+		@echo " "
+testorbit:	ioroutines.o matrixspecs.o readinput.o conversion.o utilities.o
+		$(CC) $(CFLAGS) orbitbk.cc -D__TESTMAIN__ \
+		ioroutines.o matrixspecs.o readinput.o conversion.o utilities.o \
+		-o $@
+### matrix ###
+matrixbk_test:	matrixbk_test.o matrixspecs.o
+		$(CC) $(CFLAGS) matrixbk_test.o \
+		matrixspecs.o \
+		$(LFLAGS) \
+		-o $@
+
+#####################################################
+### Cleaners ###
+clean:		cleanswobjs 
+
+cleaner:	clean cleanprog
+cleanest:	clean cleanprog uninstall
+cleanprog:
+		@rm -f $(EXECUTABLE) $(EXECUTABLE.debug) \
+		matrixbk_test testorbit
+		@echo "* Removed executables in current dir."
+cleanswobjs:
+		@rm -f $(SWOBJS) matrixbk_test.o orbitbk.o slcimage.o
+		@echo "* Removed object files."
+uninstall:	
+		@rm -f $(INSTALLDIR)/$(EXECUTABLE)
+		@echo "* Removed executables in install dir: $(INSTALLDIR)."
+
+### BK 12-Dec-2000 ###
+

@@ -1,0 +1,92 @@
+#!/bin/csh -f
+# note for cygwin:
+# csh is not standard in the distribution.
+# tcsh can be downloaded though, and put in /bin,
+# and then link /bin/csh to it.
+# same for linking /bin/awk --> /bin/gawk
+# gv is prefered to ghostview, search www.google.com.
+### viewanddel is distributed with "Doris".
+### used with scripts plotoffsets and plotcpm
+### Bert Kampes, (c) 1998-2004
+
+
+
+### Check input 
+set PSFILE = $1
+set WRONG  = 0;
+if ( $#argv != 1 ) set WRONG = 1
+if ( ! -e "$PSFILE" ) set WRONG = 1
+if ( $WRONG == 1 ) then
+  echo "$0 file.ps"
+  echo "View a temporary postscript file and"
+  echo "then delete it afterwards."
+  echo " "
+  exit 1
+endif
+
+
+
+### Decreasing order of desiredness...
+### First try to get gv, then ghostview,
+### if not found, assume a program named "ghostview"
+### exists.  Do not use "which" command here.
+#%// BK 25-Sep-2001 which seems more robust than -x...
+#%// BK 16-Jun-2003 but which is extremely slow on SUN...
+#%// BK 16-Jun-2003 therefore simply use "ghostview" and assumes 
+#%// BK 16-Jun-2003 everybody has that, or is smart enough to change it here
+### If you want to use a different program,
+### simply make sure it is known as "ghostview" using a link.
+### or put it under that name in ~/bin/ghostview
+set PSVIEWERS = "gv ghostview gsview32"
+set BINDIRS   = "/usr/X11R6/bin /bin /usr/bin /usr/local/bin /usr/sbin ~/bin ~/local/bin"
+set GV = ghostview
+foreach PSVIEWER ( $PSVIEWERS )
+  foreach BINDIR ( $BINDIRS )
+    if ( -x $BINDIR/$PSVIEWER ) then
+      set GV = $BINDIR/$PSVIEWER
+      break
+    endif
+  end
+end
+echo $GV
+
+
+
+###  set PSVIEWER = "/cygdrive/c/Program Files/gs3/Ghostgum/gsview/gsview32"
+### cygwin: do not use a space in path to executable.
+### cygwin: prepend X11R6/bin so correct gs is used
+### to avoid "postscript interpreter failed in main window" error.
+### Note also GS_LIB GS_FONTPATH may be set, but does not
+### seem important (see gs -h).
+if ( -d /cygdrive ) then
+  echo "Cygwin detected: prepending /usr/X11R6/bin to path"
+  set path = ( /usr/X11R6/bin $path )
+endif
+
+
+
+### Add options to viewer.
+### Finally call postscript viewer
+echo "Using $GV"
+$GV -fg black -bg white $PSFILE
+
+
+
+### Remove postscript file if viewing was OK.
+if ( $status == 0 ) then
+  echo "removing tmp postscript file $PSFILE"
+  rm -f $PSFILE
+else
+  echo "Something went wrong with viewer.  Please have a look"
+  echo "at postscript file $PSFILE yourself."
+  echo "E.g., try following command from promt:"
+  echo "  $GV $PSFILE"
+  echo " "
+  exit 1
+endif
+
+
+
+### EOF
+exit 0
+

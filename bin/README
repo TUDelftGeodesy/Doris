@@ -1,0 +1,61 @@
+Dear reader,
+
+This directory contains some scripting utitities to be used in conjunction 
+with the doris software.  Most are explained in the manual, and
+also see the synopsis below.  These programs have been written by me.
+Bert Kampes 
+#%// BK 05-Sep-2003
+
+
+-----------------------------------------------------
+ascii2ascii_UTM  : Convert a 3 column ascii table from WGS lon/lat/hei
+                   to UTM {X,Y,hei} triplets.  This script is an example
+		   how the proj software can be used, but it can be used
+		   as is as well as input in GMT.
+ascii2ps         : Convert a 3 column ascii table to a postscript file.
+                   GMT is used to do this.  The main output besides the plot
+		   is the interpolation to a regular grid.  See the GMT
+		   programs xyz2grd and surface.  This script is intented
+		   as an example to be adapted to your needs.
+baseline.doris   : Old?  probably to run doris from the prompt and obtain
+                   the perpendicular baseline based on the orbits.
+coregpm.doris    : Old.  script to iteratively run doris until the coregistration
+                   parameters have been computed with good fit.  Use the card
+		   CPM_MAXITER instead.
+cpx2ps           : Call GMT to convert a complex file, like an interferogram
+                   to a postscript plot.  I rather use cpxfiddle nowadays.
+helpdoris        : man page like formatter with all options to doris.
+lonlathei2ascii  : Convert binary doris output to a 3 column ascii file.
+phasefilt.doris  : Script to filter an interferogram from the prompt,
+                   creating dummy calls to doris.
+plotcpm          : Script used in doris to plot the result of the coregistration
+                   polynomial modeling.
+plotoffsets      : Script used in doris to plot the result of the FINE step.
+run              : General script to run doris with.
+viewanddel       : General script to view temporary created postscripts.
+
+
+
+
+----------------------------------------
+ 2582 2008-09-06 20:08 ascii2ascii_UTM
+ 8867 2008-09-06 20:08 ascii2ps
+ 2282 2008-09-06 20:08 baseline.doris.csh
+ 5506 2008-12-24 14:18 baseline.doris.sh
+17191 2008-12-23 16:58 construct_dem.sh
+11108 2008-09-06 20:08 coregpm.doris
+20028 2008-09-06 20:08 cpx2ps
+ 1812 2009-02-05 18:36 doris.process-reset.sh
+ 1788 2008-09-06 20:08 heightamb
+26873 2008-09-06 20:08 helpdoris
+ 3295 2008-09-06 20:08 lonlathei2ascii
+ 5484 2008-09-06 20:08 phasefilt.doris
+17927 2008-12-24 14:34 plotcpm
+17402 2008-09-06 20:08 plotoffsets
+17255 2008-09-06 20:08 plotoffsets.bruno
+ 2771 2009-04-14 14:58 README
+64419 2009-04-14 12:48 run
+ 4841 2009-04-13 13:21 tsx_dump_data.py
+10496 2009-04-14 16:29 tsx_dump_header2doris_noxpath.py
+ 9621 2009-04-14 16:11 tsx_dump_header2doris.py
+ 2516 2008-09-06 20:08 viewanddel

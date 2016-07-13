@@ -1,0 +1,101 @@
+#!/bin/csh -f
+### lonlatCoh2ascii -- Generate 3 column ASCII file x y z
+### Example script to generate grd file from lambda phi Coh
+###  
+### output of Doris InSAR software.
+### $Id: lonlatCoh2ascii,v 1.4 2006/06/22 NdO Exp $
+### $Maintainer: Anneleen Oyen
+################################################################
+set PRG    = `basename "$0"`
+set VER    = "v1.0 Doris software"
+set AUT    = "TUDelft, (c)1999-2011"
+echo "$PRG $VER, $AUT"
+echo " " 
+
+
+
+### Handle wrong input
+set WRONG = "0"
+### Input files.
+set LON     = "$1"
+set LAT     = "$2"
+set COH     = "$3"
+set XYCOHFILE = "$4"
+if ( ! -f "$LAT" ) set WRONG = "1"
+if ( ! -f "$LON" ) set WRONG = "1"
+if ( ! -f "$COH" ) set WRONG = "1"
+if ( $#argv < 4 )  set WRONG = "1"
+if ( $WRONG == "1" ) then
+cat << __EOFHD
+
+  SYNOPSIS:
+
+          $PRG  longitude_file latitude_file Coh_file output_Coh_file
+    
+      This csh-script creates a 3 column ASCII file with "lon lat coh" 
+      from the binary doris output (matrices) after step geocode.
+      It filters out invalid data, indicated with "-999" by Doris.
+    
+      The output file can be used further with GMT to create a grd file.
+      The format of the 3 input files are matrices in real4 float format.
+      all of the same size.  They describe the irregular geocoded position
+      of the pixels in the interferogram, and the corresponding heights.
+    
+      The steps taken are within this script:
+        1) Create 3 temporary ASCII files with all data in a single 
+           large column using cpxfiddle program;
+        2) Create two 3 column ASCII file (lon lat ***) 
+	   using "paste";
+        3) remove -999 invalid data using "grep"
+        4) Tidy up, remove temp files.
+    
+      These steps may take a while.  Obviously staying in binary format
+      would be better.  This script is intented to work on all platforms,
+      and to be straightforward and understandable, rather than ingenious.
+
+  DEPENDENCIES:
+
+      cpxfiddle program, part of Doris distribution.
+      grep utility, standard UNIX
+      paste utility, standard UNIX
+      Note that lambda=longitude; phi=latitude
+
+  EXAMPLE:
+
+      $PRG Outdata/lambda.raw Outdata/phi.raw Outdata/Coherence.raw   lonlatcoh.dat  
+
+  SEE ALSO:
+
+      cpxfiddle, paste, grep, http://gmt.soest.hawaii.edu/
+  
+
+__EOFHD
+  exit 1
+endif
+
+
+
+### Probably smarter is gmtconvert, but OK. ###################################
+### Convert binary files to ASCII row; trick cpxfiddle with -w1.
+echo " Convert LONGITUDES in binary real4 file" \"${LON}\" "to ASCII table"
+   #cpxfiddle -w1 -qnormal -fcr4  $LON | awk '{printf "%3.4f\n%3.4f\n",$1,$2}' > qlon
+   # using new r4 option to cpxfiddle
+  # cpxfiddle -w1 -qnormal -fr4  $LON > qlon1
+echo " Convert LATITUDES in binary real4 file" \"${LAT}\" "to ASCII table"
+   # cpxfiddle -w1 -qnormal -fr4  $LAT > qlat1
+echo " Convert COHERENCE in binary real4 file" \"${COH}\" "to ASCII table"
+   cpxfiddle -w1 -qnormal -fr4  $COH > qcoh
+
+
+### Create xyz file, delete temp files. ########################################
+echo "Paste LON/LAT/COH to xyzfile" \"${XYCOHFILE}\"
+   paste qlon1 qlat1 qcoh > $XYCOHFILE.tmp
+echo "removing -999 from input (if there was an unwrapping problem, or other problem)"
+   grep -v '\-999' $XYCOHFILE.tmp > $XYCOHFILE
+#   rm -f qlon1 qlat1 qcoh $XYCOHFILE.tmp
+   rm -f $XYCOHFILE.tmp
+
+
+### EOF.
+echo "finished..."
+

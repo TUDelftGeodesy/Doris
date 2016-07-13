@@ -1,0 +1,86 @@
+
+This file "INSTALL" describes the installation of the "Doris" Delft 
+radar interferometric software package.  Doris has been installed on
+virtually all operating systems world-wide (mainly UNIX like,
+for MS Windows(c) your best option is using Cygwin.)
+
+If the following does not work for you, please first search the FAQ via
+  http://enterprise.lr.tudelft.nl/doris
+
+Installation should take approximately 10 minutes of your time.
+
+
+There are 3 components in this distribution (doris v4.01).
+  1. src and bin subdirectory:   main software (C++ source code, python and shell scripts);
+  2. ENVISAT_TOOLS subdir:       standalone reader for ENVISAT (C source code);
+  3. SARtools subdir:            standalone utilities (C++ source code).
+
+
+
+To install Doris, basically do the following:
+--------------------------------------------
+1.  Read the manual.
+
+
+--------------------------------------------
+- OPTIONAL: installation of FFTW library ---
+- tested for Cygwin, SUN Solaris, Linux ----
+--------------------------------------------
+11. download fftw-3.2.1 from http://www.fftw.org : wget -c http://www.fftw.org/fftw-3.2.1.tar.gz
+12  gunzip and tar xvf it in subdirectory of doris root installation.
+13. cd fftw-3.2.1
+14. ./configure --prefix=`pwd` --enable-float
+15. make 
+16. make install
+
+
+--------------------------------------------
+- COMPILATION OF DORIS SOURCE CODE ---------
+--------------------------------------------
+21. cd doris/src
+22. Read the README file
+23. ./configure             (creates "Makefile")  # requires tcsh shell to run, to install type "sudo apt-get install tcsh" at shell prompt on Ubuntu platform.
+                            ( +answer the questions about libraries, etc.)
+24. make                    (compiles the software)
+25. make install            (installs doris and bin scripts)
+
+
+--------------------------------------------
+- COMPILATION OF DORIS UTILITIES -----------
+--------------------------------------------
+31. cd doris/SARtools
+32. make
+32. Review/edit the Makefile if this does not work
+    (for example if you do not want to use GNU gcc/g++ as compiler)
+33. make install            (installs in /usr/local/bin unless you edit the Makefile)
+
+
+41. cd doris/ENVISAT_TOOLS                         # on 64-bit system requires libc-dev-i386 library ex: "sudo apt-get install libc-dev-i386"
+42. make
+42. Review/edit the Makefile if this does not work
+    (for example if you do not want to use gcc as compiler)
+44. make install
+
+
+--------------------------------------------
+- INSTALLATION OF USEFUL EXTERNAL SOFTWARE -
+--------------------------------------------
+51. The doris software depends for full functionality on:
+52.   getorb:  precise orbits for ERS/ENVISAT      # requires fortran(ff7, g77 or gfortran)   ex: "sudo apt-get install gfortran" and edit Makefile and update FC = gfortran
+               (used by Doris step M_PORBITS and S_PORBITS).
+53.   snaphu:  standalone executable used for unwrapping 
+               (used by Doris step UNWRAP).
+54.   GMT:     plotting of coregistration offset vectors 
+               (used by Doris via the scripts in bin dir). 
+
+    These programs should also be installed on your system.  Refer
+    to the download area of the doris website 
+      http://enterprise.lr.tudelft.nl/doris/ 
+    where to obtain these programs.
+
+Enjoy,
+
+TUDELFT, MGP Radar Group 2009
+doris_users@tudelft.nl
+
+

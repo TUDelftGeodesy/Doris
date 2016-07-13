@@ -1,0 +1,219 @@
+#!/bin/csh -f
+# phasefilt.fast for Doris software.
+# command line call to filter complex interferogram by several methods.
+#%// BK 27-Oct-2000
+#%// $Revision: 3.5 $  $Date: 2003/04/14 06:35:15 $
+######################################################################
+set PRG    = `basename "$0"`
+set VER    = "v1.1, FMR software"
+set AUT    = "Bert Kampes, (c)2000"
+echo "$PRG $VER, $AUT"\\n
+
+### TODO: -d debug version of doris
+###       -m methods: goldstein, running, cosinerolloff, hamming
+
+### Initialize
+set HELP      = "1"
+set TMPDIR    = "/tmp"
+set METHOD    = "goldstein"
+set NUMLINES  = "0"
+set OFILE     = "0"
+set BLOCKSIZE = "32"	# default
+set ALPHA     = "0.25"	# default
+set OVERLAP   = "3"	# default (6 data the same)
+set KERNEL2D  = "comment"	# filename
+set KERNEL1D  = "comment"	# filename
+
+### Handle input
+set OPTIONS    = "l:o:a:b:e:m:k:K:"
+#set argv       = `getopts $OPTIONS $*`
+set argv       = `getopt $OPTIONS $*`
+# Check any input, getopts ok?
+if ( "$?argv" == "0" ) then
+  echo "Sorry, no input or parse error."
+  exit 1
+endif
+
+### Process commandline arguments
+while ( "$1" != "--" )
+  switch ( $1 )
+    # linelength,width
+    case '-l':
+      set HELP     = "0"
+      set NUMLINES = "$2"
+      shift
+      breaksw
+    # method
+    case '-m':
+      set METHOD = "$2"
+      set METHOD = `echo $METHOD  | tr "[:upper:]" "[:lower:]"`
+      if ( "$METHOD" != "goldstein" && "$METHOD" != "spatialconv" && "$METHOD" != "spectral") then
+	echo METHOD: $METHOD not recognized, using \"goldstein\"\\n\
+	     available methods are: goldstein, spatialconv, spectral
+	set METHOD = "goldstein"
+      endif
+      shift
+      breaksw
+    # output file
+    case '-o':
+      set OFILE = "$2"
+      shift
+      breaksw
+    # alpha filter parameter
+    case '-a':
+      set ALPHA = "$2"
+      shift
+      breaksw
+    # blocksize
+    case '-b':
+      set BLOCKSIZE = "$2"
+      shift
+      breaksw
+    # overlap between blocks
+    case '-e':
+      set OVERLAP = "$2"
+      shift
+      breaksw
+#    # smoothing window
+#    case '-s':
+#      set SMOOTH = "$2"
+#      shift
+#      breaksw
+    # 1d kernel file, -k 5/1/2/3/4/5
+    # how to deal with input with spaces? for now use underscore.
+    case '-k':
+      set KERNEL1D = `echo $2 | sed s'/_/ /g'`
+      set KERNEL1D = "PF_KERNEL $KERNEL1D"
+#echo BBBBBBBBBBB
+#echo "0 1 2: $0 $1 $2"
+#echo "star $*"
+#      set ARGS = `echo $* | cut -f1 -d'-'`
+#      echo $ARGS
+#      #set KERNEL1D = "PF_KERNEL $2"
+#exit
+      shift
+      breaksw
+    # 2d kernel file
+    case '-K':
+      set KERNEL2D = "PF_IN_KERNEL2D  $2"
+      shift
+      breaksw
+    # not recognized
+    default:
+      echo option: $1
+      echo " +++ non existing option, exiting."
+      exit
+  endsw
+  shift         # next flag
+end             # while
+shift           # skip the --
+set INFILE = $1
+if ( ! -e "$INFILE" ) then
+  echo "infile: $INFILE does not exist"
+  set HELP     = "1"
+endif
+
+### Set defaults
+if ( "$OFILE" == "0" ) then
+  set OFILE     = $INFILE.filtered
+endif
+
+
+### Handle wrong input
+if ( "$HELP" == "1" ) then
+#  cat << __EOFHD | more -de
+  cat << __EOFHD | more
+
+  PROGRAM:  $PRG -- Filter mph file using Doris.
+
+  SYNOPSIS:
+    $PRG -l numlines [-o $OFILE] [-a $ALPHA] [-e $OVERLAP]
+         [-b $BLOCKSIZE] [-m $METHOD] [-k kernel | -K file] [--] infile
+
+  OPTIONS:
+    -l numlines    Number of lines in inputfile.
+    -m method      method either: "goldstein", "spectral", or "spatialconv".
+    -o filename    Output file name.
+    -a A           Alpha filter parameter A e{0,1} (Goldstein method).
+    -e E           Use overlap of 2*E pixels, so partially the same
+                   complex data are used to estimate the spectrum.
+    -b B           Filter in blocks of size (B,B). Should be power of 2.
+    -k kernel      1D KERNEL, use underscores for space. For example
+		    -k 5_1_2_3_4_5
+    -K file        Name of ascii input file containing a 2D kernel for
+                   method spatialconv or spectral. 1 header line with:
+                   "height", "width" and "scalefactor", for example:
+                     3 3 0.111111111111
+                     1 1 1
+                     1 1 1
+                     1 1 1
+    infile         Name of input file with numlines (complexr4).
+
+  BUGS:
+    -
+
+  EXAMPLES:
+    -
+
+  SEE ALSO:
+    Doris user's manual, e.g. online, at: www.geo.tudelft.nl/doris/
+
+__EOFHD
+  exit 1
+endif
+
+
+### Create dummy input file(s).
+set DORISIN    = $TMPDIR/$user.$$.in
+set DORISOUT   = $TMPDIR/$user.$$.out
+set LOGFILE    = $TMPDIR/$user.$$.log
+set SLAVEFILE  = $TMPDIR/$user.$$.slave
+set MASTERFILE = $TMPDIR/$user.$$.master
+set PRODFILE   = $TMPDIR/$user.$$.prod
+echo TMPFILES: $DORISIN $DORISOUT
+
+
+###
+cat << __EOFHD >! $DORISIN
+c ***********************************************************
+c File created by: $PRG $VER
+c Author: $AUT
+c  This is an input file for Doris to perform phase filtering
+c  from prompt.
+c ***********************************************************
+ c
+ comment  ___general options___
+ c
+SCREEN     	progress
+MEMORY		5
+OVERWRITE	ON
+BATCH		ON
+LISTINPUT	OFF
+PROCESS   	filtphase
+LOGFILE     	$LOGFILE
+M_RESFILE   	$MASTERFILE
+S_RESFILE   	$SLAVEFILE
+I_RESFILE   	$PRODFILE
+ c
+ c
+PF_METHOD   	$METHOD
+PF_IN_FILE   	$INFILE $NUMLINES
+PF_OUT_FILE  	$OFILE
+PF_ALPHA     	$ALPHA
+PF_OVERLAP   	$OVERLAP
+PF_BLOCKSIZE 	$BLOCKSIZE
+$KERNEL1D
+$KERNEL2D
+ c
+STOP
+__EOFHD
+
+
+### Run Doris, module phasefilt.
+doris $DORISIN > $DORISOUT
+
+echo "Some more info in $DORISIN and $DORISOUT"
+
+### EOF.
+
+

@@ -1,0 +1,514 @@
+#!/bin/csh -f
+# Changed this to csh -f. The -f option has been added after a 
+# report that this script failed for a tcsh user who had a .cshrc file.
+# For Cygwin users, link your tcsh to csh, i.e., ln -s /bin/tcsh /bin/csh,
+# or obtain a regular csh from somewhere.
+#%// BK 27-Apr-2002
+#
+#   plotcpm for gmt3-0
+# used by Doris software for optional plotting of error vectors etc.
+# input is file with info of axis (x,y) ("CPM_Data")
+# BK 03/03/1999 (kampes@geo.tudelft.nl)
+#   removed psxy -F option for gmt3.3.3
+# BK 01-Feb-2000
+#  added option for background magnitude image (argv 6).
+#  this requires some diskspace...
+# BK 16-May-2000
+# added histogram of errors
+#%// BK 30-Jun-2000
+### RCS #####
+#%// BK 17-May-2000
+#%// $Revision: 3.9 $  $Date: 2003/11/27 16:36:04 $
+# changed plot error vectors instead of offsets.
+# increased size plots with errors
+#%// BK 07-Feb-2001
+# added unit vectors, changed number of plots, removed c (entimeter) option 
+# since linux box crashed on it.
+#%// BK 15-Mar-2001
+#%// MA June 2008 GMT compatibility updates
+################
+
+### Allow Doris time to write output file.
+sleep 1
+set PRG    = `basename "$0"`
+set VER    = "v1.3, FMR software"
+set AUT    = "TUDelft Radar Group (c)1999-2008"
+#set AUT    = "Bert Kampes && Mahmut Arikan (c)1999-2008"
+echo "$PRG $VER, $AUT"
+echo " "
+
+
+### Handle input.
+set USAGE = "0" #synopsis
+set HELP  = "0" #exit afterwards
+# arg 1 
+set IFILE = "CPM_Data"
+# args 2:5 (default) dimension of the 3rd plot.
+@ L0 = 1
+#@ LN = 25000
+@ LN = 30000
+@ P0 = 1
+#@ PN = 4900
+@ PN = 5000
+# args 6 for background plot
+set DOBG  = "0"
+set SLCFORMAT = ""
+set SLCFILE   = ""
+
+switch ( $#argv )
+  case '6':
+    set DOBG = "1"
+    set SLCFILE = "$6"
+    # ||| fall through |||
+    #
+  case '5':
+    @ L0 = $2
+    @ LN = $3
+    @ P0 = $4
+    @ PN = $5
+    # ||| fall through |||
+    #
+  case '1':
+    set IFILE = $1
+    breaksw
+    # --- no fall through ---
+    #
+  default:
+    set HELP  = "1"
+endsw
+#if ( $#argv < 6 ) set USAGE = "1"
+
+# Check input
+if ( ! -r "$IFILE" ) then
+  echo  " input file: $IFILE cannot be read."
+  set HELP = "1"
+endif
+
+# Check if something went wrong
+if ( $HELP ) set USAGE = "1"
+if ( $USAGE ) then
+cat << __EOFHD
+
+  $PRG -- program to plot data from Doris
+
+  Usage:
+    $PRG [[[ifile [linelo hi pixlo hi [slcfile]]]
+
+  tip: $PRG CPM_Data 1 25000 1 4900 slcfile.raw
+
+__EOFHD
+endif
+if ( $HELP ) then
+cat << __EOFHD
+
+  infile  is a data file from doris, see this script for details.
+  linelo  is first line.
+  linehi  is last line.
+  pixello is first pixel.
+  pixello is last pixel.
+  slcfile is filename of SLC data for background of magnitude.
+          format must be ci2 or cr4 of SLC data.
+
+  Defaults:
+    ifile  == CPM_Data
+    linelo == 1
+    linehi == 25000
+    pixlo  == 1
+    pixhi  == 4900
+
+  If magnitude background calls to GMT and cpxfiddle.
+
+__EOFHD
+  exit -1
+endif
+
+### find out if nawk is available, since awk seems not to know atan2?
+#set AWK = awk;
+# echo 1 | /usr/xpg4/bin/awk '{print 1}' >& /dev/null
+# if ( $status == 0 ) set AWK = '/usr/xpg4/bin/awk'
+# echo 1 | /usr/xpg4/bin/awk '{print 1}' >& /dev/null
+echo 1 | awk '{print 1}' >& /dev/null
+if ( $status == 0 ) set AWK = `which awk`
+echo 1 | nawk '{print 1}' >& /dev/null
+if ( $status == 0 ) set AWK = 'nawk'
+echo 1 | gawk '{print 1}' >& /dev/null
+if ( $status == 0 ) set AWK = 'gawk'
+echo "Using as awk program: $AWK"
+
+
+### Initialize variables
+set OFILE1  = "dummy1.$$.ps"    # distribution errors azi/range
+set OFILE2  = "dummy2.$$.ps"    # 2d pic
+set OFILE3  = "dummy3.$$.ps"  # histogram azimuth,range errors
+set TMPFILE = "tmpfile.plot"
+### Clean up, should not exist anyway.
+rm -f $OFILE1 $OFILE2 $OFILE3 $TMPFILE
+
+
+### Set GMT defaults
+#       PAPER_MEDIA a4+ \
+gmtset MEASURE_UNIT cm \
+       PAPER_MEDIA a4+ \
+       PAGE_ORIENTATION portrait \
+       ANOT_FONT Helvetica \
+       ANOT_FONT_SIZE 10p \
+       ANOT_OFFSET 0.2 \
+       ANNOT_FONT_SIZE_SECONDARY 10p \
+       BASEMAP_AXES WeSn \
+       LABEL_FONT Helvetica \
+       LABEL_FONT_SIZE 10 \
+       HEADER_FONT_SIZE    24p \
+       UNIX_TIME_POS -2/-2
+
+
+### remove heading comment lines (10)
+#tail -n +11 $IFILE >! $TMPFILE
+#%// BK 25-Sep-2001: following bug report by Irek Baran. on tail.
+$AWK '{if(NR>10)print $0}' $IFILE >! $TMPFILE
+
+
+
+###Assumes data in input file $1: (CPM_Data)
+# 2    27   447    241.12      3.31   0.44   0.04   0.11  48.12 130.80
+# 1: window number
+# 2: location x
+# 3: location y
+# 4: offset x
+# 5: offset y
+# 6: correlation
+# 7: error x
+# 8: error y
+# 9: abs(wtest x)
+# 10:abs(wtest y)
+
+### Plotting options gmt: psxy/pstext
+# R: axis , use 0 to 1
+# J: projection/size (cm, see default file)
+# V: verbose
+# U: timestamp
+# :: lat/lon not lon/lat input
+# S: symbol
+# N: if outside border do ?
+# B: boundary annotation
+# P: portrait
+# K: append to ps later
+
+### Plot1: error_vs_correlation + window number
+### get maxima in data
+# $6 : correlation
+# $7 : errors in azimuth
+# $8 : errors in range
+#
+### Plot the points (azimuth).
+echo " +++ Plotting absolute offsets in azimuth +++"
+#set MAXERR=`$AWK 'BEGIN{m=$7}{{if($7>m){m=$7}}}END{print m+.05}'<$TMPFILE`
+set MAXERR=`$AWK '(NR==1){m = sqrt ( $7 * $7 )}{{if ( sqrt ( $7 * $7 ) > m ){m = sqrt ( $7 * $7 )}}}END{print m + 0.05}'<$TMPFILE`
+set TITLE  = "Azimuth_direction"
+set PROJ   = "-JX15/8"
+set XLABEL = "Correlation"
+set YLABEL = "abs(e)"
+set GMTFLAGS = "-K -N -R0/1/0/$MAXERR $PROJ -U -Sx.2 -B.1:"$XLABEL":/.1:"$YLABEL"::."$TITLE": -P -W4/255/0/0"
+$AWK '{print $6, sqrt ( $7 * $7 )}' $TMPFILE | psxy  $GMTFLAGS >! $OFILE1
+### Add the window numbers.
+#set GMTFLAGS = "-N -R0/1/0/$MAXERR $PROJ -P -O"
+set GMTFLAGS = "-K -N -R0/1/0/$MAXERR $PROJ -P -O"
+$AWK '{printf "%lg %s 10 0 0 5 %lg\n", $6 + 0.003, sqrt ( $7 * $7 ) + 0.003, $1}' $TMPFILE | pstext  $GMTFLAGS >> $OFILE1
+###
+###
+### Do the same plot for Range direction.
+echo " +++ Plotting absolute offsets in range +++"
+set MAXERR=`$AWK '(NR==1){m = sqrt ( $8 * $8 )}{{if ( sqrt ( $8 * $8 ) > m ){m = sqrt ( $8 * $8 )}}}END{print m + 0.05}'<$TMPFILE`
+set TITLE="Range_direction"
+set GMTFLAGS="-Y14 -O -K -N -R0/1/0/$MAXERR $PROJ -Sx.2 -B.1:"":/.1:"$YLABEL"::."$TITLE": -P -W4/255/0/0"
+$AWK '{print $6, sqrt ( $8 * $8 )}' $TMPFILE | psxy  $GMTFLAGS >> $OFILE1
+set GMTFLAGS = "-N -R0/1/0/$MAXERR $PROJ -P -O"
+$AWK '{printf "%lg %s 10 0 0 5 %lg\n", $6+.003, sqrt ( $8 * $8 ) + 0.003, $1}' $TMPFILE | pstext  $GMTFLAGS >> $OFILE1
+### View this plot in bg, delete it when closed, and continue script.
+viewanddel $OFILE1 &
+
+
+### Plot3: location of windows / wtests / error vectors
+# plotted are scaled observations (offsets) for pattern visualization
+#   (rotated) scaled wtests, to see largest one
+# col1: window number
+#  2/3: positionL/P
+# 9/10: wtests
+#if ( "$5" == "" ) then
+#  echo  "usage: $0 infile minL maxL minP maxP"
+#  echo  "   eg: $0 testdata.dat 0 25000 0 4900"
+#  exit -1
+#endif
+
+
+# Labeling of axis.
+echo \\n" +++ Plotting the observed offset vectors (normalized)"
+set TITLE  = "offset_vectors+rotated_wtests"
+set XLABEL = "Azimuth"
+set YLABEL = "Range"
+# height=y=azimuth, assume 5*stretched
+@ WIDTH    = ( ( $PN - $P0 ) + 1)
+@ HEIGHT   = ( ( $LN - $L0 ) + 1)
+@ NUMPIXS  = ( $WIDTH * $HEIGHT )
+set SLCFORMAT = "cr4"
+if ( $DOBG ) then
+  # filewidth should be used...
+  @ SIZECI2  = $WIDTH * $HEIGHT * 4
+  #@ SIZECR4  = $WIDTH * $HEIGHT * 8  # [LEN] tcsh produces integer overflow with large files
+  set SIZECR4  = ` awk 'BEGIN{print '$WIDTH' * '$HEIGHT' * 8}' `
+  set FSIZE  = `ls -l $SLCFILE | $AWK '{print $6}'`
+  if ( $FSIZE == $SIZECI2 ) then
+    echo " *** File format ${SLCFILE}: complex short."
+    set SLCFORMAT = ci2
+  else if ( $FSIZE == $SIZECR4 ) then
+    echo " *** File format ${SLCFILE}: complex float."
+    set SLCFORMAT = cr4
+  else
+    echo " *** Sorry, no background, file format could not be determined."
+    set DOBG = "0"
+  endif
+endif
+
+# GMT
+@ TICKSL   = $HEIGHT / 7
+@ TICKSP   = $WIDTH  / 7
+set RANGE  = "-P -: -R$P0/$PN/$L0/$LN"
+set FRAME  = "-B"$TICKSP":"$YLABEL":/"$TICKSL":"$XLABEL"::."$TITLE":"
+set XSIZE  = "21"
+set YSIZE  = "0" 
+# size paper, largest size $XSIZE
+# strict stretching ERS1/2 only...
+@ HEIGHT = $HEIGHT / 5
+if ( $HEIGHT > $WIDTH ) then
+  set YSIZE = $XSIZE
+  set XSIZE = `echo "scale=3; $WIDTH/$HEIGHT*$YSIZE" | bc -l`
+else
+  set YSIZE = `echo "scale=3; $HEIGHT/$WIDTH*$XSIZE" | bc -l`
+endif
+
+echo " *** SIZE X,Y: $XSIZE $YSIZE"
+set SIZE = "-JX$XSIZE/$YSIZE"   # put - before axis to flip, also values to be multiple by -
+#set SIZE = "-JX17"
+
+
+### First plot background if requested.
+if ( $DOBG ) then
+  echo " *** Making background plot of magnitude image"
+  set SUBX = "1"
+  set SUBY = "1"
+  echo " *** Total number of pixels: $NUMPIXS"
+  # try to limit tmp GRDFILE to 10MB (2.500.000 binary float pixels)
+  if (      $NUMPIXS > 100000000 ) then # eg. 25.000 * 5.000
+    set SUBY = "15"                                  # else > 10MB tmpfile
+    set SUBX = "3"                                   # else > 10MB tmpfile
+  else if ( $NUMPIXS >  50000000 ) then # eg. 10.000 * 5000
+    set SUBY = "10"                                  # else > 10MB tmpfile
+    set SUBX = "2"                                   # else > 10MB tmpfile
+  else if ( $NUMPIXS >  12500000 ) then # eg. 1500 * 5000
+    set SUBY = "5"
+  endif
+  echo " *** Subsampling data with factors (x,y): $SUBX $SUBY"
+  #
+  ##  echo creating magnitude file mag.raw
+  # Assume whole file to be plotted (else not possible for now, call from doris)
+  #set PROG = "cpxfiddle -w$WIDTH -f$SLCFORMAT -qmag -e0.2 -ofloat\
+  #             -l$L0 -L$LN -p$P0 -P$PN -S$SUBX/$SUBY -- $SLCFILE"
+  set PROG = "cpxfiddle -w$WIDTH -f$SLCFORMAT -qmag -e0.2 -ofloat -M$SUBX/$SUBY -- $SLCFILE"
+
+  # correct for GMT, subsampling output = ceil ((P-p+1)/sub)
+  #set RANGE      = "-R$FIRSTPIXEL/$LASTPIXEL/$FIRSTLINE/$LASTLINE"
+  # outputlines after subsampling = ceil((P-p+1)/sub)
+  #subsampling
+  #set NUMX    = `echo "$P0 $PN $SUBX" | $AWK '{printf "%i", ($2-$1)/$3+1}'`
+  #set NUMY    = `echo "$L0 $LN $SUBY" | $AWK '{printf "%i", ($2-$1)/$3+1}'`
+
+  #multilooking
+  set NUMX  = `echo "$P0 $PN $SUBX" | $AWK '{print int ( ( $2 - $1 + 1 ) / $3 )}'`
+  set NUMY  = `echo "$L0 $LN $SUBY" | $AWK '{print int ( ( $2 - $1 + 1 ) / $3 )}'`
+  echo " *** Number of output pixels (x,y): $NUMX $NUMY"
+
+  set EAST    = `echo "$P0+($NUMX-1)*$SUBX" | bc -l`
+  set NORTH   = `echo "$L0+($NUMY-1)*$SUBY" | bc -l`
+  set BKRANGE = "-R$P0/$EAST/$L0/$NORTH"
+  echo " *** GMT range: $BKRANGE"
+
+  set GRDFILE = $$.grd
+  set INC     = "-I$SUBX/$SUBY"
+  set IFORMAT = "-Zf"                 # binary float values
+  echo " *** Calling:"\\n"     $PROG | xyz2grd -G$GRDFILE $BKRANGE $INC $IFORMAT"
+  $PROG | xyz2grd -G$GRDFILE $BKRANGE $INC $IFORMAT
+  #
+  echo " *** Making (continuous) cpt table"
+  set CPTFILE = $$.cpt
+  set CPTNAME = gray
+  echo " *** Calling:"\\n"     grd2cpt $GRDFILE -C$CPTNAME >! $CPTFILE"
+  grd2cpt $GRDFILE -C$CPTNAME >! $CPTFILE
+  #
+  # mirror grd file in horizontal plane
+  set BKSIZE = "-JX$XSIZE/-$YSIZE"
+  echo " *** GMT range option: $BKSIZE"
+  echo " *** Calling:"\\n"     grdimage $GRDFILE $BKSIZE -C$CPTFILE -P -K >! $OFILE2"
+  grdimage $GRDFILE $BKSIZE -C$CPTFILE -P -K >! $OFILE2
+  # Tidy tidy tidy
+  echo " *** Removing grd and cpt file: $GRDFILE $CPTFILE"
+  rm -f $GRDFILE
+  rm -f $CPTFILE
+  # Set Overlay for next
+  set GMTFLAGS = "-O"
+else
+  set GMTFLAGS = ""
+endif
+
+
+### Add rescaled wtests to plot as normalized ellips.
+echo " ***  Plotting normalized w tests"\
+     "      Semi major/minor are interchanged for visibility"
+# Find out maximum wtest (both directions).
+@ MAXW1=`$AWK 'BEGIN{m=$9}{{if ( $9 > m ){m = $9}}{if ( $10 > m ){m = $10}}}END{print int ( m )}'<$TMPFILE`
+# size is scale=1.5 +0.2... -> 2.2 cm largest
+set GMTFLAGS = "$GMTFLAGS -K -N $RANGE $SIZE -Se -W3/0/255/0 -Y5"
+#$AWK -v s=$MAXW1           \
+#    '{scale=1.5/s}               \
+#     {printf "%.1f %.1f 0 %.2f %.2f\n", $2, $3, 0.2+scale*$9, 0.2+scale*$10}'  \
+#     $TMPFILE |          \
+#     psxy $GMTFLAGS >> $OFILE2
+$AWK '{scale = 1.5/'$MAXW1'}                \
+      {printf "%.1f %.1f 0 %.2f %.2f\n", $2, $3, 0.2 + scale * $9, 0.2 + scale * $10}'  \
+      $TMPFILE |          \
+      psxy $GMTFLAGS >> $OFILE2
+
+
+### Plot the location crosses.
+#/set GMTFLAGS = "-K -O -N $RANGE $FRAME $SIZE -U -Sx0.4 -W6/255/0/0"
+set GMTFLAGS = "-K -O -N $RANGE $FRAME $SIZE -U -Sx0.2 -W6/255/0/0"
+$AWK '{print $2, $3}' $TMPFILE | psxy $GMTFLAGS >> $OFILE2
+
+
+if ( "1" == "1" ) then
+  ### Plot normalized offset vectors.
+  # -G fill
+  # -Sv arrowwidth/headlength/headwidth [0.075/0.3/0.25]
+  set GMTFLAGS = "-K -O -N $RANGE $SIZE -Sv0.04/0.25/0.125 -G0/0/255 -W2/0/0/0"
+  set MEANL = `$AWK '{s += $4}END{print int ( ( s / NR ) )}'<$TMPFILE` # old fashion normalization
+  set MEANP = `$AWK '{s += $5}END{print int ( ( s / NR ) )}'<$TMPFILE` # old fashion normalization
+  echo "MEAN L P : $MEANL $MEANP"
+  # set WL = $MEANL
+  # set WP = $MEANP
+  # MA new normalization
+  set MAXL=`$AWK '(NR==1){m =  $4  }{if (   $4  > m ) m = $4 }END{print m }'<$TMPFILE`
+  set MINL=`$AWK '(NR==1){m =  $4  }{if (   $4  < m ) m = $4 }END{print m }'<$TMPFILE`
+  set MAXP=`$AWK '(NR==1){m =  $5  }{if (   $5  > m ) m = $5 }END{print m }'<$TMPFILE`
+  set MINP=`$AWK '(NR==1){m =  $5  }{if (   $5  < m ) m = $5 }END{print m }'<$TMPFILE`
+  echo "MAXMIN L P : $MAXL $MINL $MAXP $MINP "
+  set WL = `$AWK 'BEGIN{ print  '$MINL' }' ` 
+  set WP = `$AWK 'BEGIN{ print  '$MINP' }' `
+  set NFL = `$AWK  'BEGIN{ print '$MAXL' - '$MINL' }' `
+  set NFP = `$AWK  'BEGIN{ print '$MAXP' - '$MINP' }' `
+  
+  # plot arrows as they are, normalized by max length ? (always longest==3cm?)
+  #no cause then offset 1000 <> 1001 is no difference while it is the same as 10<>11
+  # thus scale length by l-max
+  #$AWK -v wl=$WL -v wp=$WP     \
+  #    '{           \
+  #     {l=$4-wl-1}       \
+  #     {p=$5-wp-1}       \
+  #$AWK '{ {l  = $4 - '$WL' - 1.0} {p = $5 - '$WP' - 1.0} \ # old fashion normalization
+  #$AWK '{ {l  = $4 -402 } \
+  #        {p  = $5  -25 }  \
+  # $AWK '{ {l  = $4 -'$MEANL' } \
+  #         {p  = $5  -'$MEANP' }  \
+ # most of the displayment is on range so unit vector for azimuth
+  #$AWK '{ {l  = ($4 - '$WL')/'$NFL' } \
+  #        {p  = ($5 - '$WP')/'$NFP'*('$NFP'/'$NFL') }  \
+   $AWK '{ {l  = $4 -'$MEANL' } \
+           {p  = $5  -'$MEANP' }  \
+        {l = l + 0.0000001} {p = p + 0.0000001}    \
+       {dir   = 57.3 * atan2 ( l , p )}       \
+       {scale = 1}          \
+       {len   = scale * sqrt ( l * l + p * p )}       \
+       {printf "%.1f %.1f %.1f %.1f\n", $2, $3, dir, len} \
+       }'           \
+       $TMPFILE |         \
+       #$TMPFILE > dump.txt && cat dump.txt | \
+       psxy $GMTFLAGS >> $OFILE2
+
+else
+
+### Plot error vectors, offset vectors can be plotted with 'plotoffsets'.
+# -G fill
+# -Sv arrowwidth/headlength/headwidth [0.075c/0.3c/0.25c]
+set GMTFLAGS = "-K -O -N $RANGE $SIZE -Sv0.04/0.25/0.125 -G0/0/255 -W2/0/0/0"
+# MA new normalization
+set MAXL=`$AWK '(NR==1){m =  $7  }{if (   $7  > m ) m = $7 }END{print m }'<$TMPFILE`
+set MINL=`$AWK '(NR==1){m =  $7  }{if (   $7  < m ) m = $7 }END{print m }'<$TMPFILE`
+set MAXP=`$AWK '(NR==1){m =  $8  }{if (   $8  > m ) m = $8 }END{print m }'<$TMPFILE`
+set MINP=`$AWK '(NR==1){m =  $8  }{if (   $8  < m ) m = $8 }END{print m }'<$TMPFILE`
+echo "MAXMIN offset of L P : $MAXL $MINL $MAXP $MINP "
+set NFL = `$AWK  'BEGIN{ print '$MAXL' - '$MINL' }' `
+set NFP = `$AWK  'BEGIN{ print '$MAXP' - '$MINP' }' `
+# plot arrows as they are, normalized by max length ? (always longest==3cm?)
+$AWK '{           \
+     {l     = $7}         \
+     {p     = $8}         \
+     {l = l + 0.0000001} {p = p + 0.0000001}    \
+     {dir   = 57.3 * atan2 ( l , p )}       \
+     {scale = 1}          \
+     {len   = scale * sqrt ( l * l + p * p )}       \
+     {printf "%.1f %.1f %.1f %.1f\n", $2, $3, dir, len} \
+     }'           \
+     $TMPFILE |         \
+     psxy $GMTFLAGS >> $OFILE2
+
+# Plot unit vectors at the side
+echo "  Adding unit offset vectors in lower left corner."
+# set GMTFLAGS = "-N -O -K $RANGE $SIZE -Sv0.04/0.25/0.125 -G255/0/255 -W2/255/0/255"
+set GMTFLAGS = "-N -O $RANGE $SIZE -Sv0.04/0.25/0.125 -G255/0/255 -W2/255/0/255"
+####  l   p   err_l err_p
+echo "$L0 $P0 1 0" |                        \
+$AWK '{{l = $3 + 0.0000001}{p = $4 + 0.0000001}{dir = 57.3 * atan2 ( l , p )}   \
+     {scale = 1} {len = scale * sqrt ( l * l + p * p )} \
+     {printf "%.1f %.1f %.1f %.1f\n", $1, $2, dir, len} \
+     }' | psxy $GMTFLAGS -K >> $OFILE2
+echo "$L0 $P0 0 1" |                        \
+$AWK '{{l = $3 + 0.0000001}{p = $4 + 0.0000001}{dir = 57.3 * atan2 ( l , p )}   \
+     {scale = 1} {len = scale * sqrt ( l * l + p * p )} \
+     {printf "%.1f %.1f %.1f %.1f\n", $1, $2, dir, len} \
+     }' | psxy $GMTFLAGS  >> $OFILE2
+endif
+
+
+### Add the window numbers (last call).
+##pstext: (x, y,  size(pts), angle(ccw),  fontno,  justify,  text)
+##set GMTFLAGS = "-O -N -G0/255/0 $RANGE $SIZE"
+set GMTFLAGS = "-O -N -G0/0/0 $RANGE $SIZE"
+##green, 14pts, RightTop BottomLeft
+echo "## dont print point labels  now!"
+#$AWK '{printf "%.1f %.1f 10 0 0 RT %s\n", $2, $3, $1}' $TMPFILE | \
+#     pstext $GMTFLAGS >> $OFILE2
+
+# view postscript in background, delete it afterwards, continue script.
+viewanddel $OFILE2 &
+
+
+
+### Figure 3 : histogram of offsets in azimuth, range
+echo " +++ Plotting histograms of least squares offsets +++"
+set TITLE  = "Error_histogram_Azimuth_direction"
+set XLABEL = "Error"
+set YLABEL = "frequency"
+#set GMTFLAGS = "-K -JX10/5 -U -W0.1 -C -B0.1/5:"$XLABEL":/.1:"$YLABEL"::."$TITLE": -P -G0/0/255"
+set GMTFLAGS = "-K "$PROJ" -U -W0.1 -F -B0.1:"$XLABEL":/.1:"$YLABEL"::."$TITLE": -P -G0/0/255"
+$AWK '{print $7}' $TMPFILE | pshistogram $GMTFLAGS > $OFILE3
+### range
+set TITLE  = "Error_histogram_Range_direction"
+# set GMTFLAGS = "-O -Y10 -JX10/5 -C -W0.1 -B0.1/5:"":/.1:"$YLABEL"::."$TITLE": -P -G0/0/255"
+set GMTFLAGS = "-O -Y14 "$PROJ" -F -W0.1 -B0.1:"$XLABEL":/.1:"$YLABEL"::."$TITLE": -P -G0/0/255"
+$AWK '{print $8}' $TMPFILE | pshistogram $GMTFLAGS >> $OFILE3
+viewanddel $OFILE3 &
+
+### Tidy up
+rm -f $TMPFILE
+echo  " +++ Finished: $PRG +++"\\n
+exit 0
+
+### EOF
+

@@ -1,0 +1,153 @@
+#!/bin/csh -f
+### ascii2grdAutoMinMaxHDR -- transform 3 col ascii in GMT grd (float) format
+### with pixel size forced to 0,0009 degrees, that is about 25m
+### and remove the header, then create an ENVI header
+###   It execute first minmax to get the min/max coord.
+###   It requires the GMT fct 'nearneighbor' that may pose prblms on some systems
+###   ARG = ascii file to transform
+###   Adjust script for UTM or Lon/Lat and output as Small or Big Endian
+### $Id: ascii2grd,v 1.1 2007/04/19 NdOreye $
+################################################################
+set PRG    = `basename "$0"`
+set VER    = "v1.0 doris script utilities"
+set AUT    = "nicolas doreye, (c)2006"
+echo "$PRG $VER, $AUT"
+echo " " 
+
+
+
+### Handle wrong input
+set WRONG    = "0"
+set ASCII  = "$1"
+if ( $#argv < 1 ) set WRONG = "1"
+#---------------------------
+if ( $WRONG == "1" ) then
+cat << __EOFHD
+
+  USAGE:
+      $PRG  ascii3column  
+  This program transforms the 3 column ascii file of Doris 
+  (created with LonLat???2ascii) to GMT grd file then remove the header 
+  in order to be opened by ENVI for instance, then create the appropriate header
+ 
+  First run the program lonlat???2ascii to create the 3 column ascii input file
+
+
+   EXAMPLE:
+      $PRG lonlatSomething.dat 
+
+  See also: http://www.remotesensing.org/proj
+
+__EOFHD
+  exit 1
+endif
+echo "-----------------------------"
+echo " compute Min Max Lon and Lat"
+echo "-----------------------------"
+### this part is taken from B Kampes script asci2ps
+### Get min/max and increment from data itselves.
+### Assume lat/lon is formatted as %7.4f?
+### Not robust yet?
+echo "finding out minmax in ascii column data - may take some time !"
+set minmax = `minmax $ASCII`
+echo $minmax
+set WEST   = `echo $minmax | cut -d '<' -f2 | cut -d'/' -f1`
+set EAST   = `echo $minmax | cut -d '<' -f2 | cut -d'/' -f2 | cut -d'>' -f1`
+set SOUTH  = `echo $minmax | cut -d '<' -f3 | cut -d'/' -f1`
+set NORTH  = `echo $minmax | cut -d '<' -f3 | cut -d'/' -f2 | cut -d'>' -f1`
+set MINHEI = `echo $minmax | cut -d '<' -f4 | cut -d'/' -f1`
+set MAXHEI = `echo $minmax | cut -d '<' -f4 | cut -d'/' -f2 | cut -d'>' -f1`
+echo " "
+### handle 1e+06 format gracefully?
+#set EAST     = `echo $EAST  | awk '{printf "%.20f", $1}'`
+#set WEST     = `echo $WEST  | awk '{printf "%.20f", $1}'`
+#set SOUTH    = `echo $SOUTH | awk '{printf "%.20f", $1}'`
+#set NORTH    = `echo $NORTH | awk '{printf "%.20f", $1}'`
+echo "Using the following parameters:"
+echo "-------------------------------"
+echo "WEST:   $WEST"
+echo "EAST:   $EAST"
+echo "SOUTH:  $SOUTH"
+echo "NORTH:  $NORTH"
+echo "MINHEI: $MINHEI"
+echo "MAXHEI: $MAXHEI"
+
+
+echo " "
+echo "convert ascii to grd with GMT command nearneighbor using $WEST/$EAST/$SOUTH/$NORTH"
+
+# nearneighbor $ASCII -G$ASCII.grd -R$WEST/$EAST/$SOUTH/$NORTH -I25e=/25e= -S0.0009 -V
+# nearneighbor $ASCII -G$ASCII.grd -R$WEST/$EAST/$SOUTH/$NORTH -I0.006n=/0.006n= -S0.012m -V
+nearneighbor $ASCII -G$ASCII.grd -R$WEST/$EAST/$SOUTH/$NORTH -I0.001=/0.001= -S0.001 -V #AO
+# nearneighbor $ASCII -G$ASCII.grd -R$WEST/$EAST/$SOUTH/$NORTH -I0.000224804 -S0.0009 -V
+# xyz2grd $ASCII -G$ASCII.grd -I0.000224804= -R$WEST/$EAST/$SOUTH/$NORTH
+
+set OUTFILE = $ASCII.grd
+
+echo "-----------------------------"
+echo "removing header from $OUTFILE"
+echo "-----------------------------"
+set OUTFILE_NoHdr = $ASCII.nvi
+grdreformat $OUTFILE $ASCII.nvi=bf -N -V
+
+
+echo "-----------------------------"
+echo "Created: $OUTFILE.nvi without hdr  (GMT grid @ 0,0009 degrees i.e. about 25m)"
+echo "-----------------------------"
+
+echo "-----------------------------"
+echo "Create ENVI header"
+echo "-----------------------------"
+
+echo "attention: if wants UTM in cm, first run Mathematica notebook and watch out for the alphabumeric characters"
+
+set DATE = `date`
+#set grdinfo = `grdinfo $ASCII.grd`
+#echo $grdinfo
+#set x_inc  = `echo $grdinfo | cut -d ':' -f14 | cut -d ' ' -f2`
+#set nX   = `echo $grdinfo | cut -d ':' -f16 | cut -d ' ' -f2`
+#set y_inc  = `echo $grdinfo | cut -d ':' -f20 | cut -d ' ' -f2`
+#set nY   = `echo $grdinfo | cut -d ':' -f22 | cut -d ' ' -f2`
+grdinfo $ASCII.grd > temp
+set x_inc = `grep x_inc temp | gawk '{print $7}'`
+set nX   = `grep nx temp | gawk '{print $11}'`
+set y_inc  = `grep y_inc temp | gawk '{print $7}'`
+set nY   = `grep y_inc temp | gawk '{print $11}'`
+rm temp
+echo
+echo 'nx= ' $nX
+echo 'x_inc= ' $x_inc
+echo 'ny= ' $nY
+echo 'y_inc= '$y_inc
+echo
+# Header:
+echo 'ENVI' >> $ASCII.hdr
+echo 'description = { ' >> $ASCII.hdr
+echo '  Header created auto from gridinfo (gmt) and ' $OUTFILE.NoHdr ' on [' $DATE ']}' >> $ASCII.hdr
+echo 'samples = ' $nX >> $ASCII.hdr
+echo 'lines   = ' $nY >> $ASCII.hdr
+echo 'bands  = 1' >> $ASCII.hdr
+echo 'header offset = 0' >> $ASCII.hdr
+echo 'file type = ENVI Standard' >> $ASCII.hdr
+echo 'data type = 4' >> $ASCII.hdr
+echo 'interleave = bsq' >> $ASCII.hdr
+echo 'sensor type = Unknown' >> $ASCII.hdr
+# select the output format: small or big Endian?
+echo 'byte order = 0' >> $ASCII.hdr
+echo ' computed on a Little Endian machine'
+echo 
+
+# echo "-----------------------------"
+# echo 'UTM FORMAT'
+# echo "-----------------------------"
+# echo 'map info = {UTM, 1.000, 1.000, 715175.972, 9883485.359, 3.0940000000e+001, 3.0740000000e+001, 35, South, WGS-84, units=Meters}' >> $ASCII.hdr
+
+echo "-----------------------------"
+echo 'LON/LAT FORMAT'
+echo "-----------------------------"
+echo 'map info = {Geographic Lat/Lon, 1.0000, 1.0000, ' $WEST ', ' $NORTH ', ' $x_inc ', ' $y_inc ',  WGS-84, units=Degrees}' >> $ASCII.hdr
+
+echo 'wavelength units = Unknown' >> $ASCII.hdr
+echo '' >> $ASCII.hdr
+
+### EOF.

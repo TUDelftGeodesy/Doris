@@ -1,0 +1,168 @@
+
+           CHANGELOG for the EPR-API, VERSION 2.2
+
+
+----------------------------------------------------------------------
+Changes from Version 2.1 to Version 2.2 (of 31. July 2010)
+----------------------------------------------------------------------
+Generally replaced usage of data type "long" by "int" since "long" is 
+ambiguous with respect to 32bit and 64bit operating systems.
+
+----------------------------------------------------------------------
+Changes from Version 2.0.5 to Version 2.1 (of 6. May 2009)
+----------------------------------------------------------------------
+Support of MER_FRS (full resulution full swath) products
+Support of IODD7
+
+----------------------------------------------------------------------
+Changes from Version 2.0.4 to Version 2.0.5 (of 28. October 2004)
+----------------------------------------------------------------------
+Bugfix in file epr_bitmask.c:
+If function epr_read_bitmask_raster() was called with non-zero pixel
+offsets, the application crashed due to an invalid array index
+exception.
+
+----------------------------------------------------------------------
+Changes from Version 2.0.3 to Version 2.0.4 (of 23. June 2004)
+----------------------------------------------------------------------
+Support for updated MERIS RR/FR Level 2 product format
+Backward compatibility with older formats is ensured.
+The new product changes are:
+    a) the band "aero_epsilon" has been replaced by "aero_alpha".
+    b) new flags have been added:
+       BLUE_AERO  - Aerosol with high Angstrom Exponent
+                    selected for atmosphere correction
+       BPAC_ON    - Bright Pixels Atm. Correction activated (water)
+       LOW_SUN    - Sun low above horizon (or conversely
+                    high Sun zenith angle)
+    c) The DDV flag is now exclusively evaluated above land (LAND=true)
+
+----------------------------------------------------------------------
+Changes from Version 2.0.2 to Version 2.0.3 (of 5. Nov 2003)
+----------------------------------------------------------------------
+Bugfix in file epr_band.c:
+In function epr_read_band_raster() an error occured if the percentage
+of raster->source_step_x is bigger than raster->raster_width.
+This restriction was removed.
+
+----------------------------------------------------------------------
+Changes from Version 2.0.1 to Version 2.0.2 (of 21. June 2003)
+----------------------------------------------------------------------
+1) Bugfix: MERIS L1b flags now correcly read (read_measurement_...
+   "unknown data type")
+2) Bugfix: MERIS L2 flags now correcly read (wrong byte order)
+3) Bugfix: MER_RRC_1P products now correctly handled
+4) Support for MERIS, AATSR and ASAR child products added
+5) Support for new MERIS L2 TOAVI flags included ...
+6) New utility functions for geophysical raster data access have been
+   added to the API:
+        o epr_get_raster_elem_size
+        o epr_get_raster_elem_addr
+        o epr_get_raster_pixel_addr
+        o epr_get_raster_line_addr
+7) New utility functions have been added to the API:
+        o epr_get_data_type_size
+        o epr_data_type_id_to_str
+
+----------------------------------------------------------------------
+Changes from Version 2.0 to Version 2.0.1 (of 21.03.2003)
+----------------------------------------------------------------------
+Bugfix: The build-in support for older MERIS L1b/L2 products (IODD 5)
+caused that no other product types than MERIS L1b/L2 data products could
+be opened. The error message was "epr_create_band_ids: band not found".
+Now also the other MERIS, AATSR and ASAR products can be opened again.
+
+----------------------------------------------------------------------
+Changes from Version 1.4 to Version 2.0 (of 07.03.2003)
+----------------------------------------------------------------------
+1) The operational ENVISAT MERIS Level 1b product format has slightly
+   changed. The 'spectral shift index' has been replaced by a 'detector
+   index' according to IODD 6.0 (PO-TN-MEL-GS-0003).
+   The older format is still supported by the EPR-API.
+2) The DDDB as such has been removed and merged into the files
+   'epr_dddb.c'and 'epr_dddb.h'. This makes it unnecessary to pass the
+   DDDB path to epr_init_api().
+   The API therefore has become easier to maintain.
+3) The computation of geolocation has been improved and adapted to the
+   VISAT precision.
+
+----------------------------------------------------------------------
+Changes from Version 1.3 to Version 1.4
+----------------------------------------------------------------------
+Support for ENVISAT ASAR data products added
+
+----------------------------------------------------------------------
+Changes from Version 1.2 to Version 1.3
+----------------------------------------------------------------------
+1) Function epr_get_field_elem_as_mjd has been changed, it has now only
+   one parameter left:
+   const EPR_STime* epr_get_field_elem_as_mjd(const EPR_SField* field)
+2) Getter functions for dataset descriptions have been added to the API
+     - epr_get_num_dsds
+     - epr_get_dsd_at
+
+----------------------------------------------------------------------
+Changes from Version 1.1 to Version 1.2
+----------------------------------------------------------------------
+1) All functions defined in "epr_api.h" now properly return exeptional
+   values in case of an error.
+2) Some of the API function did not clear the internal API error state.
+   All public API functions now clear the global error state before
+   the execute their actual code.
+
+----------------------------------------------------------------------
+Changes from Version 1.0 to Version 1.1
+----------------------------------------------------------------------
+1) The 'epr_open_product' function now creates automatically all dataset
+   and band identifiers found in a given ENVISAT product file.
+   That means, the user must not take care of the memory de-allocation of these
+   identifiers; this will automatically be done when the 'epr_close_product'
+   function is called.
+2) In addition eight functions have been implemented. Their purpose is to ease
+   the work with dataset and band identifiers.
+   The new functions are listed below.
+3) The "epr_dataset.h" header-file has been added.
+4) New functions have been added:
+
+   /* Gets the number off all datasets contained in a product. */
+   uint epr_get_num_datasets(EPR_SProductId* product_id);
+
+   /* Gets the dataset_id at the specified position within the product. */
+   EPR_SDatasetId* epr_get_dataset_id_at(EPR_SProductId* product_id, uint index);
+
+   /* Gets the dataset_id coresponding to the specified dataset name. */
+   EPR_SDatasetId* epr_get_dataset_id(EPR_SProductId* product_id, const char* dataset_name);
+
+   /* Gets the name of the dataset for the given dataset ID. */
+   const char* epr_get_dataset_name(EPR_SDatasetId* dataset_id);
+
+
+   /* Gets the number off all bands contained in a product. */
+   uint epr_get_num_bands(EPR_SProductId* product_id);
+
+   /* Gets the band_id at the specified position within the product. */
+   EPR_SBandId* epr_get_band_id_at(EPR_SProductId* product_id, uint index);
+
+   /* Gets the band_id corresponding to the specified name. */
+   EPR_SBandId* epr_get_band_id(EPR_SProductId* product_id, const char* band_name);
+
+   /* Gets the name of the band for the given dataset ID. */
+   char* epr_get_band_name(EPR_SBandId* band_id);
+
+5) Some functions have been deprecated:
+
+   'epr_create_dataset_id' is no longer part of the public API.
+   Please use 'epr_get_dataset_id' instead.
+
+   'epr_free_dataset_id' is no longer part of the public API.
+   The dataset IDs retrieved with the 'epr_get_dataset_id' function
+   do not require an explicite destruction.
+
+
+   'epr_band_dataset_id' is no longer part of the public API.
+   Please use 'epr_get_band_id' instead.
+
+   'epr_free_band_id' is no longer part of the public API.
+   The dataset IDs retrieved with the 'epr_get_band_id' function
+   do not require an explicite destruction.
+

@@ -1,0 +1,260 @@
+#!/bin/csh -f
+### ascii2ps -- Generate postscript from 3 column ascii file.
+### Example script to generate grd file from phi lambda height
+### output of Doris InSAR software.
+### Ramon Hanssen, Bert Kampes, 07-Dec-2000.
+### a good idea would be to use gmtconvert instead of the ascii input.
+### $Id: ascii2ps,v 1.6 2004/09/15 10:49:03 kampes Exp $
+################################################################
+set PRG    = `basename "$0"`
+set VER    = "v1.0 Doris software"
+set AUT    = "bert kampes, (c)1999-2003"
+echo "$PRG $VER, $AUT"
+echo " " 
+
+
+
+### Handle wrong input
+set WRONG = "0"
+
+### Input files: 3 column ascii lon/lat/hei triplets.
+set XYZFILE  = "$1"
+if ( $#argv < 1 ) set WRONG = "1"
+if ( $WRONG == "1" ) then
+cat << __EOFHD
+  USAGE:
+      $PRG  3col_asciifile
+
+  Create a postscript file of the data in the 3 column ASCII input file 
+  containing "lon lat hei" triplets (output of lonlathei2ascii
+  program).  GMT is used to interpolate these irregularly distributed
+  data to a grid.
+
+  This script is intended to be transparent and understandable.
+  Please adapt this script to your own needs.  (lambda=longitude).  
+  For example, here one could easily set the correct approximate
+  height of the terrain.
+
+  The output is a postscript file named "temp.ps".
+
+  The steps foreseen to be taken are:
+    [before running this, create a three column ascii file with lon lat hei
+       using philamh2ascii program.
+       AND optionally convert this 3 column file to UTM coordinates
+       using ascii2ascii_UTM
+    ]
+    2) Call GMT program xyz2grd to perform interpolation of this data. 
+       the number of points in the output grid is 300.
+    3) call GMT program cpt to create a color table
+    4) call GMT program to create a postscript file
+    5) call ghostview to view output.
+
+  This script can serve as an example.  If you want to have another resolution
+  output grid, for example exactly 100x100 meters, then you will have
+  to change this script.
+  With the public domain software PROJ.4, you can easily convert the 
+  WGS coordinates (Doris output) to X,Y values, and then use this script.
+  See the script ascii2ascii_UTM for an example how to do this for WGS 
+  to UTM coordinates conversion.
+
+
+  DEPENDENCIES:
+      GMT tools (gmtset, minmax, xyz2grd, grd2cpt, psbasemap
+          psscale, grdgradient, psmask, grdimage, pscoast)
+      standard UNIX (echo, csh, rm, etc.)
+      ghostview
+
+  EXAMPLE:
+      $PRG lonlathei.dat
+
+      $PRG xyz_UTM.dat
+
+  SEE ALSO:
+
+      cpxfiddle, http://gmt.soest.hawaii.edu/
+
+__EOFHD
+  exit 1
+endif
+
+
+### Program variables.
+set CMAP    = sealand
+set CPTFILE = temp.cpt
+set GRDFILE = temp.grd
+set PSFILE  = temp.eps
+#use paper=a4+ for eps, a4 for ps
+rm -f $PSFILE
+rm -f $CPTFILE $GRDFILE
+
+#---------------------------
+# GMT defaults override 
+#---------------------------
+gmtset MEASURE_UNIT cm \
+       PAPER_MEDIA a4+ \
+       PAGE_ORIENTATION portrait \
+       ANOT_FONT Helvetica \
+       ANOT_FONT_SIZE 10p \
+       ANOT_OFFSET 0.2c \
+       BASEMAP_AXES WeSn \
+       LABEL_FONT Helvetica \
+       LABEL_FONT_SIZE 10 \
+       UNIX_TIME_POS -2c/-2c
+#---------------------------
+
+
+#### program philamh2ascii replaces code below
+#### if file temp.xyz exists already, maybe you do not want to wait again?
+#### but for now, always recompute it.
+#if ( "1" == "2" ) then
+#### Convert binary files to ascii row; trick cpxfiddle with -w1.
+#echo " Convert LONGITUDES in binary real4 file" \"${LON}\" "to ascii table"
+#   #cpxfiddle -w1 -qnormal -fcr4  $LON | awk '{printf "%3.4f\n%3.4f\n",$1,$2}' > qlon
+#   # using new r4 option to cpxfiddle
+#   cpxfiddle -w1 -qnormal -fr4  $LON > qlon
+#echo " Convert LATITUDES in binary real4 file" \"${LAT}\" "to ascii table"
+#   cpxfiddle -w1 -qnormal -fr4  $LAT > qlat
+#echo " Convert HEIGHTS in binary real4 file" \"${HEI}\" "to ascii table"
+#   cpxfiddle -w1 -qnormal -fr4  $HEI > qhei
+#
+#### Create xyz file, delete temp files.
+#echo "Paste LAT/LON/HEI to xyzfile" \"${XYZFILE}\"
+#   paste qlon qlat qhei > $XYZFILE.tmp
+#echo "removing -999 from input (unwrap problem, or other problem)"
+#   grep -v '\-999' $XYZFILE.tmp > $XYZFILE
+#   rm -f qlon qlat qhei $XYZFILE.tmp
+#endif
+
+
+### Get min/max and increment from data itselves.
+### Assume lat/lon is formatted as %7.4f?
+### Not robust yet?
+echo "finding out minmax in ascii column data"
+set minmax = `minmax $XYZFILE`
+echo $minmax
+set WEST   = `echo $minmax | cut -d '<' -f2 | cut -d'/' -f1`
+set EAST   = `echo $minmax | cut -d '<' -f2 | cut -d'/' -f2 | cut -d'>' -f1`
+set SOUTH  = `echo $minmax | cut -d '<' -f3 | cut -d'/' -f1`
+set NORTH  = `echo $minmax | cut -d '<' -f3 | cut -d'/' -f2 | cut -d'>' -f1`
+set MINHEI = `echo $minmax | cut -d '<' -f4 | cut -d'/' -f1`
+set MAXHEI = `echo $minmax | cut -d '<' -f4 | cut -d'/' -f2 | cut -d'>' -f1`
+echo " "
+### handle 1e+06 format gracefully?
+#set EAST     = `echo $EAST  | awk '{printf "%.20f", $1}'`
+#set WEST     = `echo $WEST  | awk '{printf "%.20f", $1}'`
+#set SOUTH    = `echo $SOUTH | awk '{printf "%.20f", $1}'`
+#set NORTH    = `echo $NORTH | awk '{printf "%.20f", $1}'`
+echo "Using the following parameters:"
+echo "-------------------------------"
+echo "WEST:   $WEST"
+echo "EAST:   $EAST"
+echo "SOUTH:  $SOUTH"
+echo "NORTH:  $NORTH"
+echo "MINHEI: $MINHEI"
+echo "MAXHEI: $MAXHEI"
+### try to figure out if we have UTM coordinates
+### assume utm if north is big.. or small
+set CARTESIAN = `echo "$NORTH $SOUTH" | awk '{if(($1>200)||($2<-200)){print"1"}else{print"0"}}'`
+echo "CARTESIAN = $CARTESIAN"
+#
+# numgrd should be multiple of 100?
+# number of points in output grid in 1 direction
+set NUMGRD = "200"
+#set IX     = `echo $WEST  $EAST  $NUMGRD | awk '{print ($2-$1)/($3-1)}'`
+#set IX     = `echo $WEST  $EAST  $NUMGRD | awk '{print ($2-$1)/$3}'`
+#set IY     = `echo $SOUTH $NORTH $NUMGRD | awk '{print ($2-$1)/$3}'`
+### report of Bruno Crippa that awk is not precise enough, use bc:
+#%// BK 24-Nov-2002
+#set IX     = `echo "scale=20; ( $EAST  - $WEST  ) / $NUMGRD" | bc -l`
+#set IY     = `echo "scale=20; ( $NORTH - $SOUTH ) / $NUMGRD" | bc -l`
+# but why not? (awk handles at least 1.2342e+06)
+set IX     = `echo $WEST  $EAST  $NUMGRD | awk '{printf "%.20f", ($2-$1)/$3}'`
+set IY     = `echo $SOUTH $NORTH $NUMGRD | awk '{printf "%.20f", ($2-$1)/$3}'`
+#
+#set RANGE = `minmax -I$IX/$IY $XYZFILE`
+set RANGE = "-R$WEST/$EAST/$SOUTH/$NORTH"
+set IXkm = `echo "scale=3; $IX * 40000 / 360" | bc -l`
+set IYkm = `echo "scale=3; $IY * 40000 / 360" | bc -l`
+echo "RANGE: " $RANGE
+if ( "$CARTESIAN" == "1" ) then 
+  echo "Sample interval X: $IX degrees, or $IXkm km at equator"
+  echo "Sample interval Y: $IY degrees, or $IYkm km at equator"
+else
+  echo "Sample interval X: $IX m"
+  echo "Sample interval Y: $IY m"
+endif
+
+
+
+### OR, use minmax to get range, much better...
+#set IX = 200
+#set IY = 200
+#set RANGE = `minmax -I$IX $XYZFILE`
+#echo "IX    = $IX [m]"
+#echo "IY    = $IY [m]"
+#echo "RANGE = $RANGE"
+
+
+
+### Create grd file with xyz2grd (better use surface).
+echo "do xyz2grd"
+xyz2grd $XYZFILE -G$GRDFILE -I$IX/$IY $RANGE 
+#awk '{print $1, $2, $3+1000.0}' $XYZFILE |  surface -G$GRDFILE -I$IX/$IY $RANGE -T0.75
+#surface $XYZFILE -G$GRDFILE -I$IX/$IY $RANGE -T0.75
+
+
+#echo "for unwrapped ifg, converting to cm slant range displacement"
+#grdmath $GRDFILE 1.4 MUL PI DIV = temp.grd2; mv temp.grd2 $GRDFILE
+
+
+
+#echo "setting min_z --> 0"
+#echo "you may not want this"
+# grdmath $GRDFILE $MINHEI SUB = temp.grd2; mv temp.grd2 $GRDFILE 
+#set MINHEI = 0.0
+#set MAXHEI = `echo $MINHEI $MAXHEI | awk '{printf "%f", $2 - $1}'`
+
+
+### Create colormap from data with grd2cpt.
+#set CPTFILE = /home/fmr/d4/hanssen/gmt_scripts/colortables/minpipi.cpt
+#set CPTFILE = /home/fmr/d4/hanssen/gmt_scripts/colortables/mass.cpt
+echo "creating colormapping..."
+set INCHEI = `echo $MINHEI $MAXHEI 255 | awk '{print($2-$1)/$3}'`
+grd2cpt $GRDFILE -C$CMAP -Z -S$MINHEI/$MAXHEI/$INCHEI        >! $CPTFILE
+
+
+
+### Actually start GMT plotting.
+# proj better use correct scaling for x/y
+set proj  = "-JX15"
+set ticks = "-Bf0.1a1.0/f0.1a1.0"
+if ( "$CARTESIAN" == "1" ) set ticks = "-Bf5000.0a40000.0/f5000.0a40000.0"
+echo "proj      = $proj"
+echo "ticks     = $ticks"
+echo "psbasemap"
+psbasemap $proj $RANGE $ticks -U -K                        >! $PSFILE
+echo "psscale"
+psscale   -I1 -D12.5/-1.2/5/0.4h -C$CPTFILE -B1000a -O -K >> $PSFILE
+echo "grdgradient"
+grdgradient $GRDFILE -A0 -Nt -G$GRDFILE.gradient
+echo "skipping psmask"
+#echo "psmask"
+#psmask $XYZFILE -I$IX $proj $RANGE -K -O -S100 >> $PSFILE
+echo "grdimage"
+grdimage  $GRDFILE $proj -I$GRDFILE.gradient -C$CPTFILE -R -B -K -O >> $PSFILE
+echo "pscoast (last call)"
+pscoast   $proj -R -B -Dh -W1 -S0/0/255 -O >> $PSFILE
+
+
+
+
+############################################################################
+### View result
+#if ( $PSFILE > 1kb ) ...
+set GV = ghostview
+echo "using ghostview to view file: $PSFILE"
+$GV $PSFILE
+
+
+### EOF.
+

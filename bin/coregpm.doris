@@ -1,0 +1,328 @@
+#!/bin/csh -f
+###
+# coregpm.fast: run doris step COREGPM from prompt.
+# basicaly a backup interf.res is created and doris works 
+# with this file until the client is satisfied with the results.
+# then this file is copied to the original for the processing.
+# This is due to that doris does not like it when a step is repeated.
+###
+# Rens Swart * 14 February 2001
+# Bert Kampes, 14-Feb-2001
+#%// BK 19-Feb-2001: made .faster...
+# $Revision: 3.5 $  $Date: 2003/04/14 06:35:15 $
+###
+
+### Some variables.
+set PRG    = `basename "$0"`
+set VER    = "v1.0, FMR software"
+set AUT    = "Rens Swart (c)2001"
+set CLS    = "clear"
+if ( ! -x `which $CLS` ) set CLS = ""
+$CLS
+echo "$PRG $VER, $AUT"\\n
+
+### TODO:
+#  -autoloop if input = n5 (batch)
+#   while numloops < 6, and max(err)>0.3 and max(wtest)<Ka do loop w/o plotting etc. 
+#  -more scripts so users can use doris for coreg, (coarse+fine+model+resample)
+#   and continue with other software.
+#
+
+### Set (default) filenames
+set WRONG	= "1" # assume wrong input
+set DORIS	= "doris" # executable, must be in path
+set DORIS_IN	= "$1"
+set TIME	= `date +%H:%M`
+set WTESTFILE   = ".wtests.$TIME"
+set LOGFILE	= "log.out" # default name, checked later
+set INTERF_RES	= "interf_res.out" # the [default] result file.
+set DORIS_QUIET = "1" # not -V 
+set REDIRFILE   = ".doris.stdout.$TIME"
+
+
+### Check input for: prog [-V] infile
+if ( $#argv == 1 ) then
+  set DORIS_IN = "$1"
+  if ( -r $DORIS_IN ) then
+    set WRONG = "0"
+  endif
+endif
+if ( $#argv == 2 ) then
+  set DORIS_IN = "$2"
+  echo "Running verbose mode, assuming -V option."
+  set DORIS_QUIET = "0"
+  if ( -r $DORIS_IN ) then
+    set WRONG = "0"
+  endif
+endif
+
+
+### Handle wrong input, give help.
+if ( "$WRONG" == "1" ) then
+#  cat << __EOFHD | more -de
+  cat << __EOFHD | more
+
+  PROGRAM: ${PRG} -- Perform step COREGPM iteratively from prompt.
+
+    (i)  Fit model through the coregistration vectors estimated by FINE;
+    (ii) Select the vector with largest w-test and ask user whether it
+         should be removed.
+         If so, remove it, and re-run Doris (goto (i)).
+         If not, stop.
+
+    The advantage of this script is that normally the result file needed
+    to be edited after each iteration to fit the model.
+    Note that the inputfile of Doris should contain cards for
+    the resultfiles, run step coregpm, screen info, etc.
+
+  SYNOPSIS:
+    $PRG [-V] Doris_inputfile
+
+  OPTIONS:
+    -V     Verbose flag, default redirect stdout to file: "$REDIRFILE"
+    input  Doris input file for step coregpm, if you use run, it is
+           like Inputfiles/input.resample
+
+  EXAMPLE:
+    To run Doris without messages to the screen, assuming you
+    have a input file named input.cpm, use the following command:
+      $PRG input.cpm
+
+  BUGS:
+    - Doris input keywords must be in capitals.
+    - Assume section Start_comp_coregpm is not in result file.
+    - Assume plotcpm is not ran from within Doris (CPM_PLOT OFF).
+    - $PRG output interferes with plotcpm output on screen (if CPM_PLOT ON) (?).
+
+  SEE ALSO:
+    - http://www.geo.tudelft.nl/doris/ (online user's manual)
+    - phasefilt.fast
+    - helpdoris
+    - run
+
+__EOFHD
+  exit 1
+endif
+
+
+
+### Look in input file for non-default filenames (happens frequently).
+set TMP = `grep -i LOGFILE $DORIS_IN`
+if ( ! $status ) then
+  # grep succeeded, check uncommented, check file existence
+  set TMP = `echo $TMP | awk '{print $2}'`
+  # Assuming logfile exists, but this is not required!
+  if ( -r $TMP ) then
+  endif
+endif
+set TMP = `grep -i I_RESFILE $DORIS_IN`
+if ( ! $status ) then
+  # grep succeeded, check uncommented, check file existence
+  set TMP = `echo $TMP | awk '{print $2}'`
+  if ( -r $TMP ) then
+    if ( "$TMP[1]" == "I_RESFILE" ) then
+      set INTERF_RES = "$TMP" #override default
+    endif
+    set INTERF_RES = "$TMP"  #override default
+    echo "Interferogram result file set to: "\"$TMP\"
+  endif
+endif
+
+
+### Copy interferogram result file to backup file
+# This file should not contain the results of the coregpm step.
+# (not checked!) 
+if ( ! -e $INTERF_RES ) then
+  echo "File: $INTERF_RES does not exist."\\n\
+       "Either default or found in Doris input file $DORIS_IN"\\n\
+       "Exiting ..."
+  exit 1
+endif
+set INTERF_BAK	= ".$INTERF_RES.bak.$TIME"
+if ( -e $INTERF_BAK ) then
+  echo "Warning: result backup file $INTERF_BAK exists, moving to $INTERF_BAK.$$"
+  mv $INTERF_BAK $INTERF_BAK.$$
+endif
+cp -f $INTERF_RES $INTERF_BAK
+echo "Result file $INTERF_RES backuped to $INTERF_BAK"
+
+### Copy interferogram result file to backup file
+set INTERF_ORIG	= ".$INTERF_RES.orig.$TIME"
+if ( -e $INTERF_ORIG ) then
+  echo "Warning: result file $INTERF_ORIG exists, moving to $INTERF_ORIG.$$"
+  mv $INTERF_ORIG $INTERF_ORIG.$$
+endif
+echo "Copying original result file $INTERF_RES to $INTERF_ORIG"
+cp -f $INTERF_RES $INTERF_ORIG
+
+### Be verbose on variables.
+echo " * PROGRAM:     $DORIS"
+echo " * INPUTFILE:   $DORIS_IN"
+echo " * LOGFILE:     $LOGFILE"
+echo " * INTERF_RES:  $INTERF_RES"
+echo " * INTERF_ORIG: $INTERF_ORIG"
+echo " * INTERF_BAK:  $INTERF_BAK"
+echo " "
+
+
+### Start loop
+@ LOOPCNT = 1
+while ( $LOOPCNT > 0 )
+  ### Run executable.
+  # change infile, remove plot?, garantee things?
+  echo "Calling Doris: $LOOPCNT (output in file: $REDIRFILE)"
+  $DORIS $DORIS_IN >>& $REDIRFILE
+  if ( $status ) then
+    echo "Doris exited with error. Exiting as well..."\\n
+    exit 1
+  endif
+  if ( "$DORIS_QUIET" == "0" ) then
+    more $REDIRFILE
+  endif
+
+  ### Ask whether plot results should be run:
+  echo "??? Plot results? ([y]/n)"
+  set KEY = $<
+  if ( "$KEY" != "n" ) then
+    #sleep 1
+    echo "Start plotting, close with 'q'"
+    set IFILE = "CPM_Data"
+    if ( ! -r $IFILE ) then
+      echo  "Plotting input file: $IFILE cannot be read, continuing..."
+    else
+    # See script plotcpm for more info. (BK)
+    gmtset MEASURE_UNIT cm \
+       PAPER_MEDIA a4+ \
+       PAGE_ORIENTATION portrait \
+       ANOT_FONT Helvetica \
+       ANOT_FONT_SIZE 10p \
+       ANOT_OFFSET 0.2c \
+       BASEMAP_AXES WeSn \
+       LABEL_FONT Helvetica \
+       LABEL_FONT_SIZE 10 \
+       UNIX_TIME_POS -2c/-2c
+    set OFILE1  = dummy1.$$.ps
+    set TMPFILE = tmpfile.plot.$$
+    ### remove trailing comment lines (10)
+    tail -n +11 $IFILE >! $TMPFILE
+    set MAXERR=`awk 'BEGIN{m=sqrt($7*$7)}{{if(sqrt($7*$7)>m){m=sqrt($7*$7)}}}END{print m+.05}'<$TMPFILE`
+    set TITLE  = "Azimuth_direction"
+    set PROJ   = "-JX15/8"
+    set XLABEL = "Correlation"
+    set YLABEL = "abs(e)"
+    set GMTFLAGS = "-K -N -R0/1/0/$MAXERR $PROJ -U -Sx.2 -B.1:"$XLABEL":/.1:"$YLABEL"::."$TITLE": -P -W4/255/0/0"
+    awk '{print $6, sqrt($7*$7)}' $TMPFILE | psxy  $GMTFLAGS >! $OFILE1
+    ### Add the window numbers.
+    set GMTFLAGS = "-N -R0/1/0/$MAXERR $PROJ -P -O -K"
+    awk '{printf "%lg %s 10 0 0 5 %lg\n", $6+.003, sqrt($7*$7)+.003, $1}' $TMPFILE | pstext  $GMTFLAGS >> $OFILE1
+    ### Do the same plot for Range direction. (shift up with -Y)
+    set MAXERR=`awk 'BEGIN{m=sqrt($8*$8)}{{if(sqrt($8*$8)>m){m=sqrt($8*$8)}}}END{print m+.05}'<$TMPFILE`
+    set TITLE="Range_direction"
+    set GMTFLAGS="-O -K -Y11 -N -R0/1/0/$MAXERR $PROJ -Sx.2 -B.1:"$XLABEL":/.1:"$YLABEL"::."$TITLE": -P -W4/255/0/0"
+    awk '{ {print $6, sqrt($8*$8)} }' $TMPFILE | psxy  $GMTFLAGS >> $OFILE1
+    set GMTFLAGS = "-N -R0/1/0/$MAXERR $PROJ -P -O"
+    awk '{ {printf "%lg %s 10 0 0 5 %lg\n", $6+.003, sqrt($8*$8)+.003, $1} }' $TMPFILE | pstext  $GMTFLAGS >> $OFILE1
+    viewanddel $OFILE1
+    rm -f $TMPFILE
+    endif
+  endif
+
+  
+  ### Check maxdeviation inversion in Doris (from logfile).
+  set NORMALMAX = "0.0001" # maximum deviation from unity for stable inversion.
+  set MAXDEV   = `grep deviation $LOGFILE | awk 'END{print $6}'`
+  if ( "X$MAXDEV" == "X" ) then
+    echo "Check for maximum deviation not found, continuing"
+  else
+    set MAXDEVOK = `echo $MAXDEV $NORMALMAX | awk '{if ($1>$2){print 1}else{print 0}}'`
+    if ( "$MAXDEV" == "NaN" ) set MAXDEVOK = "0"
+    if ( "$MAXDEVOK" != "0" ) then
+      echo \\n"Warning: Deviation from unity: $MAXDEV > $NORMALMAX "
+      echo "Press <ENTER> to continue."
+      set KEY = $<
+    endif
+  endif
+
+  ### Obtain largest w-test from log.
+  # Get last group of statistics; get line number.
+  set LINENO = `grep -n _Start_comp_coregpm $LOGFILE | tail -n1 | cut -f 1 -d:`
+  tail -n +$LINENO $LOGFILE | head -n14 >! $WTESTFILE
+  # Get w-test amplitudes and window numbers.
+  set MAXWTESTS = `grep statistic $WTESTFILE | awk '{print $8}'`
+  set WINDOWS   = `grep window $WTESTFILE | awk '{print $4}'`
+  # Determine largest w test statistic: range or azimuth? get window number.
+  set MAXWAZIMLARGER = `echo $MAXWTESTS | awk '{if($1>$2){print 1}else{print 0}}'`
+  if ($MAXWAZIMLARGER) then
+    set WINDOW1 = $WINDOWS[1]
+    set WINDOW2 = $WINDOWS[2]
+    set MAXWTEST = $MAXWTESTS[1]
+  else
+    set WINDOW1 = $WINDOWS[2]
+    set WINDOW2 = $WINDOWS[1]
+    set MAXWTEST = $MAXWTESTS[2]
+  endif
+
+  ### Test redundancy still OK...
+  ### Test wtest<20: stop
+
+  ### Disable window with largest w-test.
+  set WINDOWLIST = "$WINDOW1"
+  $CLS
+  echo " "
+  cat $WTESTFILE
+  echo \\n"------------------------------"\
+	 \\n"Select windows to remove from estimation:"\
+	 \\n"  <ENTER>     largest w-test: window number:     $WINDOW1"\
+	 \\n"  <b> <ENTER> largest w-test in both directions: $WINDOW1 and $WINDOW2"\
+	 \\n"  w1 w2 w3 ... <ENTER> specifies list to remove"\
+	 \\n"  <q> <ENTER> quit"\\n
+  set KEY = "$<"
+  if ( "X$KEY" == "X" ) then
+    set WINDOWLIST = "$WINDOW1"
+  else if ( "X$KEY" == "Xb" ) then
+    set WINDOWLIST = "$WINDOW1 $WINDOW2"
+    # Check uniqueness (how auto?).
+    if ( "X$WINDOW1" == "X$WINDOW2" ) then
+      echo "Same window1 and 2, ignoring window2."
+      set WINDOWLIST = "$WINDOW1"
+    endif
+  else if ( "X$KEY" == "Xq" ) then
+    break
+  else
+    set WINDOWLIST = "$KEY"
+  endif
+
+  ### Loop that removes specified windows.
+  foreach WINDOW ( $WINDOWLIST )
+    echo "Disabling window number: $WINDOW"
+    # Select coregpm section to prevent incidental hits and search for window nr
+    set WINDOWLINE = `awk '/Start_fine_coreg/,/End_fine_coreg/' $INTERF_BAK | \
+      awk -v w=$WINDOW '{if ($1 == w) {print $0}}'`
+    #echo WINDOWLINE: $WINDOWLINE
+    # Process lines, test also on second column for safety reasons.
+    # This only works if it writes to file different from the one it searches in
+    # (of course, BK, 19-feb-2001, ??)
+    awk -v w1=$WINDOWLINE[1] -v w2=$WINDOWLINE[2] -v loop=$LOOPCNT '{ \
+      if ($1 == w1 && $2 == w2) {printf "%4i%6i%6i%10.2f%10.2f   0.000%1i %6.2f  disabled\n", $1,$2,$3,$4,$5,loop,$6} \
+      else {print $0}}' $INTERF_BAK >! $INTERF_RES
+    # Move forced to backup file: we work with that in the next loop.
+    cp -f $INTERF_RES $INTERF_BAK
+  end
+  @ LOOPCNT++
+end
+
+### Tidy up
+rm -f $WTESTFILE $INTERF_BAK .gmtcommands
+echo "Thank you for using $PRG"\\n
+echo "Output in result file:          "\"$INTERF_RES\"
+echo "Original result file copied to: "\"$INTERF_ORIG\"\\n
+echo "redirected doris output in:     "\"$REDIRFILE\"\\n
+echo "??? Can I remove the latter two files? ([y]/n)"
+set KEY = $<
+if ( "X$KEY" != "Xn" ) then
+  rm -f $INTERF_ORIG $REDIRFILE
+endif
+
+### EOF
+
+

@@ -1,0 +1,45 @@
+### file: README
+### SARtools utility programs.
+### Tested on HP-UX and Linux machines with g++ compiler (GNU)
+### These programs should be portable.
+###
+### Bert Kampes 11-Dec-2000
+### TUDelft     19-Dec-2008
+### doris_users@tudelft.nl
+###
+
+
+*** For Doris, only the program cpxfiddle is important to install ***
+*** For Doris, only the program cpxfiddle is important to install ***
+*** For Doris, only the program cpxfiddle is important to install ***
+
+
+### Contents:
+bkconvert.c          Convert binary files.
+cpxfiddle.c          Great program to play around with binary complex files.
+cpxmult.c            Complex multiplication of raw binary files.
+cpxdiv.c             Complex division of raw binary files. (ignores NaN values)
+cpxconj.c            Complex conjugate of raw binary files.
+flapjack.c           Complex multiplication of binary files.
+floatmult.c          Real dot mult.
+rasterheader.c       Create a SUN raster file.
+readrasterheader.c   Read a SUN raster file.
+wrap.c               Wrap real file.
+dateconv.c           utility to format date strings
+
+
+### Compilation:
+Compile with the Makefile.
+1. Typing: make install
+   should compile all .c files and install them in
+   the INSTALLDIRDEF (/usr/local/bin)
+2. Add the install dir to your path.
+
+
+### Known problems:
+sometimes an include file may be different on systems.
+Simply add the required file, e.g., add:
+#include <cstring>
+if compilation breaks down due to missing declaration of strcmp.
+
+### EOF

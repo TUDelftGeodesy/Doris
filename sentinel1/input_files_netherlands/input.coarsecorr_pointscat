@@ -1,0 +1,38 @@
+c **********************************************************************
+c ***
+c **********************************************************************
+ c
+ c
+ comment  ___general options___
+ c
+c SCREEN          debug                           // level of output to standard out
+SCREEN          info                           // level of output to standard out
+MEMORY          1000                             // MB
+BEEP            error                            // level of beeping
+OVERWRITE                                       // overwrite existing files
+BATCH                                           // non-interactive
+PREVIEW         on                               // on/off
+c LISTINPUT OFF                                 // prevents copy of this file to log
+c
+PROCESS          COARSECORR
+c                                              //
+ c                                              //
+ comment  ___the general io files___            //
+ c                                              //
+LOGFILE         log.out                         // log file
+M_RESFILE       master.res  // parameter file
+S_RESFILE       slave.res                       // parameter file
+I_RESFILE       ifgs.res               // parameter file
+ c                                              //
+ c
+ comment ___COARSE CORR (COREGISTRATION)___
+ c
+CC_METHOD       magfft                          // default
+c CC_METHOD       magspace                      // (no veclib)
+c CC_ACC          30 30                         // (only for magspace)
+c CC_NWIN         51                              // number of windows
+CC_IN_POS       winpos_cc.asc
+CC_WINSIZE      1024 256                        // size of windows
+CC_INITOFF      orbit                           // use result of orbits for initial offset
+c CC_INITOFF    0 0                             // use this if no precise orbits
+STOP

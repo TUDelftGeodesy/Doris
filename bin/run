@@ -1,0 +1,1847 @@
+#!/bin/sh
+##########################################################
+# Script that:
+#       - Runs SAR software: Doris 
+#       - (Delft Object-oriented Radar Interferometric Software)
+#       - Prints out helpdoris script
+#       - NOTE: uses environment variables EDITOR, PAGER (if exist)
+#
+# Version history:
+#       v1.0 22/03/99    bert   initial version.
+#       v1.1 28/04/99    bert   added -g(enerate) option.
+#       v1.2 12/05/99    bert   added info variables (AUTHOR etc.).
+#       v1.3 02/06/99    bert   added steps 8. slant2h and 9. geocode.
+#       v1.4 02/06/99    bert   added checks for savety + renaming
+#       v2.0 02/12/99    bert   new setup of steps, general improvements
+#       v2.1 22/05/00    bert   environment variables
+#       v2.2 06/03/01    bert   file name conventions (extensions)
+#                               masterorb_slaveorb.cint .srp .srd .uint .coh .dcint
+#       v3.0 02/02/02    bert   changed from ksh to sh since cygwin didn't have one.
+#       v3.1 12-Sep-2003 bert   added quick look processing
+#       v4.01 12-Dec-2008 FvL   updates for Doris 4.01
+#       v4.01 23-Dec-2008 MA    minor revisions for Doris 4.01        
+#       v4.01 13-Apr-2009 MA    TSX update
+#       v4.02 29-May-2009 MA    Ellipsoid card generated
+#       v4.0x 23-Jun-2010 MA,PD RS2 and CSK read/crop parameters updated
+#
+# Future plans:
+#       Print out: checklist.tex , shortmanual.tex, (see helpdoris)
+#       If existed output, interactive solution for rename, don't auto
+#       add check if input exists before vi
+#       We had some problems with the which command, so changd it to running programs
+#       looking for exit status...
+#
+# Disclaimer:
+#       This run file comes without warranty,
+#       You are allowed to change/add whatever you like.
+#       If you are using this script for running the Doris software,
+#       please keep the version history and disclaimer.
+#       Mail comments/bugs to doris_users@tudelft.nl
+##########################################################
+##########################################################
+PROG="doris"                            # executable name in path
+PROGDEBUG="doris.debug"                 # executable name in path
+PROGINCWD="./processor"                 # executable name in working dir
+
+
+##########################################################
+### Default values for -g option; not used in processing. ###
+AUTHOR="TUDelft - MGP Radar Group"      # Bert Kampes is the main author
+MASTER="master"
+SLAVE="slave"
+REMARKS="No remarks"
+BASELINE="Unknown"
+DATE=`date "+%b %d, %Y (%A)"`           # cannot be changed by input option
+
+### Default directories for input/output ###
+INPUTDIR="Inputfiles"                   # directory for input
+OUTPUTDIR="Outinfo"                     # directory for output standard out
+DATAOUTDIR="Outdata"                    # directory for output matrices
+WORKDIR="."                             # don't change?
+
+### Default parameter files/logfile ###
+LOGFILE="doris.log"
+# BK 19-Jan-2001: defaults to -M -S if specified
+#MASTERRES="master.res"
+#SLAVERES="slave.res"
+#INTERFRES="products.res"
+
+
+##########################################################
+#  No need to change anything below this line (i hope)  #
+#  But feel free to change default input generation to  #
+#  Save you some editing work later.                    #
+#########################################################
+
+##########################################################
+# To run Doris software:
+#  1) make sure your path is ok.
+#  2) create work directory,
+#  3) run -g etc. creates the input etc.
+#  4) run -s runs the software. -h(elp)
+#########################################################
+#########################################################
+#########################################################
+# Script variables.
+bn=`basename $0`
+EDIT=999
+STEP=999
+VIEW=999
+RESULT=999
+INPUT=
+INPUT_1=input.m_initial
+INPUT_2=input.s_initial
+INPUT_3=input.coregistration
+INPUT_4=input.resample
+INPUT_5=input.products
+INPUT_6=input.filter_unwrap
+INPUT_7=input.s2h_geocode
+#INPUT_8=input.
+INPUT_9=input.quicklook
+DOGENERATE="0"                  # no default -g ...
+
+
+# -------------------------------
+# Functions for convenience.
+NAME()
+  {
+  echo "   $bn -- Utility for running the Delft insar processor."
+  }
+
+SYNOPSIS()
+  {
+  echo "   $bn -s/-e/-v step  -ql [-f inputfile  -r file-id  -d]"
+  echo "          /-g [-M master  -S slave  -B baseline  -R remark  -A author]"
+  echo "          /-h"
+  echo "  ($bn -h gives more help)"
+  }
+
+USAGE()
+  {
+  echo "Usage:"
+  SYNOPSIS
+  exit 1
+  }
+
+MANPG()
+  {
+  cat << __MANEOF
+
+  PROGRAM:
+  $name
+
+
+  SYNOPSIS:
+  $synopsis
+
+
+  DESCRIPTION:
+    This script is convenient for running the Doris InSAR software.
+    It generates template input files, and serves as a shell.
+    It allows you to edit the generated input, and to run Doris.
+    Of course the results can also be viewed.
+
+    The environment variables PAGER and EDITOR are used (if set)
+    for viewing and editing. In your current setup, the programs
+    "$PAGER" and "$EDITOR" are used respectively.
+__MANEOF
+
+if [ -x $PROGINCWD ]; then
+  echo "    "The executable: \"$PROGINCWD\" "is used (run -s step)."
+else
+  echo "    "The executable: \"$PROG\" "is used (run -s step)."
+fi
+
+cat << __MANEOF
+
+  OPTIONS:
+
+==========================
+=== GENERATING OPTIONS ===
+==========================
+    -g  
+                Generate directories, template input files.
+                Use -M -S -A -B -R to specify comments in template
+                input files.
+                It makes the following directories:
+                 for the input files:        "$INPUTDIR/"
+                 for the redirected stdout:  "$OUTPUTDIR/"
+                 for data output:            "$DATAOUTDIR/"
+                Either the program:
+                 "$PROG"       (default in your path),
+                 "$PROGDEBUG"  (-d option), or
+                 "$PROGINCWD"  (if it exists).
+                is called.
+
+    -M  master
+                Only in combination with -g option.
+                Specify name for master image (e.g., orbit number).
+                This variable is used to name the output data files
+                and as a comment at the top of the input files. 
+                The M_RESFILE is assigned to 'master'.res
+                The I_RESFILE is assigned to 'master_slave'.res
+
+    -S  slave
+                Only in combination with -g option.
+                Specify name for slave image (e.g., orbit number).
+                This variable is used to name the output data files
+                and as a comment at the top of the input files. 
+                The S_RESFILE is assigned to 'slave'.res
+                The I_RESFILE is assigned to 'master_slave'.res
+
+    -A  author
+                Only in combination with -g option.
+                Specify name of author/ person who is processing.
+                Used only as a comment at the top of the input files.
+
+    -B  baseline
+                Only in combination with -g option.
+                Specify baseline (e.g., 100).
+                Used only as a comment at the top of the input files.
+
+    -R  remarks
+                Only in combination with -g option.
+                Specify any remarks on the processing.
+                Used only as a comment at the top of the input files.
+
+
+==========================
+=== PROCESSING OPTIONS ===
+==========================
+
+    -e  step   
+                edit the inputfiles. then exit (no processing).
+
+    -ql
+                Quicklook processing. (Edit input: run -e1; run -e2; run -e9).
+		If run -s1 has not been done yet, it perform it.
+		If run -s2 has not been done yet, it perform it.
+		Then it copies the $MASTERRES to master_QL.res
+		               and $SLAVERES to slave_QL.res
+		Finally it runs doris with options in run -e9 (all steps for interferogram). 
+
+    -s  step
+                proces the input file for this step.
+         1: initial steps for master (readfiles, crop, porbits)
+         2: initial steps for slave (readfiles, crop, porbits)
+         3: coregistration (coarse, fine)
+         4: compute coregistration parameters and perform resampling
+         5: interferometric product generation and reference phase
+         6: phase filtering (and phase unwrapping)
+         7: slant to height conversion and geocoding
+         8: n/a
+         9: quicklook processing.
+            This step first performs a run -s1 and a run -s2 to read master and slave.
+            Make sure that you have edited the input files with run -e1 and run -e2.
+            Then, all steps to quickly create an interferogram are performed.
+            You can edit that with run -e9, but there should be no need for that.
+
+
+    -v  step
+                view output file of step.
+
+    -r  file-ID
+                view/edit result output file.
+         1: "$MASTERRES"                (master result file)
+         2: "$SLAVERES"                 (slave result file)
+         3: "$INTERFRES"                (interferogram result file)
+         4: "$LOGFILE"                  (logfile)
+
+
+==========================
+=== FURTHER OPTIONS    ===
+==========================
+
+    -f  infile
+                Specify an input file to process.
+                Useage of this option is discouraged, use option -s step.
+                (or use command line syntax if you like that better.)
+    -d          
+                Use debugger version:   $PROGDEBUG
+                instead of regular:     $PROG
+                These executables have to be in your path.
+                This option can be used if normal processing goes wrong.
+                The redirected stdout can get very large (2GB) with this option.
+
+
+
+==========================
+=== EXAMPLES           ===
+==========================
+
+    Normally, the processing starts by generating input files: run -g
+    Then, check/edit the input for the first step:             run -e1
+    Next the executable $PROG is called by:                    run -s1
+    The output can be viewed with:                             run -v1
+     for the stdout and with:                                  run -r[1/2/3/4]
+    The processing continues with the next step:               run -e2 etc. 
+
+    To generate the input files for master 21066, slave 01393,
+    with a baseline of about 100m for testing purposes:
+      run -g -M 21066 -S 01393 -R "Testing generate option" -B 100
+
+    To edit the input file for step one: 
+      run -e 1
+
+    To run first step, and put ouput file (redirected stout) in dir: 
+      run -s 1
+
+    To view the output file for step one: 
+      run -v 1
+
+    To run an input file named inputA in the current directory (discouraged with -f):
+      run -f inputA
+      doris inputA > outputA
+
+
+==========================
+=== AUTHOR             ===
+==========================
+  Author:
+    $bn is written by Bert Kampes, Delft University, (c)1999-2003, b.m.kampes@lr.tudelft.nl.
+
+  Known bugs:
+    It is not possible to edit more then one file with the -e option.
+
+
+  See also:
+    helpdoris
+    plotoffsets
+    plotcpm
+
+  Note: You can edit this script if you want other options, etc.
+        Please notify b.m.kampes@lr.tudelft.nl in that case.
+
+__MANEOF
+  }
+
+
+
+# generate input files------------------
+GENERAL()
+  {
+  cat << __GENERALEOF
+# **********************************************************************
+# ***  Doris inputfile generated by: $bn at: $DATE *****
+# **********************************************************************
+# ***
+# ***  Filename:        $INPUTDIR/$fn
+# ***  Author:          $AUTHOR
+# ***  Master:          $MASTER
+# ***  Slave :          $SLAVE
+# ***  Baseline:        $BASELINE
+# ***  Remarks:         $REMARKS
+# ***  
+# ***  Intended to be used with shell script: $bn
+# **********************************************************************
+
+########################################################################
+# NOTE: BK 16-JUN-2003                                                 #
+#   It seems when compiled with g++ 3.2, there cannot be an empty      #
+#   optional argument, since instead the first (key) of the next line  #
+#   is read.  Therefore, it seems wise to always use arguments, or to  #
+#   always have a comment with "//" behind the last argument.          #
+#   Of course there must be a way to prevent this, but I don't know how#
+########################################################################
+
+
+#   ------------------------------------------
+#   The general options
+#   ------------------------------------------
+
+SCREEN          info                    // level of output to standard out
+c SCREEN          debug                 // [trace, debug, info, progress, warning, error]
+c SCREEN          trace                 // [trace, debug, info, progress, warning, error]
+BEEP            warning                 // level of beeping
+c PREVIEW         xv                    // SUNraster files with cpxfiddle
+PREVIEW         on                      // SUNraster files with cpxfiddle
+MEMORY          500                     // [MB] RAM available to Doris
+OVERWRITE       ON                      // do overwrite existing files
+BATCH           ON                      // do process non-interactive
+LISTINPUT       ON                      // do copy this file to log
+HEIGHT          0.0                     // average WGS84 terrain height
+TIEPOINT        0.0 0.0 0.0             // lat/lon/hei of a tiepoint
+ORB_INTERP      POLYFIT 4               // 5th degree polynomial
+c ORB_INTERP      SPLINE                // natural cubic spline
+c ORB_INTERP      POLYFIT               // orbit interpolation method
+c ELLIPSOID     WGS84                   // WGS84 (default), GRS80, BESSEL or define a,b  (major radius, minor radius)
+
+c DUMPBASELINE  15 10                   // eval baseline on grid
+c M_RG_T_ERROR    0.0                   // one-way [sec] timing error
+c M_AZ_T_ERROR    0.0                   // azimuth timing error
+c S_RG_T_ERROR    0.0                   // one-way [sec]; d_rg=err*rsr*2
+c S_AZ_T_ERROR    0.0                   // [sec]; d_az=err*prf [m]
+__GENERALEOF
+  }
+
+
+FILES()
+  {
+  cat << __FILESEOF
+
+
+#   ------------------------------------------
+#   The general io files
+#   ------------------------------------------
+
+LOGFILE         $LOGFILE                // log file
+M_RESFILE       $MASTERRES              // parameter file master
+S_RESFILE       $SLAVERES               // parameter file slave
+I_RESFILE       $INTERFRES              // parameter file interferogram
+
+__FILESEOF
+  }
+
+
+GEN_1()
+  {
+  fn=$INPUT_1
+  GENERAL
+  FILES
+  cat << __GENEOF_1a
+PROCESS         m_readfiles             // reading of slc files
+PROCESS         m_porbits               // get precise orbits
+PROCESS         m_crop                  // convert data to internal format
+PROCESS         m_simamp                // simulate amplitude
+PROCESS         m_timing                // estimate timing error 
+c PROCESS         m_ovs                 // optionally oversample data
+__GENEOF_1a
+  cat << __GENEOF_1b
+
+
+#   ------------------------------------------
+#      READFILES (master)
+#   ------------------------------------------
+
+c M_IN_METHOD      JERS                          // uses ERS ceos reader
+c M_IN_METHOD      RSAT                          // uses RSAT ceos reader
+c M_IN_METHOD      ATLANTIS                      // uses RSAT ceos reader
+c M_IN_METHOD      ALOS                          // uses ALOS ceos reader
+# -- select following 5 for ERS ceos reader --         
+M_IN_METHOD       ERS                           // default
+M_IN_VOL          /CDROM/SCENE1/VDF_DAT.001     // slc volume file
+M_IN_LEA          /CDROM/SCENE1/LEA_01.001      // slc leaderfile
+M_IN_DAT          /CDROM/SCENE1/DAT_01.001      // slc data file
+M_IN_NULL         dummy                         //
+#
+#
+# --or select following 2 for ERS--
+c M_IN_METHOD    ERS_N1                         // ERS1/2 in Envisat format
+c M_IN_DAT       SAR_IMS_1PXDLR19951008_144123_00000017G150_00096_22128_3605.E1 // please link the actual input file with "ln -s" to avoid long pathnames 
+#
+# --or select following 2 for ENVISAT--
+c M_IN_METHOD    ASAR                            // ENVISAT
+c M_IN_DAT       ASA_IMS_1PXPDE19911013_214038_00000015X000_00000_04784_0002.N1 // please link the actual input file with "ln -s" to avoid long pathnames 
+# 
+#
+c M_IN_METHOD    TSX                             // TERRASAR-X
+c M_IN_DAT       IMAGE_HH_SRA_strip_007.cos      // please link the actual input file with "ln -s"
+c M_IN_LEA       TSX1_metadata.xml              
+#
+#
+c M_IN_METHOD    RADARSAT-2                      // RADARSAT-2 
+c M_IN_DAT       imagery_HH.tif                  // please link the actual input file with "ln -s"
+c M_IN_LEA       product.xml
+#
+#
+c M_IN_METHOD    CSK                             // Cosmo-skymed
+c M_IN_DAT       master.h5                       // please link the actual (CSKS1_SCS_B_HI_05_HH_RA_SF_date.h5) 
+                                                 // input file with "ln -s"
+
+
+#   ------------------------------------------
+#      PORBITS (master)
+#   ------------------------------------------
+
+M_ORBDIR        /data/delftorbits/ers?
+c M_ORBDIR        /data/delftorbits/ers1/dgm-e04           // dgm gravity model
+c M_ORBDIR        /data/delftorbits/ers2/eigen-grace01s    // grace gravity model
+c M_ORBDIR        /data/delftorbits/envisat/eigen-grace01s // grace gravity model
+c --for spline--
+c M_ORB_EXTRATIME 300                           // Time before first line
+c M_ORB_INTERVAL  30                            // Time between data
+c M_ORB_DUMP      0.05                          // dump to ascii file
+c --for polyfit(3)--
+M_ORB_EXTRATIME 5                               // Time before first line
+M_ORB_INTERVAL  4                               // Time between data
+
+
+#   ------------------------------------------
+#      CROP (master)
+#   ------------------------------------------
+ 
+c --for CEOS reader: ERS JERS RADARSAT-1 ALOS--
+M_CROP_IN       /CDROM/SCENE1/DAT_01.001        // slc data file
+c
+c --or for ENVISAT--
+c M_CROP_IN     /cdrom/ASA_IMS_1PXPDE19911013_214038_00000015X000_00000_04784_0002.N1 // please link the actual input file with "ln -s" to avoid long pathnames
+c
+c --or for TERRASAR-X
+c M_CROP_IN     IMAGE_HH_SRA_strip_007.cos      // please link the actual input file with "ln -s" 
+c
+c --or for Radarsat-2
+c M_CROP_IN     FQ9HV_20090515.tif              // please link the actual input file with "ln -s" 
+c
+c --or for Cosmo-skymed
+c M_CROP_IN     master.h5                       // please link the actual (CSKS1_SCS_B_HI_05_HH_RA_SF_date.h5) 
+                                                // input file with "ln -s"
+c
+c --and the rest of parameters
+M_CROP_OUT      $DATAOUTDIR/$MASTER.raw         // output filename
+M_DBOW          1 5000 1 1000                   // database output window in the radar cordinates
+c M_DBOW_GEO    41.1 12.0 5000 1000             // lat_0[deg], lon_0, height, width[pix]
+
+
+#   ------------------------------------------
+#      SIMULATE AMPLITUDE (master)
+#   ------------------------------------------
+ 
+SAM_IN_DEM     final_netherlands.dem
+SAM_IN_FORMAT  r4               	 // default is short integer
+SAM_IN_SIZE    4801 6001
+SAM_IN_DELTA   0.000833333  0.000833333 
+SAM_IN_UL      54  3 
+SAM_IN_NODATA  -32768
+SAM_OUT_FILE   master_sam.raw
+SAM_OUT_DEM    master_demcrop.dem
+c SAM_OUT_DEM_LP master_demhei_lp.raw 
+c SAM_OUT_THETA_LP master_theta_lp.raw 
+
+
+#   ------------------------------------------
+#      TIMING (master)
+#   ------------------------------------------
+
+MTE_METHOD    magspace
+c MTE_IN_POS  window_locations.txt 
+MTE_NWIN      16
+MTE_WINSIZE   256 128
+MTE_ACC       32 32
+MTE_INITOFF   0 0
+
+
+#   ------------------------------------------
+#      OVERSAMPLE (master)
+#   ------------------------------------------
+
+M_OVS_OUT         $DATAOUTDIR/${MASTER}_ovs.raw   // output filename              
+M_OVS_OUT_FORMAT  ci2       // output format for the oversampled image ci2 | cr4.
+M_OVS_FACT_RNG    2         // range oversampling ratio
+M_OVS_FACT_AZI    1         // azimuth oversampling ratio (>2 not implemented yet!)
+M_OVS_KERNELSIZE  16        // interpolation kernel length 
+c                                               //
+c                                               //
+STOP                                            // mandatory
+# vim: syntax=doris
+__GENEOF_1b
+  }
+#
+#
+GEN_2()
+  {
+  fn=$INPUT_2
+  GENERAL
+  FILES
+  cat << __GENEOF_2a
+PROCESS         s_readfiles             // reading of slc files
+PROCESS         s_porbits               // get precise orbits
+PROCESS         s_crop                  // convert data to internal format
+c PROCESS         s_ovs                 // optionally oversample data
+__GENEOF_2a
+  cat << __GENEOF_2b
+
+
+#   ------------------------------------------
+#      READFILES (slave)
+#   ------------------------------------------
+
+c S_IN_METHOD     JERS                          // uses ERS ceos reader
+c S_IN_METHOD     RSAT                          // uses RSAT ceos reader
+c S_IN_METHOD     ATLANTIS                      // uses RSAT ceos reader
+c S_IN_METHOD     ALOS                          // uses ALOS ceos reader
+# -- select following 5 for ERS ceos reader --         
+S_IN_METHOD      ERS                            // default 
+S_IN_VOL         /CDROM/SCENE1/VDF_DAT.001      // slc volume file
+S_IN_LEA         /CDROM/SCENE1/LEA_01.001       // slc leaderfile
+S_IN_DAT         /CDROM/SCENE1/DAT_01.001       // slc data file
+S_IN_NULL        dummy                          //
+#
+#
+# --or select following 2 for ENVISAT--         //
+c S_IN_METHOD    ASAR                           // ENVISAT
+c S_IN_DAT       ASA_IMS_1PXPDE19911013_214038_00000015X000_00000_04784_0002.N1 // please link the actual input file with "ln -s" to avoid long pathnames 
+#
+#
+c S_IN_METHOD    TSX                            // TERRASAR-X  
+c S_IN_DAT       IMAGE_HH_SRA_strip_007.cos     // please link the actual input file with "ln -s"
+c S_IN_LEA       TSX1_metadata.xml
+#
+#
+c S_IN_METHOD    RADARSAT-2                     
+c S_IN_DAT       FQ9HV_20090515.tif             // please link the actual input file with "ln -s"
+c S_IN_LEA       FQ9_20090515.xml
+#
+#
+c S_IN_METHOD    CSK                            // Cosmo-skymed
+c S_IN_DAT       slave.h5                       // please link the actual (CSKS1_SCS_B_HI_05_HH_RA_SF_date.h5) 
+                                                // input file with "ln -s"
+
+
+#   ------------------------------------------
+#      PORBITS (slave)
+#   ------------------------------------------
+
+S_ORBDIR        /data/delftorbits/ers?
+c S_ORBDIR        /data/delftorbits/ers1/dgm-e04           // dgm gravity model
+c S_ORBDIR        /data/delftorbits/ers2/eigen-grace01s    // grace gravity model
+c S_ORBDIR        /data/delftorbits/envisat/eigen-grace01s // grace gravity model
+c --for spline--              
+c S_ORB_EXTRATIME 300                           // Time before first line
+c S_ORB_INTERVAL  30                            // Time between data
+c S_ORB_DUMP      0.05                          // dump to ascii file
+c --for polyfit(3)--          
+S_ORB_EXTRATIME 5                               // Time before first line
+S_ORB_INTERVAL  4                               // Time between data
+
+
+#   ------------------------------------------
+#      CROP (slave)
+#   ------------------------------------------
+
+c --for CEOS reader: ERS JERS RADARSAT-1 ALOS--
+S_CROP_IN       /CDROM/SCENE1/DAT_01.001        // slc data file
+c
+c --or for ENVISAT--
+c S_CROP_IN     /cdrom/ASA_IMS_1PXPDE19911013_214038_00000015X000_00000_04784_0002.N1 // please link the actual input file with "ln -s" to avoid long pathnames
+c
+c --or for TERRASAR-X
+c S_CROP_IN     IMAGE_HH_SRA_strip_007.cos      // please link the actual input file with "ln -s"
+c
+c --or for Radarsat-2
+c S_CROP_IN     FQ9HV_20090515.tif              // please link the actual input file with "ln -s" 
+c
+c --or for Cosmo-skymed
+c S_CROP_IN     slave.h5                        // please link the actual (CSKS1_SCS_B_HI_05_HH_RA_SF_date.h5) 
+                                                // input file with "ln -s"
+c
+c --and the rest of parameters
+S_CROP_OUT      $DATAOUTDIR/$SLAVE.raw          // output file
+S_DBOW          101 6100 11 1010                // database output window in the radar coordinates
+c S_DBOW_GEO    41.1 12.0 5000 1000             // lat_0[deg], lon_0, height, width[pix]
+
+
+#   ------------------------------------------
+#      OVERSAMPLE (slave)
+#   ------------------------------------------
+
+S_OVS_OUT             $DATAOUTDIR/${SLAVE}_ovs.raw   // output filename              
+S_OVS_OUT_FORMAT      ci2   // output format for the oversampled image ci2 | cr4.
+S_OVS_FACT_RNG        2     // range oversampling ratio
+S_OVS_FACT_AZI        1     // azimuth oversampling ratio (>1 not implemented yet!)
+S_OVS_KERNELSIZE      16    // interpolation kernel length 
+c
+c
+STOP                                            // mandatory
+# vim: syntax=doris
+__GENEOF_2b
+  }
+
+#
+GEN_3()
+  {
+  fn=$INPUT_3
+  GENERAL
+  FILES
+  cat << __GENEOF_3a
+PROCESS         coarseorb               // no cards later
+PROCESS         coarsecorr              // based on correlation
+PROCESS       m_filtazi                 // azimuth filter
+PROCESS       s_filtazi                 // azimuth filter
+c PROCESS       filtrange               // range filter (orbits)
+c -- note that fine requires good initial offset by coarsecorr   --
+c -- ..and/or coarseorb.  See the logfile if the coarse offset   --
+c -- ..is computed correctly if you have low coherence after fine --
+PROCESS         fine                    // fine coregistration
+PROCESS         reltiming               // relative timing error master-slave
+PROCESS         demassist               // DEM assisted coregistration
+__GENEOF_3a
+  cat << __GENEOF_3b
+
+
+#   ------------------------------------------
+#      COARSE COREGISTRATION
+#   ------------------------------------------
+
+CC_METHOD       magfft                  // default
+c CC_METHOD     magspace                // 
+CC_NWIN         21                      // number of large windows
+CC_WINSIZE      256 256                 // size of windows (square better?)
+c CC_INITOFF    0 0                     // initial offset
+CC_INITOFF      orbit                   // use result of orbits
+
+
+#   ------------------------------------------
+#      AZIMUTH FILTERING
+#   ------------------------------------------
+
+c AF_METHOD                             //
+AF_BLOCKSIZE    1024                    // fftlength each column
+AF_OVERLAP      64                      // hbs
+AF_HAMMING      0.75                    // alpha of hamming, see logfile
+AF_OUT_MASTER   $DATAOUTDIR/$MASTER.af
+AF_OUT_SLAVE    $DATAOUTDIR/$SLAVE.af
+AF_OUT_FORMAT   cr4                     //
+
+
+#   ------------------------------------------
+#      RANGE FILTERING (master&slave)
+#   ------------------------------------------
+
+RF_METHOD       porbits                 // based on orbit geometry
+RF_SLOPE        0.0                     // [deg] and terrain slope
+RF_FFTLENGTH    1024                    // power of 2
+RF_HAMMING      0.75                    // 'alpha'
+RF_OUT_MASTER   $DATAOUTDIR/$MASTER.rf_orb
+RF_OUT_SLAVE    $DATAOUTDIR/$SLAVE.rf_orb
+RF_OUT_FORMAT   cr4                     //
+
+
+#   ------------------------------------------
+#      FINE COREGISTRATION
+#   ------------------------------------------
+
+c FC_METHOD       magfft                // fast
+FC_METHOD     oversample                // best: oversample complex data
+c FC_METHOD     magspace                // same as magfft
+FC_NWIN         601                     // number of smaller windows
+c FC_IN_POS       highcorr.pos          // filename with window positions
+FC_WINSIZE      64 64                   // size of windows
+FC_ACC          8 8                     // search window, 2^n
+FC_INITOFF      coarsecorr              // use result of coarse
+FC_OSFACTOR     32                      // oversampling factor
+FC_PLOT         0.2 NOBG                // GMT plot with magnitude background
+
+
+#   ------------------------------------------
+#      RELATIVE TIMING ERROR
+#   ------------------------------------------
+
+RTE_THRESHOLD  0.4
+RTE_MAXITER  10000
+RTE_K_ALPHA  1.97
+
+
+#   ------------------------------------------
+#      DEM ASSISTED COREGISTRATION
+#   ------------------------------------------
+
+DAC_IN_DEM     final_netherlands.dem
+DAC_IN_FORMAT  r4        	 // default is short integer
+DAC_IN_SIZE    4801 6001
+DAC_IN_DELTA   0.000833333  0.000833333 
+DAC_IN_UL      54  3 
+DAC_IN_NODATA  -32768
+c DAC_OUT_DEM    demassist.dem
+c DAC_OUT_DEMI   demassist_int.dem
+c DAC_OUT_DEM_LP demheight_lp.raw 
+ 
+c                                       //
+c                                       //
+STOP                                    // mandatory
+# vim: syntax=doris
+__GENEOF_3b
+  }
+#
+#
+GEN_4()
+  {
+  fn=$INPUT_4
+  GENERAL
+  FILES
+  cat << __GENEOF_4a
+c -- note that coregpm requires a threshold, and you may need    --
+c -- ..to run step coregpm again.  I put it here as process      --
+c -- ..to obtain an automatic processing for my test data.       --
+c -- ..but normally you have to remove some points interactively --
+c -- ..in an iterative way (i.e., before running "resample).     --
+PROCESS         coregpm                 // estimate coregistration param.
+PROCESS         resample                // slave
+c -- note that filtrange adaptive is recommended to run.         --
+c PROCESS       filtrange               // master&slave
+__GENEOF_4a
+  cat << __GENEOF_4b
+
+
+#   ------------------------------------------
+#      COREGISTRATION PARAMETERS MODELING
+#   ------------------------------------------
+
+CPM_THRESHOLD   0.2                     // higher threshold->less windows
+c CPM_DEGREE      2                       // 2d-polynomial 
+CPM_DEGREE      1                       // 1d-polynomial (if demassist coregistration)
+c CPM_WEIGHT      linear                // or [none]
+c CPM_WEIGHT      quadratic             // or [none]
+CPM_WEIGHT      bamler                  // paper R.Bamler, IGARSS 2000/2004
+CPM_MAXITER     10000                      // automated removal, max 10000 iterations
+c CPM_K_ALPHA     1.97                  // automated removal crit. value
+CPM_PLOT        NOBG                    // plot w/o magnitude background
+c CPM_DUMP      OFF                     // no creation of files
+
+
+#   ------------------------------------------
+#      RESAMPLING SLAVE
+#   ------------------------------------------
+
+c --- Interpolation Kernel ---
+c RS_METHOD     tri                     // linear
+c RS_METHOD     nearest                 // nearest neighbour
+c RS_METHOD     cc4p                    // cubic convolution
+c RS_METHOD     cc6p                    // good choice; tested
+c RS_METHOD     ts6p                    // truncated sinc
+c RS_METHOD     ts8p                    // truncated sinc
+c RS_METHOD     ts16p                   // slower but better
+c RS_METHOD       knab6p                // better than cc6 (theory)
+c RS_METHOD       knab8p                // KNAB window
+c RS_METHOD       knab10p               // KNAB window
+c RS_METHOD       knab16p               // KNAB window
+c RS_METHOD       knab4p                // KNAB window
+RS_METHOD       rc6p                    // best choice (theory 0.9999)
+c RS_METHOD       rc12p                 // best choice (theory 0.9999)
+c
+c --- Output file ---
+RS_OUT_FILE     $DATAOUTDIR/$SLAVE.resampled
+RS_OUT_FORMAT   cr4                     //
+c RS_DBOW       2000 3000 1 5000        // database output window
+c RS_DBOW_GEO     52.6743 5.3434 10000 2000  // lat_0[deg], lon_0, height, width[pix]
+RS_SHIFTAZI     on                      // keep this on
+
+
+#   ------------------------------------------
+#      RANGE FILTERING (master&slave)
+#   ------------------------------------------
+
+RF_METHOD       adaptive                // estimate local fringe freq.
+c RF_FFTLENGTH    8                     // 8 pixels ~ 160m ground range
+c RF_FFTLENGTH    32                    // 32 pixels ~ 640m ground range
+RF_FFTLENGTH    128                     // 128 pixels ~ 2500m ground range
+RF_OVERLAP      50                      // half overlap
+RF_OVERSAMPLE   2                       // master/slave before ifg generation
+RF_NLMEAN       9                       // must be odd (15 pixels ~ 60m)
+RF_THRESHOLD    2                       // SNR spectral peak detection
+RF_HAMMING      0.75                    // alpha of Hamming window
+RF_WEIGHTCORR   OFF
+RF_OUT_MASTER   $DATAOUTDIR/$MASTER.rf_adapt
+RF_OUT_SLAVE    $DATAOUTDIR/$SLAVE.rf_adapt
+c RF_OUT_FORMAT   ci2                   // reduce output file size
+c                                       //
+c                                       //
+STOP                                    // mandatory
+# vim: syntax=doris
+__GENEOF_4b
+  }
+#
+#
+GEN_5()
+  {
+  fn=$INPUT_5
+  GENERAL
+  FILES
+  cat << __GENEOF_5a
+PROCESS       interfero                 //
+// -- note: compute reference phase after interfero,    --
+// -- ..otherwise it is subtracted in INT_METHOD old    --
+PROCESS       comprefpha                // estimate flatearth param.
+PROCESS       subtrrefpha               //
+PROCESS       comprefdem                // synthetic phase from DEM
+PROCESS       subtrrefdem               //
+PROCESS       coherence                 //
+__GENEOF_5a
+  cat << __GENEOF_5b
+
+
+#   ------------------------------------------
+#      INTERFEROGRAM
+#   ------------------------------------------
+
+INT_METHOD      old                     // 
+c INT_METHOD    oversample              // 
+INT_OUT_CINT    $DATAOUTDIR/${MASTER}_${SLAVE}.cint // optional complex int.
+c INT_OUT_INT   $DATAOUTDIR/${MASTER}_${SLAVE}.int  // optional real int. 
+INT_MULTILOOK   5 1                     // line, pixel factors
+
+
+#   ------------------------------------------
+#      REFERENCE PHASE COMPUTATION
+#   ------------------------------------------
+
+FE_METHOD       porbits                 //
+c FE_METHOD     method2                 // not implemented?
+FE_DEGREE       5                       //
+FE_NPOINTS      501                     //
+
+
+#   ------------------------------------------
+#      SUBTRACT REFERENCE PHASE
+#   ------------------------------------------
+
+c SRP_METHOD    exact                   // compute foreach pixel
+c SRP_METHOD    polynomial              // evaluate comprefpha poly
+SRP_OUT_CINT    $DATAOUTDIR/${MASTER}_${SLAVE}.srp  //
+SRP_MULTILOOK   2 2
+c SRP_DUMPREFPHA        ON
+c SRP_OUT_REFPHA        $DATAOUTDIR/refphase.cr4  // only output for debug
+
+
+#   ------------------------------------------
+#      REFERENCE DEM
+#   ------------------------------------------
+
+CRD_IN_DEM      /home/fmr/d4/dem/gtopo30/w020n90/W020N90.DEM
+c CRD_IN_FORMAT r4                              // default is short integer
+CRD_IN_UL       89.995833333333333 -19.995833333333333333333    // w020n90.HDR
+CRD_IN_SIZE     6000 4800                       // number of rows columns
+CRD_IN_DELTA    0.00833333333333333333 0.00833333333333333333  // latitude, longitude dec degrees
+CRD_IN_NODATA   -9999                           // DEM invalid sample indicator
+CRD_INCLUDE_FE  OFF                             // phase w.r.t. ellips
+c CRD_OUT_DEM     $DATAOUTDIR/DEM_crop.raw          // debug cropped dem
+c CRD_OUT_DEMI    $DATAOUTDIR/DEM_crop_interp.raw   // debug cropped dem interpolated
+c CRD_OUT_DEM_LP  $DATAOUTDIR/refdem_hei.raw        // DEM [m] in radar geometry
+CRD_OUT_FILE    $DATAOUTDIR/refdem_pha.raw          // phase of DEM
+
+
+#   ------------------------------------------
+#      SUBTRREF DEM
+#   ------------------------------------------
+
+SRD_OUT_CINT    $DATAOUTDIR/${MASTER}_${SLAVE}.srd  //
+c                                               //
+c                                               //
+
+#   ------------------------------------------
+#      COHERENCE
+#   ------------------------------------------
+
+c COH_METHOD      refphase_only                 // 
+COH_METHOD      include_refdem                  // remove topographic phase also.
+c COH_OUT_CCOH  $DATAOUTDIR/${MASTER}_${SLAVE}.ccoh // optional complex image
+COH_OUT_COH     $DATAOUTDIR/${MASTER}_${SLAVE}.coh  // optional real
+COH_MULTILOOK   10 2                            // same as interferogram
+COH_WINSIZE     20 4                            // estimator window size
+c                                               //
+c                                               //
+STOP                                            // mandatory
+# vim: syntax=doris
+__GENEOF_5b
+  }
+#
+#
+GEN_6()
+  {
+  fn=$INPUT_6
+  GENERAL
+  FILES
+  cat << __GENEOF_6a
+c -- note to set filtparameters correctly, or not to filter. --
+c -- ..also set unwrap snaphu to correct model.              --
+c -- ..unwrap relies on snaphu to be installed!              --
+PROCESS       filtphase                         // filter interferogram
+PROCESS       unwrap                            // unwrap interferogram
+c PROCESS         dinsar                          // differential interferogram
+__GENEOF_6a
+  cat << __GENEOF_6b
+
+
+#   ------------------------------------------
+#      PHASE FILTERING
+#   ------------------------------------------
+
+c PF_IN_FILE   $DATAOUTDIR/${MASTER}_${SLAVE}.srp 323  // only for standalone usage
+PF_OUT_FILE  $DATAOUTDIR/${MASTER}_${SLAVE}.cint.filtered
+PF_METHOD    spatialconv
+PF_KERNEL    5 1 1 1 1 1
+c c PF_KERNEL    5 1 4 9 4 1
+c c PF_KERNEL    5 1 2 3 2 1
+c c PF_KERNEL    3 -1 1 0
+c c PF_IN_KERNEL2D    myfilt.asc
+ c
+c PF_METHOD    goldstein
+c PF_ALPHA     1.8
+c PF_BLOCKSIZE 32
+c PF_OVERLAP   12
+c PF_KERNEL    5 1 1 1 1 1
+
+
+#   ------------------------------------------
+#      PHASE UNWRAPPING
+#   ------------------------------------------
+
+c UW_METHOD       RAMON                         // (delft only)
+c UW_SEEDS        100                           // delta seedL = seedP
+c UW_SEEDS      100 200                         //
+c UW_SEEDS      seedfilename                    // put EOL after last
+UW_OUT_FILE     $DATAOUTDIR/${MASTER}_${SLAVE}.uint // unwrapped interferogram
+c UW_OUT_REGIONS    $DATAOUTDIR/${MASTER}_${SLAVE}.regions // 2b used with manuw.m
+UW_METHOD         SNAPHU
+UW_OUT_FORMAT     HGT
+UW_SNAPHU_LOG     snaphu.log
+UW_SNAPHU_coh     $DATAOUTDIR/${MASTER}_${SLAVE}.coh
+UW_SNAPHU_MODE    TOPO
+UW_SNAPHU_INIT    MST
+UW_SNAPHU_VERBOSE ON
+
+
+#   ------------------------------------------
+#      DIFFERENTIAL INSAR
+#   ------------------------------------------
+
+DI_OUT_FILE     $DATAOUTDIR/${MASTER}_${SLAVE}.dcint // differential
+DI_IN_TOPOSLAVE  topodir/slave.res
+DI_IN_TOPOINT    topodir/products.res
+c DI_IN_TOPOMASTER topodir/master.res           // 4 pass
+c DI_OUT_SCALED   debug.raw
+c                                               //
+c                                               //
+STOP                                            // mandatory
+# vim: syntax=doris
+__GENEOF_6b
+  }
+#
+#
+GEN_7()
+  {
+  fn=$INPUT_7
+  GENERAL
+  FILES
+  cat << __GENEOF_7a
+PROCESS         slant2h                         //
+PROCESS         geocode                         //
+__GENEOF_7a
+  cat << __GENEOF_7b
+
+
+#   ------------------------------------------
+#      SLANT TO HEIGHT CONVERSION
+#   ------------------------------------------
+
+c
+c S2H_METHOD      ambiguity                       //
+c S2H_METHOD      rodriguez                       //
+S2H_METHOD      schwabisch                      // adviced!
+S2H_NPOINTS   200                             //
+S2H_DEGREE1D  2                               //
+S2H_NHEIGHTS  3                               //
+S2H_DEGREE2D  5                               //
+S2H_OUT_HEI     $DATAOUTDIR/heights.raw         //
+C S2H_OUT_HEI     $DATAOUTDIR/s2h_heights.raw         //
+C S2H_OUT_LAM     $DATAOUTDIR/s2h_lambda.raw      //
+C S2H_OUT_PHI     $DATAOUTDIR/s2h_phi.raw         //
+
+
+#   ------------------------------------------
+#      GEOCODING
+#   ------------------------------------------
+
+GEO_OUT_PHI     $DATAOUTDIR/phi.raw             //
+GEO_OUT_LAM     $DATAOUTDIR/lambda.raw          //
+c                                               //
+c                                               //
+STOP                                            // mandatory
+# vim: syntax=doris
+__GENEOF_7b
+  }
+#
+#
+GEN_8()
+  {
+  fn=$INPUT_8
+  GENERAL
+  FILES
+  cat << __GENEOF_8a
+PROCESS         ???
+__GENEOF_8a
+  cat << __GENEOF_8b
+
+
+#   ------------------------------------------
+#      ??
+#   ------------------------------------------
+
+c CARDS GO HERE
+c CARDS GO HERE
+c CARDS GO HERE
+c                                               //
+c                                               //
+STOP                                            // mandatory
+__GENEOF_8b
+  }
+#
+#
+GEN_9()
+  {
+  fn=$INPUT_9
+  cat << __GENEOF_9a
+######################################################################################
+### This is a (full scene) quicklook processing.  To quickly see the ifg etc,      ###
+### use "run -ql (or equivalently run -s9)".                                       ###
+###  this will run -s1; run -s2; run -s9 (i.e, read files, process them            ###
+### Therefore, also edit step1,2 input (run -e1; run -e2) to set input filenames.  ###
+### You can set the DBOW crop there.   If master.res or slave.res already exist    ###
+### then these steps are skipped.                                                  ###
+###                                                                                ###
+### Basically we read the data, then automated coregistration with lower quality,  ###
+### fast resampling to short output format, and form the interferogram, flatten it ###
+### and compute the coherence image, all heavily multilooked.                      ###
+### NO spektral filtering. Experimental...                                         ###
+###                                                                                ###
+### This takes about 6 minutes for a quarter scene.                                ###
+###                                                                                ###
+###%// BK 15-Sep-2003                                                              ###
+######################################################################################
+SCREEN        info                    // level of output to standard out
+BEEP          warning                 // level of beeping
+PREVIEW       on                      // SUNraster files with cpxfiddle
+MEMORY        200                     // MB
+OVERWRITE     ON                      // overwrite existing files
+BATCH         ON                      // non-interactive
+LISTINPUT     ON                      // copy this file to log
+ORB_INTERP    POLYFIT 3               // orbit interpolation method
+LOGFILE       quicklook.log              //
+M_RESFILE     master_QL.res           // after run -s1, run -s2 the files are 
+S_RESFILE     slave_QL.res            // copied to these
+I_RESFILE     ifg_QL.res              // names
+###
+###
+PROCESS       coarseorb               // no cards later
+PROCESS       coarsecorr              // based on correlation
+PROCESS       fine                    // fine coregistration
+PROCESS       coregpm                 // estimate coregistration param.
+PROCESS       resample                // slave
+PROCESS       interfero               //
+PROCESS       comprefpha              // estimate flatearth param.
+PROCESS       subtrrefpha             //
+PROCESS       coherence               //
+###
+###
+CC_METHOD       magfft                  // default
+CC_NWIN         21                      // number of windows
+CC_WINSIZE      256 256                 // size of large windows
+CC_INITOFF      orbit                   // use result of orbits
+###
+###
+FC_METHOD       magfft                  //
+FC_NWIN         501                     // number of windows
+FC_WINSIZE      64 64                   // size of small windows
+FC_ACC          8 8                     // search window, 2^n
+FC_INITOFF      coarsecorr              // use result of coarse
+FC_OSFACTOR     8                       // oversampling factor
+###
+###
+CPM_THRESHOLD   0.2                     //
+CPM_DEGREE      2                       //
+CPM_WEIGHT      quadratic               // none | linear | quadratic
+CPM_MAXITER     350                     // automated removal, max 20 iterations
+CPM_K_ALPHA     5.00                    // automated removal crit. value
+###
+###
+RS_METHOD       tri                     // linear interpolation
+RS_OUT_FILE     $DATAOUTDIR/$SLAVE.resampled_QL
+RS_OUT_FORMAT   ci2                     //
+RS_SHIFTAZI     off                     // doppler
+###
+###
+INT_METHOD      old                     // 
+INT_OUT_CINT    $DATAOUTDIR/${MASTER}_${SLAVE}.cint_QL // optional complex int.
+INT_MULTILOOK   10 2                    // 20 x 20 m
+###
+###
+FE_METHOD       porbits                 //
+FE_DEGREE       5                       //
+FE_NPOINTS      301                     //
+###
+###
+SRP_OUT_CINT    $DATAOUTDIR/${MASTER}_${SLAVE}.srp_QL  //
+SRP_MULTILOOK   3 3                     // total 60x60 m
+###
+###
+COH_METHOD      refphase_only                   // options: refphase_only or include_refdem
+COH_OUT_COH     $DATAOUTDIR/${MASTER}_${SLAVE}.coh_QL  // optional real
+COH_MULTILOOK   30 6                            //
+COH_WINSIZE     30 6                            //
+###
+STOP                                            // mandatory
+# vim: syntax=doris
+__GENEOF_9a
+  }
+
+
+GENERATE()
+  {
+#BK 19-Jan-2001: set resultfiles -M -S option
+MASTERRES="$MASTER.res"
+SLAVERES="$SLAVE.res"
+INTERFRES="${MASTER}_${SLAVE}.res"
+
+# Workdir
+if [ ! -d $WORKDIR ]; then
+  mkdir $WORKDIR
+  echo "${bn}: ***INFO***    workdir: $WORKDIR created."
+fi
+# Directory where input prototypes are stored.
+if [ -d $INPUTDIR ]; then
+  echo "${bn}: ***WARNING*** inputdir: $INPUTDIR existed, I renamed it to $INPUTDIR.$$."
+  mv -f $INPUTDIR $INPUTDIR.$$
+fi
+mkdir $INPUTDIR
+
+# Output directory for redirected standard output.
+if [ -d $OUTPUTDIR ]; then
+  echo "${bn}: ***WARNING*** outputdir: $OUTPUTDIR existed, I renamed it to $OUTPUTDIR.$$"
+  mv -f $OUTPUTDIR $OUTPUTDIR.$$
+fi
+mkdir $OUTPUTDIR
+
+# Output directory for matrices.
+if [ ! -d $DATAOUTDIR ]; then
+  mkdir $DATAOUTDIR
+fi
+
+# Test if executable is present.
+#if [ ! -x $SWDIR/$PROG ]; then
+#  echo "executable: $SWDIR/$PROG not present."
+#  if [ ! -x $WORKDIR/$PROG ]; then
+#    echo "also not in workdir: $WORKDIR, exiting."
+#    exit 4
+#  fi
+#  echo "Continuing"
+#fi
+#if [ -x $WORKDIR/$PROG ]; then
+#  echo "executable already present in: $WORKDIR/$PROG, I renamed it to $WORKDIR/$PROG.$$"
+#  mv -f $WORKDIR/$PROG $WORKDIR/$PROG.$$
+#fi
+
+#  cp   $SWDIR/$PROG    $WORKDIR/$PROG
+  GEN_1 > $INPUTDIR/$INPUT_1
+  GEN_2 > $INPUTDIR/$INPUT_2
+  GEN_3 > $INPUTDIR/$INPUT_3
+  GEN_4 > $INPUTDIR/$INPUT_4
+  GEN_5 > $INPUTDIR/$INPUT_5
+  GEN_6 > $INPUTDIR/$INPUT_6
+  GEN_7 > $INPUTDIR/$INPUT_7
+#  GEN_8 > $INPUTDIR/$INPUT_8
+  GEN_9 > $INPUTDIR/$INPUT_9
+
+  echo "${bn}: ***INFO***    generation of inputfiles finished."
+  echo "${bn}: ***INFO***    inputdir:   $INPUTDIR"
+  echo "${bn}: ***INFO***    outputdir (stout):  $OUTPUTDIR"
+  echo "${bn}: ***INFO***    outputdir (matrices):  $DATAOUTDIR"
+#
+# BK 25-feb-2000
+# 2nd check is not ok, should check with whence?
+#
+if [ -x $PROGINCWD ]; then
+  echo "${bn}: ***INFO***    Using executable in cwd: $PROGINCWD"
+else
+  echo "${bn}: ***INFO***    Using executable in path:  $PROG"
+  echo "${bn}: ***INFO***    or (if -d option present): $PROGDEBUG"
+fi
+  echo "${bn}: ***TIP***     run -e1; run -s1"
+  exit 0
+  }
+
+
+##################################################
+# START SCRIPT ---------------
+# Set viewer (if no default environment variables: PAGER and EDITOR) ###
+# Set PAGER (VIEWER) and EDITOR if not default (prefer less and nedit)
+if [ "X$PAGER" = "X" ]; then
+  #default should be specified in your login resource file.
+  echo "environment variable PAGER not set, please set this variable"
+  echo "to specify your prefered viewer.  For example in csh shell type:"
+  echo " setenv PAGER more"
+  echo " setenv PAGER less   (adviced)"
+  #PAGER="more"
+  PAGER="less"
+  $PAGER 2>&1
+  if [ "$status" = "0" ]; then
+    echo "PAGER: $PAGER found in path..."
+  else
+    PAGER="more"
+    echo "using PAGER $PAGER"
+  fi
+fi
+VIEWER="$PAGER"
+if [ "X$EDITOR" = "X" ]; then
+  #default should be specified in your login resource file.
+  echo "environment variable EDITOR not set, please set this variable"
+  echo "to specify your prefered editor.  For example in csh shell type:"
+  echo " setenv EDITOR vi"
+  echo " setenv EDITOR nedit"
+  echo " setenv EDITOR xemacs"
+  EDITOR="nedit"
+  $EDITOR 2>&1
+  if [ "$status" = "0" ]; then
+    echo "EDITOR: $EDITOR found in path..."
+  else
+    EDITOR="vi"
+    echo "using EDITOR $EDITOR"
+  fi
+fi
+
+# Assume template inputfile are generated, obtain name of files...
+# only for view?
+if [ "$DOGENERATE" = "0" ]; then
+  if [ -r $INPUTDIR/$INPUT_1 ]; then
+    MASTERRES=`awk '/M_RESFILE/ {print $2}' $INPUTDIR/$INPUT_1`
+    SLAVERES=`awk  '/S_RESFILE/ {print $2}' $INPUTDIR/$INPUT_1`
+    INTERFRES=`awk '/I_RESFILE/ {print $2}' $INPUTDIR/$INPUT_1`
+  fi
+fi
+
+# Help wanted?
+#if [ $# -eq 1 -a "$1" = "-h" ]; then
+if [ "$1" = "-h" ]; then
+  name=`NAME`
+  synopsis=`SYNOPSIS`
+  MANPG | $PAGER
+  exit
+fi
+
+
+### Simple options parsing by bert... since getopts not known on my cygwin sh shell (?)
+### This is slower and not tested properly like lib function, but seems to work.
+### Also it doesn't incorporate numargs exceptions checks.
+### Bert Kampes, 03-Feb-2002.
+#1) delete all spaces from input option string, delimiters are - signs
+#2) insert spaces before - signs (use QQQ to keep spaces in OPTARG)
+#3) for each word, obtain option and argument
+#INPUTARGS=`echo "$*" | sed 's/ /QQQ/g' | sed 's/-/ -/g'`
+INPUTARGS=`echo "$*" | sed 's/ //g' | sed 's/-/ -/g'`
+for OPTION in $INPUTARGS; do
+  OPTKEY=`echo $OPTION | awk '{print substr($1,1,2)}'`
+  OPTARG=`echo $OPTION | awk '{print substr($1,3)}'`
+#  OPTARG=`echo $OPTION | awk '{print substr($1,3)}' | sed 's/QQQ/ /g'`
+#  echo "OPTKEY: "XXX${OPTKEY}XXX
+#  echo "OPTARG: "XXX${OPTARG}XXX
+#  if test "$OPTKEY"="-f"; then
+#    INPUT="$OPTARG"
+#  fi
+### quicklook run step 9
+  case $OPTKEY in
+    -f)   INPUT=$OPTARG                 ;;
+    -d)   PROG=$PROGDEBUG               ;;
+    -s)   STEP=$OPTARG                  ;;
+    -q)   STEP=9                        ;;
+    -e)   EDIT=$OPTARG                  ;;
+    -v)   VIEW=$OPTARG                  ;;
+    -r)   RESULT=$OPTARG                ;;
+    -g)   DOGENERATE="1"                ;;
+    -M)   MASTER=$OPTARG                ;;
+    -S)   SLAVE=$OPTARG                 ;;
+    -A)   AUTHOR=$OPTARG                ;;
+    -B)   BASELINE=$OPTARG              ;;
+    -R)   REMARKS=$OPTARG               ;;
+    -h)  USAGE                          ;;
+    \?)  USAGE                          ;;
+    *)   echo "wrong input argument"; USAGE             ;;
+  esac
+done
+
+### OLD KSH getopts...
+### Get other options.
+###OPTIONS="f:s:e:v:r:M:S:A:B:R:gd"
+###while getopts $OPTIONS OPT; do
+###  case $OPT in
+###    f)   INPUT=$OPTARG                               ;;
+###    d)   PROG=$PROGDEBUG                     ;;
+###    s)   STEP=$OPTARG                                ;;
+###    e)   EDIT=$OPTARG                                ;;
+###    v)   VIEW=$OPTARG                                ;;
+###    r)   RESULT=$OPTARG                              ;;
+###    g)   DOGENERATE="1"                      ;;
+###    M)   MASTER=$OPTARG                              ;;
+###    S)   SLAVE=$OPTARG                       ;;
+###    A)   AUTHOR=$OPTARG                              ;;
+###    B)   BASELINE=$OPTARG                    ;;
+###    R)   REMARKS=$OPTARG                     ;;
+###    \?)  USAGE                                       ;;
+###  esac
+###done
+
+# Check any input.
+if [ "$1" = "" ]; then
+  USAGE
+fi
+
+# -g option.
+if [ "$DOGENERATE" = "1" ]; then
+  GENERATE
+fi
+
+# -e option.
+case $EDIT in
+  1)   if [ -r $INPUTDIR/$INPUT_1 ]; then
+         $EDITOR $INPUTDIR/$INPUT_1
+         #echo "don't forget to mountcd";
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_1 not found."
+       fi;;
+  2)   if [ -r $INPUTDIR/$INPUT_2 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_2
+         #echo "don't forget to mountcd"
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_2 not found."
+       fi;;
+  3)   if [ -r $INPUTDIR/$INPUT_3 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_3
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_3 not found."
+       fi;;
+  4)   if [ -r $INPUTDIR/$INPUT_4 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_4
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_4 not found."
+       fi;;
+  5)   if [ -r $INPUTDIR/$INPUT_5 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_5
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_5 not found."
+       fi;;
+  6)   if [ -r $INPUTDIR/$INPUT_6 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_6
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_6 not found."
+       fi;;
+  7)   if [ -r $INPUTDIR/$INPUT_7 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_7
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_7 not found."
+       fi;;
+  8)   if [ -r $INPUTDIR/$INPUT_8 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_8
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_8 not found."
+       fi;;
+  9)   if [ -r $INPUTDIR/$INPUT_9 ]; then 
+         $EDITOR $INPUTDIR/$INPUT_9
+         echo "to run, use: $bn -s$EDIT"
+       else
+         echo "${bn}: ***ERROR*** file $INPUTDIR/$INPUT_9 not found."
+       fi;;
+  999)                                                  ;;
+  *)   echo "wrong -e(dit) argument"; USAGE             ;;
+esac
+
+
+# -s option.
+if [ "$STEP" != "999" ]; then
+  case $STEP in
+    1)   INPUT=$INPUT_1                         ;;
+    2)   INPUT=$INPUT_2                         ;;
+    3)   INPUT=$INPUT_3                         ;;
+    4)   INPUT=$INPUT_4                         ;;
+    5)   INPUT=$INPUT_5                         ;;
+    6)   INPUT=$INPUT_6                         ;;
+    7)   INPUT=$INPUT_7                         ;;
+    8)   INPUT=$INPUT_8                         ;;
+    9)   INPUT=$INPUT_9                         ;;
+#    999)                                       ;;
+    *)   echo "wrong -s argument"; USAGE        ;;
+  esac
+
+  #substitution problem on capone with sh? (simple solution change name...)
+  #%// BK 16-Jun-2003
+  #OUTFILE=$OUTPUTDIR/out.${INPUT#input.}
+  OUTFILE=$OUTPUTDIR/stdout.$INPUT
+  INPUT=$INPUTDIR/$INPUT
+  ### Check if there is an inputfile.
+  if [ ! -r $INPUT ]; then
+    echo "${bn}: ***ERROR***   Inputfile: $INPUT not readable, exiting"
+    exit
+  fi;
+
+  ### Check if output allready exists.
+  if [ -f $OUTFILE ]; then
+    echo "${bn}: ***WARNING*** (redirected) outputfile: $OUTFILE existed, I renamed it to $OUTFILE.$$"
+    mv -f $OUTFILE $OUTFILE.$$
+  fi;
+  
+  ### if no -d option and prog "doris" is present in cwd, use it.
+  if [ -x $PROGINCWD ] && [ $PROG != $PROGDEBUG ]; then
+    PROG=$PROGINCWD
+  fi;
+
+  ### If quicklook processing, first run step1 and step2 to read the data
+  ### this means step=9, and run that after that!
+  touch $OUTFILE
+  if [ "$STEP" = "9" ]; then
+    touch $LOGFILE
+    mv $LOGFILE $LOGFILE.tmp
+    echo " "
+    echo " - - PERFORMING QUICKLOOK PROCESSING - -"
+    echo " "
+    echo " First I will do: run -s1, then run -s2 (readfiles and crop)"
+    echo " Then I will copy the resultfiles to new QL names"
+    echo " Then I will do: run -s9 (the steps to get the interferogram)"
+    echo " "
+    echo " I will pause after the master has been read, so you can change the CDROM"
+    echo " "
+    echo " ---------------------------------------------------------------" >> $OUTFILE
+    echo " --- START STEP 1 for QUICKLOOK --------------------------------" >> $OUTFILE
+    echo " ---------------------------------------------------------------" >> $OUTFILE
+    if [ -f master_QL.res ]; then
+      echo " SKIPPING run -s1 since file master_QL.res exists (master has been read)"
+    else
+      $PROG $INPUTDIR/$INPUT_1 >> $OUTFILE
+      if [ ! -f $MASTERRES ]; then
+        echo "file $MASTERRES does not exist.  Exiting."
+        mv $LOGFILE.tmp $LOGFILE
+        exit 1
+      fi;
+      cp $MASTERRES master_QL.res
+    fi;
+    echo " "
+    echo " *************************************************************"
+    echo " *** Pausing after reading master so you can change cdrom. ***"
+    echo " *** Press <ENTER> when ready to proceed.                  ***"
+    echo " *************************************************************"
+    echo " "
+    read key
+    echo " "
+    echo " ---------------------------------------------------------------" >> $OUTFILE
+    echo " --- START STEP 2 for QUICKLOOK --------------------------------" >> $OUTFILE
+    echo " ---------------------------------------------------------------" >> $OUTFILE
+    if [ -f slave_QL.res ]; then
+      echo " SKIPPING run -s1 since file slave_QL.res exists (slave has been read)"
+    else
+      $PROG $INPUTDIR/$INPUT_2 >> $OUTFILE
+      if [ ! -f $SLAVERES ]; then
+        echo "file $SLAVERES does not exist.  Exiting."
+        mv $LOGFILE.tmp $LOGFILE
+        exit 1
+      fi;
+      cp $SLAVERES  slave_QL.res
+    fi;
+    echo " "
+    echo " Done with reading slave (and master).  Proceeding with quicklook"
+    echo " First copying master and slave result file to master_QL.res, slave_QL.res"
+    echo " "
+    echo " ---------------------------------------------------------------" >> $OUTFILE
+    echo " --- START STEP 9 for QUICKLOOK --------------------------------" >> $OUTFILE
+    echo " --- (first moving the output files of run -s1 and run -s2 -----" >> $OUTFILE
+    echo " ---------------------------------------------------------------" >> $OUTFILE
+    mv $LOGFILE quicklook.log
+    mv $LOGFILE.tmp $LOGFILE
+    if [ -f ifg_QL.res ]; then
+      echo "file ifg_QL.res already exists??? continuing..."
+    fi;
+  fi;
+
+  ### Execute program (use >> for quicklook, is an empty touched file anyway)
+  echo "  $PROG $INPUT >> $OUTFILE "
+  echo " "
+  $PROG $INPUT >> $OUTFILE
+  echo " "
+  echo "   Redirected output in file: $OUTFILE"
+  echo "   view with: run -v$STEP"
+
+  ### Save some work for user / tips ###
+  if [ "$STEP" = "1" ]; then
+    #    echo " don't forget to umountcd"
+    echo " NOTE: before run -s1, you can do run -ql to get a quicklook processing."
+    echo "       which will run step 1 and 2 if not done already."
+  fi;
+  if [ "$STEP" = "9" ]; then
+    echo " "
+    echo " Moving quicklook output to QL sub directory."
+    echo " "
+    mkdir QL
+    mv *ras *ras.sh *_QL* *quicklook* ./QL
+  fi;
+fi;
+
+
+### -v option.
+case $VIEW in
+  1)   if [ -r $OUTPUTDIR/stdout.$INPUT_1 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_1
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_1 not found."
+       fi;;
+  2)   if [ -r $OUTPUTDIR/stdout.$INPUT_2 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_2
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_2 not found."
+       fi;;
+  3)   if [ -r $OUTPUTDIR/stdout.$INPUT_3 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_3
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_3 not found."
+       fi;;
+  4)   if [ -r $OUTPUTDIR/stdout.$INPUT_4 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_4
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_4 not found."
+       fi;;
+  5)   if [ -r $OUTPUTDIR/stdout.$INPUT_5 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_5
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_5 not found."
+       fi;;
+  6)   if [ -r $OUTPUTDIR/stdout.$INPUT_6 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_6
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_6 not found."
+       fi;;
+  7)   if [ -r $OUTPUTDIR/stdout.$INPUT_7 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_7
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_7 not found."
+       fi;;
+  8)   if [ -r $OUTPUTDIR/stdout.$INPUT_8 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_8
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_8 not found."
+       fi;;
+  9)   if [ -r $OUTPUTDIR/stdout.$INPUT_9 ]; then
+         $VIEWER $OUTPUTDIR/stdout.$INPUT_9
+       else
+         echo "${bn}: ***ERROR*** file $OUTPUTDIR/stdout.$INPUT_9 not found."
+       fi;;
+  999)                                          ;;
+  *)   echo "wrong -v argument"; USAGE          ;;
+esac
+
+
+cd $WORKDIR
+# -r option.
+case $RESULT in
+  1)   if [ -r $MASTERRES ]; then
+         $EDIT $MASTERRES
+       else
+         echo "${bn}: ***ERROR*** file $MASTERRES not found."
+       fi;;
+  2)   if [ -r $SLAVERES ]; then
+         $EDIT $SLAVERES
+       else
+         echo "${bn}: ***ERROR*** file $SLAVERES not found."
+       fi;;
+  3)   if [ -r $INTERFRES ]; then
+         $EDIT $INTERFRES
+       else
+         echo "${bn}: ***ERROR*** file $INTERFRES not found."
+       fi;;
+  4)   if [ -r $LOGFILE ]; then
+         $EDIT $LOGFILE
+       else
+         echo "${bn}: ***ERROR*** file $LOGFILE not found."
+       fi;;
+  999)                                  ;;
+  *)   echo "wrong -v argument"; USAGE          ;;
+esac
+
+
+exit 0
+
+
+### RCS #####
+# $Source: /users/kampes/DEVELOP/DORIS/doris/bin/RCS/run,v $
+# $Revision: 4.01 $
+# $Author: FvL $
+# $Date: 2008/12/17 12:02:06 $
+# $Log: run,v $
+# Revision 4.01  2008/12/17 12:02:06  FvL
+# Update to doris v4.01
+#
+# Revision 3.47  2005/09/20 12:02:06  kampes
+# *** empty log message ***
+#
+# Revision 3.46  2005/09/20 11:02:16  kampes
+# ERR changed to ERROR
+#
+# Revision 3.45  2005/08/25 13:38:01  kampes
+# *** empty log message ***
+#
+# Revision 3.44  2005/08/25 07:37:50  kampes
+# *** empty log message ***
+#
+# Revision 3.43  2005/08/24 15:12:40  kampes
+# *** empty log message ***
+#
+# Revision 3.42  2005/08/24 11:35:32  kampes
+# *** empty log message ***
+#
+# Revision 3.41  2005/08/16 11:46:26  kampes
+# update for v3.16
+#
+# Revision 3.40  2005/07/28 09:28:48  kampes
+# *** empty log message ***
+#
+# Revision 3.39  2005/04/16 10:08:05  kampes
+# *** empty log message ***
+#
+# Revision 3.38  2005/04/16 10:00:37  kampes
+# added CRD_OUT_DEM_LP
+#
+# Revision 3.37  2005/04/08 14:09:53  kampes
+# *** empty log message ***
+#
+# Revision 3.36  2005/03/08 14:04:55  kampes
+# *** empty log message ***
+#
+# Revision 3.35  2004/09/20 08:05:59  kampes
+# *** empty log message ***
+#
+# Revision 3.34  2004/09/15 10:49:03  kampes
+# *** empty log message ***
+#
+# Revision 3.33  2004/09/13 08:20:57  kampes
+# *** empty log message ***
+#
+# Revision 3.32  2004/08/24 15:33:15  kampes
+# *** empty log message ***
+#
+# Revision 3.31  2004/08/09 09:46:53  kampes
+# *** empty log message ***
+#
+# Revision 3.30  2004/08/03 13:22:56  kampes
+# increased default memory usage
+#
+# Revision 3.29  2004/06/17 09:38:54  kampes
+# *** empty log message ***
+#
+# Revision 3.28  2004/06/03 06:19:52  kampes
+# *** empty log message ***
+#
+# Revision 3.27  2004/05/13 18:28:58  kampes
+# *** empty log message ***
+#
+# Revision 3.26  2004/01/20 15:08:03  kampes
+# added oversampling
+#
+# Revision 3.25  2003/12/22 06:50:51  kampes
+# added knab windows card
+#
+# Revision 3.24  2003/12/15 07:56:41  kampes
+# added DBOW_GEO card
+#
+# Revision 3.23  2003/11/27 16:14:54  kampes
+# *** empty log message ***
+#
+# Revision 3.22  2003/11/27 16:01:11  kampes
+# *** empty log message ***
+#
+# Revision 3.21  2003/11/27 15:39:42  kampes
+# *** empty log message ***
+#
+# Revision 3.20  2003/09/15 13:27:54  kampes
+# *** empty log message ***
+#
+# Revision 3.19  2003/09/15 13:11:26  kampes
+# *** empty log message ***
+#
+# Revision 3.18  2003/09/15 12:24:12  kampes
+# *** empty log message ***
+#
+# Revision 3.17  2003/09/15 10:14:08  kampes
+# added quicklook
+#
+# Revision 3.16  2003/09/12 15:12:46  kampes
+# added quicklook as s9
+#
+# Revision 3.15  2003/09/01 15:33:33  kampes
+# *** empty log message ***
+#
+# Revision 3.14  2003/09/01 06:42:56  kampes
+# *** empty log message ***
+#
+# Revision 3.13  2003/08/28 17:12:36  kampes
+# added coregpm maxioter
+#
+# Revision 3.12  2003/08/14 08:45:58  kampes
+# added jers info
+#
+# Revision 3.11  2003/06/24 08:32:38  kampes
+# release version
+#
+# Revision 3.10  2003/06/17 13:24:00  kampes
+# *** empty log message ***
+#
+# Revision 3.9  2003/06/16 14:59:10  kampes
+# increased default numwindows fine coreg.
+#
+# Revision 3.8  2003/06/16 11:44:33  kampes
+# seemed to be a problem with run file variable name substitution.
+#
+# Revision 3.7  2003/06/16 07:05:11  kampes
+# new version
+#
+# Revision 3.6  2003/04/15 06:31:58  kampes
+# *** empty log message ***
+#
+# Revision 3.5  2003/04/14 06:35:15  kampes
+# doris release 3.5
+#
+# Revision 1.60  2001/09/28  14:09:57  14:09:57  kampes (B.M.Kampes)
+# release doris 3.2
+# 
+# Revision 1.57  2000/12/07  13:53:44  13:53:44  kampes (B.M.Kampes)
+# release 3
+# 
+# Revision 1.56  2000/10/24  13:46:20  13:46:20  kampes (B.M.Kampes)
+# doris2.6
+# 
+# Revision 1.42  2000/04/05  11:37:13  11:37:13  kampes (B.M.Kampes)
+# range filtering
+# 
+# Revision 1.41  2000/02/25  15:36:20  15:36:20  kampes (B.M.Kampes)
+# cohwinsize added.
+# 
+# Revision 1.40  2000/02/25  09:45:26  09:45:26  kampes (B.M.Kampes)
+# check whence
+# 
+# Revision 1.39  2000/02/16  17:44:49  17:44:49  kampes (B.M.Kampes)
+# new cards, refdem, check release 2.2
+# 
+# Revision 1.37  2000/02/09  11:22:35  11:22:35  kampes (B.M.Kampes)
+# new cards
+# 
+# Revision 1.32  2000/01/06  09:55:04  09:55:04  kampes (B.M.Kampes)
+# use exe in cwd
+# 
+# Revision 1.31  2000/01/06  09:25:06  09:25:06  kampes (B.M.Kampes)
+# author added
+# 
+# Revision 1.29  99/12/20  14:35:45  14:35:45  kampes (B.M.Kampes)
+# synopsis updated
+# 
+# Revision 1.28  99/12/16  13:53:03  13:53:03  kampes (B.M.Kampes)
+# some new options -d for use with 1 script
+# 
+# Revision 1.27  99/12/13  16:50:42  16:50:42  kampes (B.M.Kampes)
+# *** empty log message ***
+# 
+# Revision 1.26  99/12/09  16:06:48  16:06:48  kampes (B.M.Kampes)
+# mountcds
+# 
+# Revision 1.25  99/12/09  15:11:44  15:11:44  kampes (B.M.Kampes)
+# bugfixed
+# 
+# Revision 1.24  99/12/03  09:39:31  09:39:31  kampes (B.M.Kampes)
+# new setup steps, reviewed ok version.
+# 
+# 
+# Revision 1.16  99/11/02  11:34:53  11:34:53  kampes (B.M.Kampes)
+# doris v1.2 s2h geocoding
+# 
+# Revision 1.1  99/09/13  15:57:22  15:57:22  kampes (B.M.Kampes)
+# initial version
+# 
+#############
