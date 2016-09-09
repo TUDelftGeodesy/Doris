@@ -657,6 +657,8 @@ class SingleMaster(object):
 
                 master_file = self.dat_file(burst,'master')
                 if master == True:
+                    master_deramped = 'master_deramped.raw'
+                    os.system('cp ' + master_file + ' ' + master_deramped)
                     master_orig = master_file + '.orig'
                     os.system('cp ' + master_orig + ' ' + master_file)
 
@@ -879,7 +881,7 @@ class SingleMaster(object):
         # This function concatenates the master files to one image.
 
         self.read_res()
-        self.concatenate('master', 'master.raw', dt= np.dtype('complex64'))
+        self.concatenate('master', 'master.raw', dt= np.dtype('int32'))
         self.concatenate('master_deramped.raw', 'master_deramped.raw', dt= np.dtype('complex64'))
 
         # Add the resample step to the .res file
