@@ -15,6 +15,8 @@ def valid_date(s):
         msg = "Not a valid date: '{0}'.".format(s)
         raise argparse.ArgumentTypeError(msg)
 
+# parse arguments here
+
 parser = argparse.ArgumentParser(description='Doris processing.')
 parser.add_argument('--parameterfilepath', '-p', default='./',
                     help='Path to dorisParameter.py file, this file contains case specific parameters')
@@ -27,6 +29,7 @@ parser.add_argument('--masterdate', '-m', type=valid_date,
 
 args = parser.parse_args()
 
+#start doris sentinel1 run
 doris_sentinel_1 = DorisSentinel1()
 doris_sentinel_1.run(args.parameterfilepath, args.startdate, args.enddate, args.masterdate)
 
