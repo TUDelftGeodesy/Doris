@@ -233,7 +233,7 @@ class StackData(object):
         for p in self.polarisation:
             for swath in ['1','2','3']:
                 swath_id = 'iw' + swath + '-slc-' + p
-                swath_name = 'swath-' + swath + '-' + p
+                swath_name = 'swath_' + swath + '_' + p
                 burst_no = 1
 
                 for i in image_id:
@@ -254,7 +254,7 @@ class StackData(object):
                                     self.swath_names.append(swath_name)
 
                             # Assign burst to data stack
-                            burst_name = 'burst-' + str(burst_no)
+                            burst_name = 'burst_' + str(burst_no)
                             burst.new_burst_num = burst_no
                             burst.res_burst(precise_folder=self.precise_orbits)
                             self.datastack[date][swath_name][burst_name] = burst
@@ -262,7 +262,7 @@ class StackData(object):
                             # Assign coverage, center coordinates and burst name.
                             self.burst_shapes.append(burst.burst_coverage)
                             self.burst_centers.append(burst.burst_center)
-                            self.burst_names.append(swath_name + '-' + burst_name)
+                            self.burst_names.append(swath_name + '_' + burst_name)
                             burst_no += 1
 
     def swath_coverage(self):
@@ -409,16 +409,16 @@ class StackData(object):
                     self.coordinates[date]['shapes'].append(shape)
 
                     # Finally add information to the .res file if already loaded
-                    if self.datastack[date][swath]['burst-' + str(burst+1)].processes['readfiles']:
+                    if self.datastack[date][swath]['burst_' + str(burst+1)].processes['readfiles']:
 
-                        read = self.datastack[date][swath]['burst-' + str(burst+1)].processes['readfiles']
+                        read = self.datastack[date][swath]['burst_' + str(burst+1)].processes['readfiles']
                         read['First_line (w.r.t. output_image)'] = str(shape_c[0,0])
                         read['Last_line (w.r.t. output_image)'] = str(shape_c[2,0])
                         read['First_pixel (w.r.t. output_image)'] = str(shape_c[0,1])
                         read['Last_pixel (w.r.t. output_image)'] = str(shape_c[2,1])
                         read['Number_of_pixels_output_image'] = str(max_pixel)
                         read['Number_of_lines_output_image'] = str(max_line)
-                        self.datastack[date][swath]['burst-' + str(burst+1)].processes['readfiles'] = read
+                        self.datastack[date][swath]['burst_' + str(burst+1)].processes['readfiles'] = read
                     else:
                         print 'No resfile available, so information is not added to resfile'
 

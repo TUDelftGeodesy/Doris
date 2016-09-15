@@ -31,7 +31,7 @@ class ResData(object):
             self.res_type = type
         if filename:
             if not os.path.exists(filename):
-                warnings.warn('This filename does not exist')
+                warnings.warn('This filename does not exist: ' + filename)
             else:
                 self.res_path = filename
                 self.res_read()
@@ -197,15 +197,15 @@ class ResData(object):
 
         if isinstance(process, basestring): # one process
             if not process in self.process_control.keys():
-                warnings.warn('The requested process does not exist! (or processes are not read jet, use self.process_reader)')
+                warnings.warn('The requested process does not exist! (or processes are not read jet, use self.process_reader): ' + str(process))
                 return
         elif isinstance(process, list): # If we use a list
             for proc in process:
                 if not proc in self.process_control.keys():
-                    warnings.warn('The requested process does not exist! (or processes are not read jet, use self.process_reader)')
+                    warnings.warn('The requested process does not exist! (or processes are not read jet, use self.process_reader): ' + str(proc))
                     return
         else:
-            warnings.warn('process should contain either a string of one process or a list of multiple processes')
+            warnings.warn('process should contain either a string of one process or a list of multiple processes: ' + str(process))
 
         # Now remove the process and write the file again.
         if isinstance(process, basestring): # Only one process should be removed
@@ -222,12 +222,12 @@ class ResData(object):
         # which are not added yet..)
 
         if not new_filename and not self.res_path:
-            warnings.warn('Please specify filename')
+            warnings.warn('Please specify filename: ' + str(new_filename))
             return
         elif not new_filename:
             new_filename = self.res_path
         if not self.process_control or not self.processes:
-            warnings.warn('Every result file needs at least a process control and one process to make any sense.')
+            warnings.warn('Every result file needs at least a process control and one process to make any sense: ' + str(new_filename))
 
         # Open file and write header, process control and processes
         self.res_path = new_filename
@@ -305,13 +305,13 @@ class ResData(object):
         processes.extend(['header','leader_datapoints'])
 
         if process not in processes:
-            warnings.warn('This process does not exist for this datatype')
+            warnings.warn('This process does not exist for this datatype: ' + str(process))
             return
 
         # If a full process is added
         if not variable:
             if self.process_control[process] == '1':
-                warnings.warn('This process already exists! Use the update function.')
+                warnings.warn('This process already exists! Use the update function: ' + str(process))
                 return
             elif self.process_control[process] == '0':
                 self.process_control[process] = '1'
@@ -321,7 +321,7 @@ class ResData(object):
         # A variable is added
         if variable:
             if variable in self.processes[process].keys():
-                warnings.warn('This variable already exists! Use the update function.')
+                warnings.warn('This variable already exists! Use the update function: ' + str(variable))
                 return
             elif not self.processes[process][variable]:
                 self.processes[process][variable] = data
@@ -332,13 +332,13 @@ class ResData(object):
         processes.extend(['header','leader_datapoints'])
 
         if process not in processes:
-            warnings.warn('This process does not exist for this datatype')
+            warnings.warn('This process does not exist for this datatype: ' + str(process))
             return
 
         # If a full process is deleted
         if not variable:
             if self.process_control[process] == '0':
-                warnings.warn('This process does not exist!')
+                warnings.warn('This process does not exist: ' + str(process))
                 return
             elif self.process_control[process] == '1':
                 self.process_control[process] = '0'
@@ -348,7 +348,7 @@ class ResData(object):
         # A variable is deleted
         if variable:
             if not variable in self.processes[process].keys():
-                warnings.warn('This variable does not exist!')
+                warnings.warn('This variable does not exist: ' + str(variable))
                 return
             else:
                 del self.processes[process][variable]
@@ -359,7 +359,7 @@ class ResData(object):
         processes.extend(['header','leader_datapoints'])
 
         if not process in processes:
-            warnings.warn('This process does not exist for this datatype')
+            warnings.warn('This process does not exist for this datatype: ' + str(process))
             return
 
         # If a full process is added
@@ -367,14 +367,14 @@ class ResData(object):
             if self.process_control[process] == '1':
                 self.processes[process] = data
             elif self.process_control[process] == '0':
-                warnings.warn('This process does not exist. Use the insert function')
+                warnings.warn('This process does not exist. Use the insert function: ' + str(process))
                 return
         # A variable is added
         if variable:
             if variable in self.processes[process].keys():
                 self.processes[process][variable] = data
             elif not self.processes[process][variable]:
-                warnings.warn('This variable does not exist. Use the insert function')
+                warnings.warn('This variable does not exist. Use the insert function: ' + str(variable))
                 return
 
     def request(self,process,variable=''):
@@ -383,7 +383,7 @@ class ResData(object):
         processes.extend(['header','leader_datapoints'])
 
         if not process in processes:
-            warnings.warn('This process does not exist for this datatype')
+            warnings.warn('This process does not exist for this datatype: ' + str(process))
             return
 
         # If a full process is added
@@ -391,14 +391,14 @@ class ResData(object):
             if self.process_control[process] == '1':
                 data = self.processes[process]
             elif self.process_control[process] == '0':
-                warnings.warn('This process does not exist.')
+                warnings.warn('This process does not exist: ' + str(process))
                 return
         # A variable is added
         if variable:
             if variable in self.processes[process].keys():
                 data = self.processes[process][variable]
             elif not self.processes[process][variable]:
-                warnings.warn('This variable does not exist.')
+                warnings.warn('This variable does not exist: ' + str(variable))
                 return
 
         return data

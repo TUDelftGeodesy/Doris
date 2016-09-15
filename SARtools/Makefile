@@ -23,7 +23,7 @@ SHELL	=	/bin/sh
 
 ### Installdirdef should exist!
 #INSTALL_DIR =	/usr/local/bin
-INSTALL_DIR =	/home/gertmulder/bin/doris/doris_v5_wu_branch
+INSTALL_DIR =	/data/src/Doris_s1_git/bin
 
 ### GCC compiler
 CC 	=	g++

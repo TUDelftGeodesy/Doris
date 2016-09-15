@@ -1,0 +1,28 @@
+#!/bin/bash
+
+touch $1/$2".started"
+if [ "$3" == "True" ]; then
+      echo "PYTHONPATH:"
+      echo $PYTHONPATH
+      echo $2" "$4" "$5" "$6" "$7" "$8" "$9" started"
+      date +%T
+      pwd
+      touch "./job.started"
+fi
+$4 $5 $6 $7 $8 $9 2>&1 | tee job.log # start job
+if [ $? -lt 0 ]
+then
+    echo "Execution FAILED, retry"
+    echo $2" "$4" "$5" "$6" "$7" "$8" "$9" RESTARTED"
+    $4 $5 $6 $7 $8 $9 # start job
+fi
+touch $1/$2".finished"
+if [ "$3" == "True" ]; then
+      echo $2" "$4" "$5" "$6" "$7" "$8" "$9" finished"
+      date +%T
+      pwd
+      touch "./job.finished"
+fi
+
+
+

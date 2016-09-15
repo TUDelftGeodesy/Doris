@@ -43,7 +43,7 @@
 SHELL   = /bin/sh
 
 ### Specify compiler/installation directory ###
-INSTALLDIR = /home/gertmulder/bin/doris/doris_v5_wu_branch
+INSTALLDIR = /data/src/Doris_s1_git/bin
 CC	   = g++
 SCRIPTSDIR = ../bin
 
