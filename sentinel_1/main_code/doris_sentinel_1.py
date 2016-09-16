@@ -12,6 +12,7 @@ class DorisSentinel1(object):
 
     def run(self, doris_parameters_path, start_date, end_date, master_date):
 
+	print 'start sentinel 1 processing'
         dorisParameters_Path = DorisParameters_Path()
         dorisParameters_Path.set(doris_parameters_path)
 
@@ -176,4 +177,5 @@ class DorisSentinel1(object):
         profile.log_time_stamp('calc_coordinates')
         profile.log_time_stamp('end')
 
+	print 'end sentinel 1 processing'
 
