@@ -87,8 +87,8 @@ class DorisSentinel1(object):
         # Now we import the script to create a single master interferogram
         processing = single_master_stack.SingleMaster(master_date=master_date, start_date=start_date,
                                                       end_date=end_date, stack_folder=stack_path,
-                                                      input_files=input_files,processing_folder=stack_path,
-                                                      doris_path=doris_path)
+                                                      input_files=input_files, processing_folder=stack_path,
+                                                      doris_path=doris_path, cpxfiddle_folder=cpxfiddle_folder)
 
         # These lines can be used if you want to skip the initialize step because a some calculation steps are already performed....
         #del processing.stack[master_date]

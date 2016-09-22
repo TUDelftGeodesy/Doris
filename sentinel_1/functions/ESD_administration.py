@@ -61,8 +61,8 @@ def get_BOL_lines(burstList):
     for nBurst in burstList:
         # Read metadata
         # Master res and ifg res files for current burst
-        masterRes1 = 'burst-' + str(nBurst) + '/' + 'master.res'
-        ifgRes1 = 'burst-' + str(nBurst) + '/' + 'ifgs.res'
+        masterRes1 = 'burst_' + str(nBurst) + '/' + 'master.res'
+        ifgRes1 = 'burst_' + str(nBurst) + '/' + 'ifgs.res'
 
         # Tries to read the Azimuth_time_interval otherwise points out a possible error
         try:
@@ -72,8 +72,8 @@ def get_BOL_lines(burstList):
             print "Something is wrong reading Azimuth_time_interval, check get_parameter... "
 
         # Master res and ifg res files for next bursts
-        masterRes2 = 'burst-' + str(nBurst+1) + '/' + 'master.res'
-        ifgRes2 = 'burst-' + str(nBurst+1) + '/' + 'ifgs.res'
+        masterRes2 = 'burst_' + str(nBurst+1) + '/' + 'master.res'
+        ifgRes2 = 'burst_' + str(nBurst+1) + '/' + 'ifgs.res'
 
         PRF2 = get_parameter('Pulse_Repetition_Frequency (computed, Hz)',masterRes2,1)
         PRF2 = float(PRF2)
@@ -122,8 +122,8 @@ def get_BOL_lines(burstList):
 # Df_DC = get_f_DC_difference(f_DC_1, f_DC_2, BOL_Length, BOL_lines, PRF, normalize)
 def get_f_DC_difference(nBurst, BOL_lines, normalize = True):
 
-    burst1 = 'burst-' + str(nBurst) + '/'
-    burst2 = 'burst-' + str(nBurst+1)+ '/'
+    burst1 = 'burst_' + str(nBurst) + '/'
+    burst2 = 'burst_' + str(nBurst+1)+ '/'
     this_m_resData = burst1 + 'master.res'
     this_s_resData = burst1 + 'slave.res'
     next_m_resData = burst2 + 'master.res'
@@ -177,8 +177,8 @@ def get_f_DC_difference(nBurst, BOL_lines, normalize = True):
 # thisburstdata, nextburstdata, diffBursts, PRF = get_interfero(nBurst, BOL_lines, BOL_Length)
 def get_interfero(nBurst, BOL_lines, BOL_Length, Df_DC):
 
-    burst1 = 'burst-' + str(nBurst) + '/'
-    burst2 = 'burst-' + str(nBurst+1)+ '/'
+    burst1 = 'burst_' + str(nBurst) + '/'
+    burst2 = 'burst_' + str(nBurst+1)+ '/'
     this_m_resData = burst1 + 'master.res'
     this_s_resData = burst1 + 'slave.res'
     next_m_resData = burst2 + 'master.res'
@@ -395,7 +395,7 @@ def apply_ESD_Nida(diffBursts, Df_DC, PRF, threshold = 0.0001):
 # = apply_ESD_Wu(diffBursts, Df_DC, azimFreq1, Total_shift, Iteration_ESD, threshold, max_iterate)
 def apply_ESD_Wu(nBurst, diffBursts, Df_DC, Total_shift, Iteration_ESD, azimuth_shift, Weight_shift, Valid_ESD_index, threshold = 0.0001, max_iterate = 25):
 
-    masterRes = 'burst-' + str(nBurst) + '/' + 'master.res'
+    masterRes = 'burst_' + str(nBurst) + '/' + 'master.res'
     Azimuth_time_interval = get_parameter('Azimuth_time_interval (s)',masterRes,1)
     azimFreq    = 1.0/float(Azimuth_time_interval)
 
