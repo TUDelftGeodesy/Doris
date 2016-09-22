@@ -726,6 +726,7 @@ class SingleMaster(object):
         jobList1 = []
         jobList2 = []
         jobList3 = []
+        jobList4 = []
 
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
@@ -738,9 +739,13 @@ class SingleMaster(object):
                 jobList2.append([path, command2])
                 master_file = self.dat_file(burst, 'master')
                 if(master):
+                    master_deramped = 'master_deramped.raw'
+                    command3 = 'cp ' + master_file + ' ' + master_deramped
                     master_orig = master_file + '.orig'
-                    command3 = 'cp ' + master_orig + ' ' + master_file
+                    command4 = 'cp ' + master_orig + ' ' + master_file
+
                     jobList3.append([path, command3])
+                    jobList4.append([path, command4])
                 if(not(self.parallel)):
                     os.chdir(path)
                     # Save the original deramped slave
@@ -748,8 +753,10 @@ class SingleMaster(object):
                     os.system('python -m ' + 'do_reramp_SLC.py' + ' slave_rsmp.raw slave.res')
 
                     if master == True:
+                        master_deramped = 'master_deramped.raw'
+                        os.system('cp ' + master_file + ' ' + master_deramped)
                         master_orig = master_file + '.orig'
-                        os.system(command3)
+                        os.system('cp ' + master_orig + ' ' + master_file)
 # TODO Gert: is for all dates OK or should is be per date?
 
         if(self.parallel):
@@ -757,6 +764,7 @@ class SingleMaster(object):
             jobs.run(jobList1)
             jobs.run(jobList2)
             jobs.run(jobList3)
+            jobs.run(jobList4)
 
     def interferogram(self,concatenate = True):
         # Make an interferogram for the different bursts. (Not always necessary)
@@ -776,6 +784,27 @@ class SingleMaster(object):
         if concatenate == True:
             self.concatenate('cint.raw', 'cint.raw', dt= np.dtype('complex64'))
             for date in self.stack.keys():
+
+                # Add res file information
+                no_lines = self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original']
+                no_pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
+                line_0 = self.full_swath[date]['master'].processes['readfiles']['First_line (w.r.t. output_image)']
+                line_1 = self.full_swath[date]['master'].processes['readfiles']['Last_line (w.r.t. output_image)']
+                pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
+                pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
+
+                burst = self.stack[date].keys()[0]
+                res = self.stack[date][burst]['ifgs'].processes['interfero']
+
+                res['First_line (w.r.t. original_master)'] = line_0
+                res['Last_line (w.r.t. original_master)'] = line_1
+                res['First_pixel (w.r.t. original_master)'] = pix_0
+                res['Last_pixel (w.r.t. original_master)'] = pix_1
+                res['Number of lines (multilooked)'] = no_lines
+                res['Number of pixels (multilooked)'] = no_pixels
+
+                self.full_swath[date]['ifgs'].processes['interfero'] = res
+
                 path = self.image_path(date)
                 os.chdir(path)
                 # Finally show preview based on cpxfiddle
@@ -939,6 +968,13 @@ class SingleMaster(object):
             # Finally add to result file
             self.full_swath[date]['slave'].insert(slave_res,'resample')
 
+            pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
+
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+                                     '-p1 -P' + pixels + ' slave_rsmp.raw > slave_rsmp.ras'
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+                         '-p1 -P' + pixels + ' slave_rsmp_deramped.raw > slave_rsmp_deramped.ras'
+
         self.update_res()
 
     def combine_master(self):
@@ -946,11 +982,19 @@ class SingleMaster(object):
 
         self.read_res()
         self.concatenate('master', 'master.raw', dt= np.dtype('int32'))
+        self.concatenate('master_deramped.raw', 'master_deramped.raw', dt= np.dtype('complex64'))
 
         # Add the resample step to the .res file
         for date in self.stack.keys():
             # Write new name to master.res
             self.full_swath[date]['master'].processes['crop']['Data_output_file'] = 'master.raw'
+
+            pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
+
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+                                     '-p1 -P' + pixels + ' master.raw > master.ras'
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+                         '-p1 -P' + pixels + ' master_deramped.raw > master_deramped.ras'
 
         self.update_res()
 
@@ -980,6 +1024,29 @@ class SingleMaster(object):
         if concatenate == True:
             self.concatenate('cint_srp.raw', 'cint_srp.raw', dt= np.dtype('complex64'))
             for date in self.stack.keys():
+
+                # Add res file information
+                no_lines = self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original']
+                no_pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
+                line_0 = self.full_swath[date]['master'].processes['readfiles']['First_line (w.r.t. output_image)']
+                line_1 = self.full_swath[date]['master'].processes['readfiles']['Last_line (w.r.t. output_image)']
+                pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
+                pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
+
+                burst = self.stack[date].keys()[0]
+                res_2 = self.stack[date][burst]['ifgs'].processes['comp_refphase']
+                res_1 = self.stack[date][burst]['ifgs'].processes['subtr_refphase']
+
+                res_2['First_line (w.r.t. original_master)'] = line_0
+                res_2['Last_line (w.r.t. original_master)'] = line_1
+                res_2['First_pixel (w.r.t. original_master)'] = pix_0
+                res_2['Last_pixel (w.r.t. original_master)'] = pix_1
+                res_2['Number of lines (multilooked)'] = no_lines
+                res_2['Number of pixels (multilooked)'] = no_pixels
+
+                self.full_swath[date]['ifgs'].processes['comp_refphase'] = res_1
+                self.full_swath[date]['ifgs'].processes['subtr_refphase'] = res_2
+
                 path = self.image_path(date)
                 os.chdir(path)
                 # Finally show preview based on cpxfiddle
@@ -1019,6 +1086,36 @@ class SingleMaster(object):
         if concatenate == True:
             self.concatenate('cint_srd.raw', 'cint_srd.raw', dt= np.dtype('complex64'))
             for date in self.stack.keys():
+
+                # Add res file information
+                no_lines = self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original']
+                no_pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
+                line_0 = self.full_swath[date]['master'].processes['readfiles']['First_line (w.r.t. output_image)']
+                line_1 = self.full_swath[date]['master'].processes['readfiles']['Last_line (w.r.t. output_image)']
+                pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
+                pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
+
+                burst = self.stack[date].keys()[0]
+                res_2 = self.stack[date][burst]['ifgs'].processes['comp_refdem']
+                res_1 = self.stack[date][burst]['ifgs'].processes['subtr_refdem']
+
+                res_1['First_line (w.r.t. original_master)'] = line_0
+                res_1['Last_line (w.r.t. original_master)'] = line_1
+                res_1['First_pixel (w.r.t. original_master)'] = pix_0
+                res_1['Last_pixel (w.r.t. original_master)'] = pix_1
+                res_1['Number of lines (multilooked)'] = no_lines
+                res_1['Number of pixels (multilooked)'] = no_pixels
+
+                res_2['First_line (w.r.t. original_master)'] = line_0
+                res_2['Last_line (w.r.t. original_master)'] = line_1
+                res_2['First_pixel (w.r.t. original_master)'] = pix_0
+                res_2['Last_pixel (w.r.t. original_master)'] = pix_1
+                res_2['Number of lines (multilooked)'] = no_lines
+                res_2['Number of pixels (multilooked)'] = no_pixels
+
+                self.full_swath[date]['ifgs'].processes['comp_refdem'] = res_1
+                self.full_swath[date]['ifgs'].processes['subtr_refdem'] = res_2
+
                 path = self.image_path(date)
                 os.chdir(path)
                 # Finally show preview based on cpxfiddle
@@ -1053,6 +1150,27 @@ class SingleMaster(object):
         if concatenate == True:
             self.concatenate('coherence.raw', 'coherence.raw', dt= np.dtype('float32'))
             for date in self.stack.keys():
+
+                # Add res file information
+                no_lines = self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original']
+                no_pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
+                line_0 = self.full_swath[date]['master'].processes['readfiles']['First_line (w.r.t. output_image)']
+                line_1 = self.full_swath[date]['master'].processes['readfiles']['Last_line (w.r.t. output_image)']
+                pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
+                pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
+
+                burst = self.stack[date].keys()[0]
+                res = self.stack[date][burst]['ifgs'].processes['coherence']
+
+                res['First_line (w.r.t. original_master)'] = line_0
+                res['Last_line (w.r.t. original_master)'] = line_1
+                res['First_pixel (w.r.t. original_master)'] = pix_0
+                res['Last_pixel (w.r.t. original_master)'] = pix_1
+                res['Number of lines (multilooked)'] = no_lines
+                res['Number of pixels (multilooked)'] = no_pixels
+
+                self.full_swath[date]['ifgs'].processes['coherence'] = res
+
                 path = self.image_path(date)
                 os.chdir(path)
                 # Finally show preview based on cpxfiddle
@@ -1082,6 +1200,27 @@ class SingleMaster(object):
         if concatenate == True:
             self.concatenate('cint_filt.raw', 'cint_filt.raw', dt= np.dtype('complex64'))
             for date in self.stack.keys():
+
+                # Add res file information
+                no_lines = self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original']
+                no_pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
+                line_0 = self.full_swath[date]['master'].processes['readfiles']['First_line (w.r.t. output_image)']
+                line_1 = self.full_swath[date]['master'].processes['readfiles']['Last_line (w.r.t. output_image)']
+                pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
+                pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
+
+                burst = self.stack[date].keys()[0]
+                res = self.stack[date][burst]['ifgs'].processes['filtphase']
+
+                res['First_line (w.r.t. original_master)'] = line_0
+                res['Last_line (w.r.t. original_master)'] = line_1
+                res['First_pixel (w.r.t. original_master)'] = pix_0
+                res['Last_pixel (w.r.t. original_master)'] = pix_1
+                res['Number of lines (multilooked)'] = no_lines
+                res['Number of pixels (multilooked)'] = no_pixels
+
+                self.full_swath[date]['ifgs'].processes['filtphase'] = res
+
                 path = self.image_path(date)
                 os.chdir(path)
                 # Finally show preview based on cpxfiddle
@@ -1137,6 +1276,55 @@ class SingleMaster(object):
                 # Cut out data with border of 20 px and write to file.
                 burst_image = np.memmap(burst_dat, dtype=dt, mode='r', shape=(burst_line,burst_pix))
                 full_image[(line_0+19):(line_1-20),(pix_0+19):(pix_1-20)] = burst_image[20:-20,20:-20]
+
+        self.update_res()
+
+    def multilook(self, ra=20, az= 5,step='filtphase'):
+        # This function does the multilooking using cpxfiddle and updates the resolution of the step variable. You
+        # have to careful that if you want to perform this step to follow on with a smaller data file, for e.g. unwrapping
+        # this should be the last mentioned step.
+
+        if step == 'filtphase':
+            filename = 'cint_filt.raw'
+            type = 'cr4'
+        elif step == 'coherence':
+            filename = 'coherence.raw'
+            type = 'r4'
+        elif step == 'subtrefdem':
+            filename = 'cint_srd.raw'
+            type = 'cr4'
+        elif step == 'subtrefpha':
+            filename = 'cint_srp.raw'
+            type = 'cr4'
+        elif step == 'interfero':
+            filename = 'cint.raw'
+            type = 'cr4'
+        else:
+            print('Choose for step between filtphase, coherence, subtrefdem, subtrefpha and interfero')
+
+        self.read_res()
+
+        for date in self.stack.keys():
+            lines = int(self.full_swath[date][type].processes['readfiles']['Number_of_lines_original'])
+            pixels = int(self.full_swath[date][type].processes['readfiles']['Number_of_pixels_original'])
+
+            # Create cpxfiddle command
+            command = ' -w ' + str(pixels) + ' -o float -M ' + str(ra) + '/'+ str(az) + ' -f ' + type + ' -l1 ' \
+                                             '-p1 -P' + str(pixels) + ' ' + filename + ' > ' + filename
+            os.system(self.cpxfiddle + command)
+
+            # Update res file
+            new_lines = str(floor(lines / az))
+            new_pixels = str(floor(pixels / ra))
+
+            res = self.stack[date][burst]['ifgs'].processes[step]
+
+            res['Multilookfactor_azimuth_direction'] = str(az)
+            res['Multilookfactor_range_direction'] = str(ra)
+            res['Number of lines (multilooked)'] = new_lines
+            res['Number of pixels (multilooked)'] = new_pixels
+
+            self.stack[date][burst]['ifgs'].processes[step] = res
 
         self.update_res()
 
