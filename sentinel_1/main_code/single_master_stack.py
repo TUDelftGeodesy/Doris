@@ -241,10 +241,10 @@ class SingleMaster(object):
             self.full_swath[date]['slave'].processes['readfiles']['Number_of_pixels_original'] = no_pixels
 
             # Change readfiles
-            self.full_swath[date]['slave'].processes['readfiles']['First_line (w.r.t. original_image)'] = '1'
-            self.full_swath[date]['slave'].processes['readfiles']['Last_line (w.r.t. original_image)'] = no_lines
-            self.full_swath[date]['slave'].processes['readfiles']['First_pixel (w.r.t. original_image)'] = '1'
-            self.full_swath[date]['slave'].processes['readfiles']['Last_pixel (w.r.t. original_image)'] = no_pixels
+            self.full_swath[date]['slave'].processes['readfiles']['First_line (w.r.t. output_image)'] = '1'
+            self.full_swath[date]['slave'].processes['readfiles']['Last_line (w.r.t. output_image)'] = no_lines
+            self.full_swath[date]['slave'].processes['readfiles']['First_pixel (w.r.t. output_image)'] = '1'
+            self.full_swath[date]['slave'].processes['readfiles']['Last_pixel (w.r.t. output_image)'] = no_pixels
 
             # Change in crop
             self.full_swath[date]['slave'].processes['crop']['First_line (w.r.t. original_image)'] = '1'
@@ -1308,18 +1308,23 @@ class SingleMaster(object):
 
         if step == 'filtphase':
             filename = 'cint_filt.raw'
+            filename2 = 'cint_filt_ml.raw'
             type = 'cr4'
         elif step == 'coherence':
             filename = 'coherence.raw'
+            filename2 = 'coherence_ml.raw'
             type = 'r4'
         elif step == 'subtrefdem':
             filename = 'cint_srd.raw'
+            filename2 = 'cint_srd_ml.raw'
             type = 'cr4'
         elif step == 'subtrefpha':
             filename = 'cint_srp.raw'
+            filename2 = 'cint_srp_ml.raw'
             type = 'cr4'
         elif step == 'interfero':
             filename = 'cint.raw'
+            filename2 = 'cint_ml.raw'
             type = 'cr4'
         else:
             print('Choose for step between filtphase, coherence, subtrefdem, subtrefpha and interfero')
@@ -1327,26 +1332,48 @@ class SingleMaster(object):
         self.read_res()
 
         for date in self.stack.keys():
-            lines = int(self.full_swath[date][type].processes['readfiles']['Number_of_lines_original'])
-            pixels = int(self.full_swath[date][type].processes['readfiles']['Number_of_pixels_original'])
+            lines = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original'])
+            pixels = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original'])
+
+            date_path = self.image_path(date)
+            os.chdir(date_path)
 
             # Create cpxfiddle command
-            command = ' -w ' + str(pixels) + ' -o float -M ' + str(ra) + '/'+ str(az) + ' -f ' + type + ' -l1 ' \
-                                             '-p1 -P' + str(pixels) + ' ' + filename + ' > ' + filename
+            command = ' -w ' + str(pixels) + ' -o float -M ' + str(ra) + '/'+ str(az) + ' -f ' + type + ' ' \
+                                             '-l1 -p1 -P' + str(pixels) + ' -q normal ' + filename + ' > ' + filename2
             os.system(self.cpxfiddle + command)
 
             # Update res file
-            new_lines = str(floor(lines / az))
-            new_pixels = str(floor(pixels / ra))
+            new_lines = str(int(np.floor(lines / az)))
+            new_pixels = str(int(np.floor(pixels / ra)))
 
-            res = self.stack[date][burst]['ifgs'].processes[step]
+            res = self.full_swath[date]['ifgs'].processes[step]
 
+            res['Data_output_file'] = filename2
             res['Multilookfactor_azimuth_direction'] = str(az)
             res['Multilookfactor_range_direction'] = str(ra)
             res['Number of lines (multilooked)'] = new_lines
             res['Number of pixels (multilooked)'] = new_pixels
 
-            self.stack[date][burst]['ifgs'].processes[step] = res
+            self.full_swath[date]['ifgs'].processes[step] = res
+
+            # Finally create an image using cpxfiddle (full resolution)
+            if type == 'r4':
+                # Only show the magnitude
+                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 1/1 -f r4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '.ras'
+                os.system(self.cpxfiddle + mag)
+            elif type == 'cr4':
+                # Show the 3 images
+                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 1/1 -f cr4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_mag.ras'
+                os.system(self.cpxfiddle + mag)
+                mix = ' -w ' + new_pixels + ' -e 0.3 -s 1.2 -q mixed -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename[:-4] + '_mix.ras'
+                os.system(self.cpxfiddle + mix)
+                pha = ' -w ' + new_pixels + ' -q phase -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_pha.ras'
+                os.system(self.cpxfiddle + pha)
 
         self.update_res()
 
