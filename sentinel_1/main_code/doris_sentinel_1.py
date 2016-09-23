@@ -177,10 +177,13 @@ class DorisSentinel1(object):
         profile.log_time_stamp('calc_coordinates')
         profile.log_time_stamp('end')
 
-        # Multilook filtered image
-
-
+        # Multilook filtered image and coherence image
+        processing.multilook(step='coherence')
+        processing.multilook(step='filtphase')
+        profile.log_time_stamp('multilooking')
         # Unwrap image
+        processing.unwrap()
+        profile.log_time_stamp('unwrapping')
 
 
 	print 'end sentinel 1 processing'

@@ -1259,6 +1259,17 @@ class SingleMaster(object):
 
         self.update_res()
 
+    def unwrap(self):
+        # This function is used to call the unwrapping program snaphu via doris.
+
+        for date in self.stack.keys():
+
+            path = self.image_path(date)
+            os.chdir(path)
+
+            command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.unwrap')
+            os.system(command)
+
     def concatenate(self,burst_file,master_file,dt=np.dtype(np.float32),type='master'):
         # Concatenate all burst to a single full swath product. If burst_file = 'master' then the input master files are read...
 
