@@ -91,9 +91,9 @@ class DorisSentinel1(object):
                                                       doris_path=doris_path, cpxfiddle_folder=cpxfiddle_folder)
 
         # These lines can be used if you want to skip the initialize step because a some calculation steps are already performed....
-        #del processing.stack[master_date]
-        #del processing.full_swath[master_date]
-        #processing.read_res()
+        del processing.stack[master_date.strftime('%Y-%m-%d')]
+        del processing.full_swath[master_date.strftime('%Y-%m-%d')]
+        processing.read_res()
 
         # Copy the necessary files to start processing
         processing.initialize()
@@ -176,6 +176,12 @@ class DorisSentinel1(object):
         processing.calc_coordinates()
         profile.log_time_stamp('calc_coordinates')
         profile.log_time_stamp('end')
+
+        # Multilook filtered image
+
+
+        # Unwrap image
+
 
 	print 'end sentinel 1 processing'
 

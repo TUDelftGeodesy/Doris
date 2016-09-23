@@ -211,6 +211,8 @@ class SingleMaster(object):
             bursts = self.stack[date].keys()
             self.full_swath[date] = copy.deepcopy(self.stack[date][bursts[0]])
 
+
+            # Information slave images
             az_time = self.full_swath[date]['slave'].processes['readfiles']['First_pixel_azimuth_time (UTC)']
             az_time = datetime.strptime(az_time,'%Y-%b-%d %H:%M:%S.%f')
             range_time = float(self.full_swath[date]['slave'].processes['readfiles']['Range_time_to_first_pixel (2way) (ms)'])
@@ -238,13 +240,11 @@ class SingleMaster(object):
             self.full_swath[date]['slave'].processes['readfiles']['Number_of_lines_original'] = no_lines
             self.full_swath[date]['slave'].processes['readfiles']['Number_of_pixels_original'] = no_pixels
 
-            # Remove from readfiles
-            self.full_swath[date]['slave'].processes['readfiles'].pop('First_line (w.r.t. output_image)')
-            self.full_swath[date]['slave'].processes['readfiles'].pop('Last_line (w.r.t. output_image)')
-            self.full_swath[date]['slave'].processes['readfiles'].pop('First_pixel (w.r.t. output_image)')
-            self.full_swath[date]['slave'].processes['readfiles'].pop('Last_pixel (w.r.t. output_image)')
-            self.full_swath[date]['slave'].processes['readfiles'].pop('Number_of_pixels_output_image')
-            self.full_swath[date]['slave'].processes['readfiles'].pop('Number_of_lines_output_image')
+            # Change readfiles
+            self.full_swath[date]['slave'].processes['readfiles']['First_line (w.r.t. original_image)'] = '1'
+            self.full_swath[date]['slave'].processes['readfiles']['Last_line (w.r.t. original_image)'] = no_lines
+            self.full_swath[date]['slave'].processes['readfiles']['First_pixel (w.r.t. original_image)'] = '1'
+            self.full_swath[date]['slave'].processes['readfiles']['Last_pixel (w.r.t. original_image)'] = no_pixels
 
             # Change in crop
             self.full_swath[date]['slave'].processes['crop']['First_line (w.r.t. original_image)'] = '1'
@@ -767,6 +767,8 @@ class SingleMaster(object):
             jobs.run(jobList4)
 
     def interferogram(self,concatenate = True):
+
+        self.read_res()
         # Make an interferogram for the different bursts. (Not always necessary)
         jobList = []
         for date in self.stack.keys():
@@ -803,7 +805,7 @@ class SingleMaster(object):
                 res['Number of lines (multilooked)'] = no_lines
                 res['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].processes['interfero'] = res
+                self.full_swath[date]['ifgs'].insert(res, 'interfero')
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -820,6 +822,8 @@ class SingleMaster(object):
                 pha = ' -w ' + pixels + ' -q phase -o sunraster -b -c jet -M 20/5 -f cr4 -l1 ' \
                                                  '-p1 -P' + pixels + ' cint.raw > interferogram_pha.ras'
                 os.system(self.cpxfiddle + pha)
+
+        self.update_res()
 
     def overlapping(self):
         # This function calculates the overlapping areas between different bursts. This function will give a list of
@@ -946,7 +950,7 @@ class SingleMaster(object):
         # This function concatenates the different slave values. Both ramped and deramped.
 
         self.read_res()
-        self.concatenate('slave_rsmp.raw', 'slave.rsmp.raw', dt= np.dtype('complex64'))
+        self.concatenate('slave_rsmp.raw', 'slave_rsmp.raw', dt= np.dtype('complex64'))
         self.concatenate('slave_rsmp_deramped.raw', 'slave_rsmp_deramped.raw', dt=np.dtype('complex64'))
 
         # Add the resample step to the .res file
@@ -970,10 +974,12 @@ class SingleMaster(object):
 
             pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
 
-            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f cr4 -l1 ' \
                                      '-p1 -P' + pixels + ' slave_rsmp.raw > slave_rsmp.ras'
-            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+            os.system(self.cpxfiddle + mag)
+            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f cr4 -l1 ' \
                          '-p1 -P' + pixels + ' slave_rsmp_deramped.raw > slave_rsmp_deramped.ras'
+            os.system(self.cpxfiddle + mag)
 
         self.update_res()
 
@@ -982,7 +988,7 @@ class SingleMaster(object):
 
         self.read_res()
         self.concatenate('master', 'master.raw', dt= np.dtype('int32'))
-        self.concatenate('master_deramped.raw', 'master_deramped.raw', dt= np.dtype('complex64'))
+        self.concatenate('master_deramped.raw', 'master_deramped.raw', dt= np.dtype('int32'))
 
         # Add the resample step to the .res file
         for date in self.stack.keys():
@@ -991,17 +997,17 @@ class SingleMaster(object):
 
             pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
 
-            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f ci2 -l1 ' \
                                      '-p1 -P' + pixels + ' master.raw > master.ras'
-            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
+            os.system(self.cpxfiddle + mag)
+            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f ci2 -l1 ' \
                          '-p1 -P' + pixels + ' master_deramped.raw > master_deramped.ras'
+            os.system(self.cpxfiddle + mag)
 
         self.update_res()
 
     def ref_phase(self,concatenate=True):
         # This function performs the final steps in making an interferogram for all full images.
-
-
 
         for date in self.stack.keys():
             job_list1 = []
@@ -1020,6 +1026,8 @@ class SingleMaster(object):
                 jobs = Jobs(self.nr_of_jobs)
                 jobs.run(job_list1)
                 jobs.run(job_list2)
+
+        self.read_res()
 
         if concatenate == True:
             self.concatenate('cint_srp.raw', 'cint_srp.raw', dt= np.dtype('complex64'))
@@ -1044,8 +1052,8 @@ class SingleMaster(object):
                 res_2['Number of lines (multilooked)'] = no_lines
                 res_2['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].processes['comp_refphase'] = res_1
-                self.full_swath[date]['ifgs'].processes['subtr_refphase'] = res_2
+                self.full_swath[date]['ifgs'].insert(res_1, 'comp_refphase')
+                self.full_swath[date]['ifgs'].insert(res_2, 'subtr_refphase')
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1062,6 +1070,8 @@ class SingleMaster(object):
                 pha = ' -w ' + pixels + ' -q phase -o sunraster -b -c jet -M 20/5 -f cr4 -l1 ' \
                                                  '-p1 -P' + pixels + ' cint_srp.raw > interferogram_srp_pha.ras'
                 os.system(self.cpxfiddle + pha)
+
+        self.update_res()
 
     def ref_dem(self,concatenate=True):
         # This function performs the final steps in making an interferogram for all full images.
@@ -1082,6 +1092,8 @@ class SingleMaster(object):
                 jobs = Jobs(self.nr_of_jobs)
                 jobs.run(job_list1)
                 jobs.run(job_list2)
+
+        self.read_res()
 
         if concatenate == True:
             self.concatenate('cint_srd.raw', 'cint_srd.raw', dt= np.dtype('complex64'))
@@ -1113,8 +1125,8 @@ class SingleMaster(object):
                 res_2['Number of lines (multilooked)'] = no_lines
                 res_2['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].processes['comp_refdem'] = res_1
-                self.full_swath[date]['ifgs'].processes['subtr_refdem'] = res_2
+                self.full_swath[date]['ifgs'].insert(res_1, 'comp_refdem')
+                self.full_swath[date]['ifgs'].insert(res_2, 'subtr_refdem')
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1132,6 +1144,8 @@ class SingleMaster(object):
                                                  '-p1 -P' + pixels + ' cint_srd.raw > interferogram_srd_pha.ras'
                 os.system(self.cpxfiddle + pha)
 
+        self.update_res()
+
     def coherence(self,concatenate=True):
         # This function performs the final steps in making an interferogram for all full images.
         for date in self.stack.keys():
@@ -1146,6 +1160,8 @@ class SingleMaster(object):
             if (self.parallel):
                 jobs = Jobs(self.nr_of_jobs)
                 jobs.run(job_list)
+
+        self.read_res()
 
         if concatenate == True:
             self.concatenate('coherence.raw', 'coherence.raw', dt= np.dtype('float32'))
@@ -1169,7 +1185,7 @@ class SingleMaster(object):
                 res['Number of lines (multilooked)'] = no_lines
                 res['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].processes['coherence'] = res
+                self.full_swath[date]['ifgs'].insert(res, 'coherence')
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1180,6 +1196,8 @@ class SingleMaster(object):
                 mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -r 0.0/1.0 -f r4 -l1 ' \
                                                  '-p1 -P' + pixels + ' coherence.raw > coherence.ras'
                 os.system(self.cpxfiddle + mag)
+
+        self.update_res()
 
     def phasefilt(self,concatenate=True):
         # This function performs the phase filtering of the individual bursts.
@@ -1196,6 +1214,8 @@ class SingleMaster(object):
             if (self.parallel):
                 jobs = Jobs(self.nr_of_jobs)
                 jobs.run(job_list)
+
+        self.read_res()
 
         if concatenate == True:
             self.concatenate('cint_filt.raw', 'cint_filt.raw', dt= np.dtype('complex64'))
@@ -1219,7 +1239,7 @@ class SingleMaster(object):
                 res['Number of lines (multilooked)'] = no_lines
                 res['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].processes['filtphase'] = res
+                self.full_swath[date]['ifgs'].insert(res, 'filtphase')
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1236,6 +1256,8 @@ class SingleMaster(object):
                 pha = ' -w ' + pixels + ' -q phase -o sunraster -b -c jet -M 20/5 -f cr4 -l1 ' \
                                                  '-p1 -P' + pixels + ' cint_filt.raw > interferogram_filt_pha.ras'
                 os.system(self.cpxfiddle + pha)
+
+        self.update_res()
 
     def concatenate(self,burst_file,master_file,dt=np.dtype(np.float32),type='master'):
         # Concatenate all burst to a single full swath product. If burst_file = 'master' then the input master files are read...
