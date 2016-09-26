@@ -796,7 +796,7 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res = self.stack[date][burst]['ifgs'].processes['interfero']
+                res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['interfero'])
 
                 res['First_line (w.r.t. original_master)'] = line_0
                 res['Last_line (w.r.t. original_master)'] = line_1
@@ -1042,8 +1042,8 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res_2 = self.stack[date][burst]['ifgs'].processes['comp_refphase']
-                res_1 = self.stack[date][burst]['ifgs'].processes['subtr_refphase']
+                res_2 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['comp_refphase'])
+                res_1 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['subtr_refphase'])
 
                 res_2['First_line (w.r.t. original_master)'] = line_0
                 res_2['Last_line (w.r.t. original_master)'] = line_1
@@ -1108,8 +1108,8 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res_2 = self.stack[date][burst]['ifgs'].processes['comp_refdem']
-                res_1 = self.stack[date][burst]['ifgs'].processes['subtr_refdem']
+                res_2 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['comp_refdem'])
+                res_1 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['subtr_refdem'])
 
                 res_1['First_line (w.r.t. original_master)'] = line_0
                 res_1['Last_line (w.r.t. original_master)'] = line_1
@@ -1176,7 +1176,7 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res = self.stack[date][burst]['ifgs'].processes['coherence']
+                res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['coherence'])
 
                 res['First_line (w.r.t. original_master)'] = line_0
                 res['Last_line (w.r.t. original_master)'] = line_1
@@ -1230,7 +1230,7 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res = self.stack[date][burst]['ifgs'].processes['filtphase']
+                res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['filtphase'])
 
                 res['First_line (w.r.t. original_master)'] = line_0
                 res['Last_line (w.r.t. original_master)'] = line_1
@@ -1264,11 +1264,25 @@ class SingleMaster(object):
 
         for date in self.stack.keys():
 
+
             path = self.image_path(date)
             os.chdir(path)
 
+            # First create an phase input file for unwrapping
+            pixels = self.full_swath[date]['ifgs'].processes['filtphase']['Number of pixels (multilooked)']
+            print pixels
+            pha = ' -w ' + pixels + ' -q phase -o float -M 1/1 -f cr4 -l1 ' \
+                                    '-p1 -P' + pixels + ' cint_filt_ml.raw > unwrap_input.raw'
+            os.system(self.cpxfiddle + pha)
+
             command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.unwrap')
             os.system(command)
+
+            # And create an image using cpxfiddle
+
+            pha = ' -w ' + pixels + ' -q normal -o sunraster -b -c jet -M 1/1 -f r4 -l1 ' \
+                                    '-p1 -P' + pixels + ' unwrapped.raw > unwrapped.ras'
+            os.system(self.cpxfiddle + pha)
 
     def concatenate(self,burst_file,master_file,dt=np.dtype(np.float32),type='master'):
         # Concatenate all burst to a single full swath product. If burst_file = 'master' then the input master files are read...
@@ -1371,7 +1385,7 @@ class SingleMaster(object):
             # Finally create an image using cpxfiddle (full resolution)
             if type == 'r4':
                 # Only show the magnitude
-                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 1/1 -f r4 -l1 ' \
+                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q normal -o sunraster -b -c gray -M 1/1 -f r4 -l1 ' \
                                                  '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '.ras'
                 os.system(self.cpxfiddle + mag)
             elif type == 'cr4':
