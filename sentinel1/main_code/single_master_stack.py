@@ -10,35 +10,26 @@ from resdata import ResData
 from geocode_master import geocode_master
 from ESD_administration import get_BOL_lines, get_f_DC_difference, get_interfero, get_parameter, freadbk, apply_ESD_Nida
 from scipy import linalg
-import resdata
-import collections
 
-from jobs import Jobs
-from dorisparameters import DorisParameters
 
 class SingleMaster(object):
 
     def __init__(self,datastack=[],stack_read=False,start_date='',end_date='',master_date='',stack_folder='',processing_folder='',
-                 input_files='',doris_path='', cpxfiddle_folder=''):
+                 input_files='',script_folder='',doris_path='', cpxfiddle_folder=''):
         # This function loads in a datastack to create a single master stack. Optional are the start date, end date and
         # master date. If they are not defined all dates will be loaded. The master date can be loaded later using the
         # master function. If you want a random master value, choose master_date='random'
         # Dates should be given as 'yyyy-mm-dd'. If stack_read is True information is read from the stack_folder. Otherwise
         # the datastack from an StackData object should be given as input.
 
-        doris_parameters = DorisParameters()
-
         if not start_date:
-            self.start_date = doris_parameters.start_date_default
+            self.start_date = datetime.strptime('2010-01-01','%Y-%m-%d')
         else:
-            self.start_date = start_date
+            self.start_date = datetime.strptime(start_date,'%Y-%m-%d')
         if not end_date:
-            self.end_date = doris_parameters.end_date_default
+            self.end_date = datetime.strptime('2100-01-01','%Y-%m-%d')
         else:
-            self.end_date = end_date
-
-        self.nr_of_jobs = doris_parameters.nr_of_jobs
-        self.parallel = doris_parameters.parallel
+            self.end_date = datetime.strptime(end_date,'%Y-%m-%d')
 
         self.stack = dict()
         self.full_swath = dict()
@@ -49,6 +40,7 @@ class SingleMaster(object):
         self.doris_path = doris_path
         self.cpxfiddle = cpxfiddle_folder
         self.input_files = input_files
+        self.script_folder = script_folder
         self.ESD_shift = dict()
         self.pi_shift = dict()
         self.swath = dict()
@@ -92,7 +84,7 @@ class SingleMaster(object):
 
                     for burst in bursts:
                         slave_res = os.path.join(self.stack_folder, fold, swath, burst)
-                        burst_name = 'burst_' + burst.split('.')[0][20:]
+                        burst_name = 'burst-' + burst.split('.')[0][20:]
                         self.datastack[date][swath][burst_name] = ResData(slave_res)
 
     def stack_read(self):
@@ -148,7 +140,7 @@ class SingleMaster(object):
 
     def master(self,master_date):
         # Load master date
-        self.master_date = master_date.strftime('%Y-%m-%d')
+        self.master_date = master_date
         self.master_key = self.master_date[:4] + self.master_date[5:7] + self.master_date[8:10]
 
         if not master_date in self.stack.keys():
@@ -213,8 +205,6 @@ class SingleMaster(object):
             bursts = self.stack[date].keys()
             self.full_swath[date] = copy.deepcopy(self.stack[date][bursts[0]])
 
-
-            # Information slave images
             az_time = self.full_swath[date]['slave'].processes['readfiles']['First_pixel_azimuth_time (UTC)']
             az_time = datetime.strptime(az_time,'%Y-%b-%d %H:%M:%S.%f')
             range_time = float(self.full_swath[date]['slave'].processes['readfiles']['Range_time_to_first_pixel (2way) (ms)'])
@@ -242,11 +232,13 @@ class SingleMaster(object):
             self.full_swath[date]['slave'].processes['readfiles']['Number_of_lines_original'] = no_lines
             self.full_swath[date]['slave'].processes['readfiles']['Number_of_pixels_original'] = no_pixels
 
-            # Change readfiles
-            self.full_swath[date]['slave'].processes['readfiles']['First_line (w.r.t. output_image)'] = '1'
-            self.full_swath[date]['slave'].processes['readfiles']['Last_line (w.r.t. output_image)'] = no_lines
-            self.full_swath[date]['slave'].processes['readfiles']['First_pixel (w.r.t. output_image)'] = '1'
-            self.full_swath[date]['slave'].processes['readfiles']['Last_pixel (w.r.t. output_image)'] = no_pixels
+            # Remove from readfiles
+            self.full_swath[date]['slave'].processes['readfiles'].pop('First_line (w.r.t. output_image)')
+            self.full_swath[date]['slave'].processes['readfiles'].pop('Last_line (w.r.t. output_image)')
+            self.full_swath[date]['slave'].processes['readfiles'].pop('First_pixel (w.r.t. output_image)')
+            self.full_swath[date]['slave'].processes['readfiles'].pop('Last_pixel (w.r.t. output_image)')
+            self.full_swath[date]['slave'].processes['readfiles'].pop('Number_of_pixels_output_image')
+            self.full_swath[date]['slave'].processes['readfiles'].pop('Number_of_lines_output_image')
 
             # Change in crop
             self.full_swath[date]['slave'].processes['crop']['First_line (w.r.t. original_image)'] = '1'
@@ -275,62 +267,33 @@ class SingleMaster(object):
 
     def coarse_orbits(self):
         # Run coarse orbits for all bursts.
-## aanpassen DLEVELT TODO
-        job_list1 = []
+
         for date in self.stack.keys():
-            job_list2 = []
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
-                command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarseorb')
-                job_list2.append([path, command2])
-                if(not(self.parallel)):
-                    os.chdir(path)
-                    os.system(command2)
-            if(self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
-                jobs.run(job_list2)
+                os.chdir(path)
+                os.system(self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarseorb'))
 
             # Run coarse orbits for full swath
             folder = self.image_path(date)
-            command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarseorb')
-            job_list1.append([folder, command1])
-            if(not(self.parallel)):
-                os.chdir(folder)
-                os.system(command1)
-        if(self.parallel):
-            jobs = Jobs(self.nr_of_jobs)
-            jobs.run(job_list1)
+            os.chdir(folder)
+            os.system(self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarseorb'))
 
     def coarse_correlation(self,ps = False):
         # Run coarse correlation.
+
         for date in self.stack.keys():
-            job_list1 = []
-            job_list2 = []
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
                 os.chdir(path)
                 if ps is True:
                     master_file = self.dat_file(burst,date='master',full_path=False)
-                    command1 = 'python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc'
-                    job_list1.append([path, command1])
-                    command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr_pointscat')
-                    job_list2.append([path, command2])
-                    if(not(self.parallel)):
-                        # TODO David
-                        os.system('python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc')
-                        os.system(command2)
+                    os.system('python ' + os.path.join(self.script_folder,'get_winpos.py') + ' ' + master_file + ' master.res 21 winpos_cc.asc')
+                    os.system(self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr_pointscat'))
                 if ps is False:
-                    command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr_random')
-                    job_list1.append([path, command])
-                    if(not(self.parallel)):
-                        os.system(command)
-
-            if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
-                jobs.run(job_list1)
-                jobs.run(job_list2)
+                    os.system(self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr_random'))
 
     def correct_coarse_correlation(self):
         # Correct coarse orbits to same reference system for whole image.
@@ -387,8 +350,6 @@ class SingleMaster(object):
     def deramp(self,stage=1):
         # Deramp slave and masters and slaves of bursts.
 
-        job_list1 = []
-        job_list2 = []
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
 
@@ -396,51 +357,25 @@ class SingleMaster(object):
 
                 master_file = self.dat_file(burst,date='master',full_path=False)
                 slave_file = self.dat_file(burst,date='slave',full_path=False)
-                #TODO david command
-                command1 = 'python -m ' + 'do_deramp_SLC' + ' ' + master_file + ' master.res'
-                job_list1.append([path, command1])
-                command2 = 'python -m ' + 'do_deramp_SLC' + ' ' + slave_file + ' slave.res'
-                job_list2.append([path, command2])
-                if(not(self.parallel)):
-                    os.chdir(path)
-                    os.system('python -m ' + 'do_deramp_SLC.py' + ' ' + master_file + ' master.res')
-                    os.system('python -m ' + 'do_deramp_SLC.py' + ' ' + slave_file + ' slave.res')
-        if(self.parallel):
-            jobs = Jobs(self.nr_of_jobs)
-            jobs.run(job_list1)
-            jobs.run(job_list2)
+                os.chdir(path)
+
+                os.system('python ' + os.path.join(self.script_folder, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res')
+                os.system('python ' + os.path.join(self.script_folder, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res')
 
     def icc_burst(self, ps=False):
         # Do the icc per burst
-        self.read_res()
-
-        job_list1 = []
-        job_list2 = []
 
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date,burst)
                 master_file = self.dat_file(burst,date='master',full_path=False)
-                if(not(self.parallel)):
-                    os.chdir(path)
+                os.chdir(path)
                 if ps == True:
-                    command1 = 'python -m' + 'get_winpos'  + ' ' + master_file + ' master.res 101 winpos_fine.asc'
-                    job_list1.append([path, command1])
-                    command2 = self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg_icc_pointscat')
-                    job_list2.append([path, command2])
-                    if (not(self.parallel)):
-                        os.system(command1)
-                        os.system(command2)
+                    os.system('python ' + os.path.join(self.script_folder,'get_winpos.py')  + ' ' + master_file + ' master.res 101 winpos_fine.asc')
+                    os.system(self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg_icc_pointscat'))
                 elif ps == False:
-                    command = self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg_icc_random')
-                    job_list1.append([path,command])
-                    if (not(self.parallel)):
-                        os.system(command)
-        if (self.parallel):
-            jobs = Jobs(self.nr_of_jobs)
-            jobs.run(job_list1)
-            jobs.run(job_list2)
+                    os.system(self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg_icc_random'))
 
     def coreg_full_swath(self):
         # Do the combined icc and dem coregistration for the full swath
@@ -493,19 +428,12 @@ class SingleMaster(object):
     def dac_bursts(self):
         # Do the DEM coregistration and coregpm for the full swath
 
-
         for date in self.stack.keys():
-            job_list = []
             for burst in self.stack[date].keys():
                 path = self.burst_path(date, burst)
-                command = self.doris_path + ' ' + os.path.join(self.input_files,'input.dembased')
-                job_list.append([path, command])
-                if(not(self.parallel)):
-                    os.chdir(path)
-                    os.system(command)
-            if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
-                jobs.run(job_list)
+                os.chdir(path)
+
+                os.system(self.doris_path + ' ' + os.path.join(self.input_files,'input.dembased'))
 
     def coreg_bursts(self,no_poly=True):
         # Write coregistration results from full swath to individual bursts
@@ -706,71 +634,35 @@ class SingleMaster(object):
 
     def resample(self):
         # Resample slave bursts
-        jobList = []
 
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
-                command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.resample_no_kernel_shift')
-                jobList.append([path, command])
-                if(not(self.parallel)):
-                    os.chdir(path)
-                    os.system(command)
-
-        if (self.parallel):
-            jobs = Jobs(self.nr_of_jobs)
-            jobs.run(jobList)
+                os.chdir(path)
+                os.system(self.doris_path + ' ' + os.path.join(self.input_files, 'input.resample_no_kernel_shift'))
 
     def reramp(self, master=False):
         # This function reramps the radar data. If master is True, we assume that there is still an original master file
         # Which means that it is not needed to reramp that one. If master is false, only the slave is reramped.
-        jobList1 = []
-        jobList2 = []
-        jobList3 = []
-        jobList4 = []
 
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
-                command1 = 'cp slave_rsmp.raw slave_rsmp_deramped.raw'
-                jobList1.append([path, command1])
-                #TODO david command
-                command2 = 'python -m' + 'do_reramp_SLC' + ' slave_rsmp.raw slave.res'
-                jobList2.append([path, command2])
-                master_file = self.dat_file(burst, 'master')
-                if(master):
+                os.chdir(path)
+                # Save the original deramped slave
+                os.system('cp slave_rsmp.raw slave_rsmp_deramped.raw')
+                os.system('python ' + os.path.join(self.script_folder, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res')
+
+                master_file = self.dat_file(burst,'master')
+                if master == True:
                     master_deramped = 'master_deramped.raw'
-                    command3 = 'cp ' + master_file + ' ' + master_deramped
+                    os.system('cp ' + master_file + ' ' + master_deramped)
                     master_orig = master_file + '.orig'
-                    command4 = 'cp ' + master_orig + ' ' + master_file
-
-                    jobList3.append([path, command3])
-                    jobList4.append([path, command4])
-                if(not(self.parallel)):
-                    os.chdir(path)
-                    # Save the original deramped slave
-                    os.system(command1)
-                    os.system('python -m ' + 'do_reramp_SLC.py' + ' slave_rsmp.raw slave.res')
-
-                    if master == True:
-                        master_deramped = 'master_deramped.raw'
-                        os.system('cp ' + master_file + ' ' + master_deramped)
-                        master_orig = master_file + '.orig'
-                        os.system('cp ' + master_orig + ' ' + master_file)
-# TODO Gert: is for all dates OK or should is be per date?
-
-        if(self.parallel):
-            jobs = Jobs(self.nr_of_jobs)
-            jobs.run(jobList1)
-            jobs.run(jobList2)
-            jobs.run(jobList3)
-            jobs.run(jobList4)
+                    os.system('cp ' + master_orig + ' ' + master_file)
 
     def interferogram(self,concatenate = True):
-
-        self.read_res()
         # Make an interferogram for the different bursts. (Not always necessary)
         jobList = []
         for date in self.stack.keys():
@@ -783,10 +675,12 @@ class SingleMaster(object):
                     os.chdir(path)
                     os.system(command)
         if (self.parallel):
-            jobs = Jobs(self.nr_of_jobs)
+            jobs = Jobs(self.nr_of_jobs, True)
             jobs.run(jobList)
         if concatenate == True:
             self.concatenate('cint.raw', 'cint.raw', dt= np.dtype('complex64'))
+            self.read_res()
+
             for date in self.stack.keys():
 
                 # Add res file information
@@ -798,7 +692,7 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['interfero'])
+                res = self.stack[date][burst]['ifgs'].processes['interfero']
 
                 res['First_line (w.r.t. original_master)'] = line_0
                 res['Last_line (w.r.t. original_master)'] = line_1
@@ -807,7 +701,7 @@ class SingleMaster(object):
                 res['Number of lines (multilooked)'] = no_lines
                 res['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].insert(res, 'interfero')
+                self.full_swath[date]['ifgs'].processes['interfero'] = res
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -825,7 +719,7 @@ class SingleMaster(object):
                                                  '-p1 -P' + pixels + ' cint.raw > interferogram_pha.ras'
                 os.system(self.cpxfiddle + pha)
 
-        self.update_res()
+            self.update_res()
 
     def overlapping(self):
         # This function calculates the overlapping areas between different bursts. This function will give a list of
@@ -952,7 +846,7 @@ class SingleMaster(object):
         # This function concatenates the different slave values. Both ramped and deramped.
 
         self.read_res()
-        self.concatenate('slave_rsmp.raw', 'slave_rsmp.raw', dt= np.dtype('complex64'))
+        self.concatenate('slave_rsmp.raw', 'slave.rsmp.raw', dt= np.dtype('complex64'))
         self.concatenate('slave_rsmp_deramped.raw', 'slave_rsmp_deramped.raw', dt=np.dtype('complex64'))
 
         # Add the resample step to the .res file
@@ -976,12 +870,10 @@ class SingleMaster(object):
 
             pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
 
-            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f cr4 -l1 ' \
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
                                      '-p1 -P' + pixels + ' slave_rsmp.raw > slave_rsmp.ras'
-            os.system(self.cpxfiddle + mag)
-            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f cr4 -l1 ' \
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
                          '-p1 -P' + pixels + ' slave_rsmp_deramped.raw > slave_rsmp_deramped.ras'
-            os.system(self.cpxfiddle + mag)
 
         self.update_res()
 
@@ -990,7 +882,7 @@ class SingleMaster(object):
 
         self.read_res()
         self.concatenate('master', 'master.raw', dt= np.dtype('int32'))
-        self.concatenate('master_deramped.raw', 'master_deramped.raw', dt= np.dtype('int32'))
+        self.concatenate('master_deramped.raw', 'master_deramped.raw', dt= np.dtype('complex64'))
 
         # Add the resample step to the .res file
         for date in self.stack.keys():
@@ -999,12 +891,10 @@ class SingleMaster(object):
 
             pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
 
-            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f ci2 -l1 ' \
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
                                      '-p1 -P' + pixels + ' master.raw > master.ras'
-            os.system(self.cpxfiddle + mag)
-            mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f ci2 -l1 ' \
+            mag = ' -w ' + pixels + ' -q normal -o sunraster -b -c gray -M 20/5 -f r4 -l1 ' \
                          '-p1 -P' + pixels + ' master_deramped.raw > master_deramped.ras'
-            os.system(self.cpxfiddle + mag)
 
         self.update_res()
 
@@ -1025,14 +915,14 @@ class SingleMaster(object):
                     os.system(command1)
                     os.system(command2)
             if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
+                jobs = Jobs(self.nr_of_jobs, True)
                 jobs.run(job_list1)
                 jobs.run(job_list2)
 
-        self.read_res()
-
         if concatenate == True:
             self.concatenate('cint_srp.raw', 'cint_srp.raw', dt= np.dtype('complex64'))
+            self.read_res()
+
             for date in self.stack.keys():
 
                 # Add res file information
@@ -1044,8 +934,8 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res_2 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['comp_refphase'])
-                res_1 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['subtr_refphase'])
+                res_2 = self.stack[date][burst]['ifgs'].processes['comp_refphase']
+                res_1 = self.stack[date][burst]['ifgs'].processes['subtr_refphase']
 
                 res_2['First_line (w.r.t. original_master)'] = line_0
                 res_2['Last_line (w.r.t. original_master)'] = line_1
@@ -1054,8 +944,8 @@ class SingleMaster(object):
                 res_2['Number of lines (multilooked)'] = no_lines
                 res_2['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].insert(res_1, 'comp_refphase')
-                self.full_swath[date]['ifgs'].insert(res_2, 'subtr_refphase')
+                self.full_swath[date]['ifgs'].processes['comp_refphase'] = res_1
+                self.full_swath[date]['ifgs'].processes['subtr_refphase'] = res_2
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1073,7 +963,7 @@ class SingleMaster(object):
                                                  '-p1 -P' + pixels + ' cint_srp.raw > interferogram_srp_pha.ras'
                 os.system(self.cpxfiddle + pha)
 
-        self.update_res()
+            self.update_res()
 
     def ref_dem(self,concatenate=True):
         # This function performs the final steps in making an interferogram for all full images.
@@ -1091,14 +981,14 @@ class SingleMaster(object):
                     os.system(command1)
                     os.system(command2)
             if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
+                jobs = Jobs(self.nr_of_jobs, True)
                 jobs.run(job_list1)
                 jobs.run(job_list2)
 
-        self.read_res()
-
         if concatenate == True:
             self.concatenate('cint_srd.raw', 'cint_srd.raw', dt= np.dtype('complex64'))
+            self.read_res()
+
             for date in self.stack.keys():
 
                 # Add res file information
@@ -1110,8 +1000,8 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res_2 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['comp_refdem'])
-                res_1 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['subtr_refdem'])
+                res_2 = self.stack[date][burst]['ifgs'].processes['comp_refdem']
+                res_1 = self.stack[date][burst]['ifgs'].processes['subtr_refdem']
 
                 res_1['First_line (w.r.t. original_master)'] = line_0
                 res_1['Last_line (w.r.t. original_master)'] = line_1
@@ -1127,8 +1017,8 @@ class SingleMaster(object):
                 res_2['Number of lines (multilooked)'] = no_lines
                 res_2['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].insert(res_1, 'comp_refdem')
-                self.full_swath[date]['ifgs'].insert(res_2, 'subtr_refdem')
+                self.full_swath[date]['ifgs'].processes['comp_refdem'] = res_1
+                self.full_swath[date]['ifgs'].processes['subtr_refdem'] = res_2
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1146,7 +1036,7 @@ class SingleMaster(object):
                                                  '-p1 -P' + pixels + ' cint_srd.raw > interferogram_srd_pha.ras'
                 os.system(self.cpxfiddle + pha)
 
-        self.update_res()
+            self.update_res()
 
     def coherence(self,concatenate=True):
         # This function performs the final steps in making an interferogram for all full images.
@@ -1160,13 +1050,13 @@ class SingleMaster(object):
                     os.chdir(path)
                     os.system(command)
             if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
+                jobs = Jobs(self.nr_of_jobs, True)
                 jobs.run(job_list)
-
-        self.read_res()
 
         if concatenate == True:
             self.concatenate('coherence.raw', 'coherence.raw', dt= np.dtype('float32'))
+            self.read_res()
+
             for date in self.stack.keys():
 
                 # Add res file information
@@ -1178,7 +1068,7 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['coherence'])
+                res = self.stack[date][burst]['ifgs'].processes['coherence']
 
                 res['First_line (w.r.t. original_master)'] = line_0
                 res['Last_line (w.r.t. original_master)'] = line_1
@@ -1187,7 +1077,7 @@ class SingleMaster(object):
                 res['Number of lines (multilooked)'] = no_lines
                 res['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].insert(res, 'coherence')
+                self.full_swath[date]['ifgs'].processes['coherence'] = res
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1199,7 +1089,7 @@ class SingleMaster(object):
                                                  '-p1 -P' + pixels + ' coherence.raw > coherence.ras'
                 os.system(self.cpxfiddle + mag)
 
-        self.update_res()
+            self.update_res()
 
     def phasefilt(self,concatenate=True):
         # This function performs the phase filtering of the individual bursts.
@@ -1214,13 +1104,13 @@ class SingleMaster(object):
                     os.chdir(path)
                     os.system(command)
             if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
+                jobs = Jobs(self.nr_of_jobs, True)
                 jobs.run(job_list)
-
-        self.read_res()
 
         if concatenate == True:
             self.concatenate('cint_filt.raw', 'cint_filt.raw', dt= np.dtype('complex64'))
+            self.read_res()
+
             for date in self.stack.keys():
 
                 # Add res file information
@@ -1232,7 +1122,7 @@ class SingleMaster(object):
                 pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
                 burst = self.stack[date].keys()[0]
-                res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['filtphase'])
+                res = self.stack[date][burst]['ifgs'].processes['filtphase']
 
                 res['First_line (w.r.t. original_master)'] = line_0
                 res['Last_line (w.r.t. original_master)'] = line_1
@@ -1241,7 +1131,7 @@ class SingleMaster(object):
                 res['Number of lines (multilooked)'] = no_lines
                 res['Number of pixels (multilooked)'] = no_pixels
 
-                self.full_swath[date]['ifgs'].insert(res, 'filtphase')
+                self.full_swath[date]['ifgs'].processes['filtphase'] = res
 
                 path = self.image_path(date)
                 os.chdir(path)
@@ -1259,74 +1149,7 @@ class SingleMaster(object):
                                                  '-p1 -P' + pixels + ' cint_filt.raw > interferogram_filt_pha.ras'
                 os.system(self.cpxfiddle + pha)
 
-        self.update_res()
-
-    def unwrap(self):
-        # This function is used to call the unwrapping program snaphu via doris.
-
-        for date in self.stack.keys():
-
-
-            path = self.image_path(date)
-            os.chdir(path)
-
-            # First create an phase input file for unwrapping
-            pixels = self.full_swath[date]['ifgs'].processes['filtphase']['Number of pixels (multilooked)']
-            print pixels
-            pha = ' -w ' + pixels + ' -q phase -o float -M 1/1 -f cr4 -l1 ' \
-                                    '-p1 -P' + pixels + ' cint_filt_ml.raw > unwrap_input.raw'
-            os.system(self.cpxfiddle + pha)
-
-            command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.unwrap')
-            os.system(command)
-
-            # And create an image using cpxfiddle
-
-            pha = ' -w ' + pixels + ' -q normal -o sunraster -b -c jet -M 1/1 -f r4 -l1 ' \
-                                    '-p1 -P' + pixels + ' unwrapped.raw > unwrapped.ras'
-            os.system(self.cpxfiddle + pha)
-
-    def concatenate(self,burst_file,master_file,dt=np.dtype(np.float32),type='master'):
-        # Concatenate all burst to a single full swath product. If burst_file = 'master' then the input master files are read...
-
-        self.read_res()
-
-        for date in self.stack.keys():
-            # Create master path
-            master = self.image_path(date,file_path=master_file)
-
-            # Read image size
-            bursts = self.stack[date].keys()
-            no_lines = int(self.full_swath[date][type].processes['readfiles']['Number_of_lines_original'])
-            no_pixels = int(self.full_swath[date][type].processes['readfiles']['Number_of_pixels_original'])
-
-            # First use memmap to get a memory map of the full file.
-            full_image = np.memmap(master, dtype=dt, mode='w+', shape=(no_lines, no_pixels))
-
-            for burst in bursts:
-                # Finally write all data from individual bursts to master file. We assume a simple 20 pixel offset from
-                # the side to prevent copying data without information.
-
-                if burst_file == 'master':
-                    master_path = self.burst_path(date,burst)
-                    master_file = self.dat_file(burst,date='master',full_path=False)
-                    burst_dat = os.path.join(master_path, master_file)
-                else:
-                    burst_dat = self.burst_path(date,burst,burst_file)
-
-                line_0 = int(self.stack[date][burst][type].processes['readfiles']['First_line (w.r.t. output_image)'])
-                line_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_line (w.r.t. output_image)'])
-                pix_0 = int(self.stack[date][burst][type].processes['readfiles']['First_pixel (w.r.t. output_image)'])
-                pix_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_pixel (w.r.t. output_image)'])
-
-                burst_pix = pix_1 - pix_0 + 1
-                burst_line = line_1 - line_0 + 1
-
-                # Cut out data with border of 20 px and write to file.
-                burst_image = np.memmap(burst_dat, dtype=dt, mode='r', shape=(burst_line,burst_pix))
-                full_image[(line_0+19):(line_1-20),(pix_0+19):(pix_1-20)] = burst_image[20:-20,20:-20]
-
-        self.update_res()
+            self.update_res()
 
     def multilook(self, ra=20, az= 5,step='filtphase'):
         # This function does the multilooking using cpxfiddle and updates the resolution of the step variable. You
@@ -1335,23 +1158,18 @@ class SingleMaster(object):
 
         if step == 'filtphase':
             filename = 'cint_filt.raw'
-            filename2 = 'cint_filt_ml.raw'
             type = 'cr4'
         elif step == 'coherence':
             filename = 'coherence.raw'
-            filename2 = 'coherence_ml.raw'
             type = 'r4'
         elif step == 'subtrefdem':
             filename = 'cint_srd.raw'
-            filename2 = 'cint_srd_ml.raw'
             type = 'cr4'
         elif step == 'subtrefpha':
             filename = 'cint_srp.raw'
-            filename2 = 'cint_srp_ml.raw'
             type = 'cr4'
         elif step == 'interfero':
             filename = 'cint.raw'
-            filename2 = 'cint_ml.raw'
             type = 'cr4'
         else:
             print('Choose for step between filtphase, coherence, subtrefdem, subtrefpha and interfero')
@@ -1359,50 +1177,29 @@ class SingleMaster(object):
         self.read_res()
 
         for date in self.stack.keys():
-            lines = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original'])
-            pixels = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original'])
-
-            date_path = self.image_path(date)
-            os.chdir(date_path)
+            lines = int(self.full_swath[date][type].processes['readfiles']['Number_of_lines_original'])
+            pixels = int(self.full_swath[date][type].processes['readfiles']['Number_of_pixels_original'])
 
             # Create cpxfiddle command
-            command = ' -w ' + str(pixels) + ' -o float -M ' + str(ra) + '/'+ str(az) + ' -f ' + type + ' ' \
-                                             '-l1 -p1 -P' + str(pixels) + ' -q normal ' + filename + ' > ' + filename2
+            command = ' -w ' + str(pixels) + ' -o float -M ' + str(ra) + '/'+ str(az) + ' -f ' + type + ' -l1 ' \
+                                             '-p1 -P' + str(pixels) + ' ' + filename + ' > ' + filename
             os.system(self.cpxfiddle + command)
 
             # Update res file
-            new_lines = str(int(np.floor(lines / az)))
-            new_pixels = str(int(np.floor(pixels / ra)))
+            new_lines = str(floor(lines / az))
+            new_pixels = str(floor(pixels / ra))
 
-            res = self.full_swath[date]['ifgs'].processes[step]
+            res = self.stack[date][burst]['ifgs'].processes[step]
 
-            res['Data_output_file'] = filename2
             res['Multilookfactor_azimuth_direction'] = str(az)
             res['Multilookfactor_range_direction'] = str(ra)
             res['Number of lines (multilooked)'] = new_lines
             res['Number of pixels (multilooked)'] = new_pixels
 
-            self.full_swath[date]['ifgs'].processes[step] = res
-
-            # Finally create an image using cpxfiddle (full resolution)
-            if type == 'r4':
-                # Only show the magnitude
-                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q normal -o sunraster -b -c gray -M 1/1 -f r4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '.ras'
-                os.system(self.cpxfiddle + mag)
-            elif type == 'cr4':
-                # Show the 3 images
-                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 1/1 -f cr4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_mag.ras'
-                os.system(self.cpxfiddle + mag)
-                mix = ' -w ' + new_pixels + ' -e 0.3 -s 1.2 -q mixed -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename[:-4] + '_mix.ras'
-                os.system(self.cpxfiddle + mix)
-                pha = ' -w ' + new_pixels + ' -q phase -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_pha.ras'
-                os.system(self.cpxfiddle + pha)
+            self.stack[date][burst]['ifgs'].processes[step] = res
 
         self.update_res()
+
 
     def decatenate(self,burst_file,master_file,dt=np.dtype(np.float32),type='master'):
         # Split full swath into different burst products. (to be used for DEM result splitting)
@@ -1445,30 +1242,23 @@ class SingleMaster(object):
     # Following functions are helper function which help acces the correct folders and files more easily:
 
     def burst_path(self,date,key,file_path=''):
-        #TODO refactor string lengt code
         date_folder = self.master_date[:4] + self.master_date[5:7] + self.master_date[8:10] + '_' + date[:4] + date[5:7] + date[8:10]
         swath_burst = key.split('_')
         if file_path:
-            file_path = os.path.join(self.folder, date_folder, swath_burst[0] + '_' + swath_burst[1]
-                                     , swath_burst[3] + '_' + swath_burst[4]
-                                     , file_path)
+            file_path = os.path.join(self.folder, date_folder, swath_burst[0], swath_burst[1], file_path)
         else:
-            file_path = os.path.join(self.folder, date_folder, swath_burst[0] + '_' + swath_burst[1]
-                                     , swath_burst[3] + '_' + swath_burst[4]
-                                     )
+            file_path = os.path.join(self.folder, date_folder, swath_burst[0], swath_burst[1])
 
         return file_path
 
     def swath_path(self,date,key):
-        #TODO refactor string lengt code
         date_folder = self.master_date[:4] + self.master_date[5:7] + self.master_date[8:10] + '_' + date[:4] + date[5:7] + date[8:10]
         swath_burst = key.split('_')
-        file_path = os.path.join(self.folder, date_folder, swath_burst[0] + '_' + swath_burst[1])
+        file_path = os.path.join(self.folder, date_folder, swath_burst[0])
 
         return file_path
 
     def image_path(self,date,file_path=''):
-        #TODO refactor string lengt code
         date_folder = self.master_date[:4] + self.master_date[5:7] + self.master_date[8:10] + '_' + date[:4] + date[5:7] + date[8:10]
         if file_path:
             file_path = os.path.join(self.folder, date_folder, file_path)
@@ -1478,7 +1268,6 @@ class SingleMaster(object):
         return file_path
 
     def dat_file(self,key,date,full_path=False,swath=False):
-        #TODO refactor string lengt code
         # This function converts combinations of dates and keys to a datafile name
 
         string = '_iw_' + key[6] + '_burst_' + key[17:]
@@ -1584,97 +1373,23 @@ class SingleMaster(object):
         self.update_res()
 
     def calc_coordinates(self, createdem=False):
-    # Calculate the coordinates of grid cells
+        # Calculate the coordinates of grid cells
 
         dates = [self.stack.keys()[0]]
 
         for date in dates:
-            job_list1 = []
-            job_list2 = []
-
-            doris_dir = self.doris_path
-
             for burst in self.stack[date].keys():
-                path = self.burst_path(date, burst)
-
                 # Create grid coordinates and heights
+                folder = self.burst_path(date,burst)
+                geocode_inputfile = os.path.join(self.input_files, 'input.geocode')
                 if createdem == True:
                     dem_inputfile = os.path.join(self.input_files, 'input.createdem')
                 else:
                     dem_inputfile = False
+                doris_dir = self.doris_path
 
                 # Run if one of the files does not exist...
-        ###                geocode_master(folder, geocode_inputfile, dem_inputfile, doris_dir)
-                # this function geocode the bursts of a master file, based on a DEM
-                # Run the create DEM command
-
-                if (not (self.parallel)):
-                    os.chdir(path)
-
-                if not dem_inputfile == False:
-                    if not doris_dir:
-                        command = 'doris ' + dem_inputfile
-                        job_list1.append([path, command])
-                        if (not (self.parallel)):
-                            os.system(command)
-                    else:
-                        command = doris_dir + ' ' + dem_inputfile
-                        job_list1.append([path, command])
-                        if (not (self.parallel)):
-                            os.system(command)
-            if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
-                jobs.run(job_list1)
-
-            for burst in self.stack[date].keys():
-                path = self.burst_path(date, burst)
-                os.chdir(path)
-
-                shutil.copy('ifgs.res', 'create_dem.res')
-                resultfile = resdata.ResData(filename='create_dem.res')
-                # Read the .res file
-                resultfile.res_read()
-
-                # Add the slant2height information. This is meant to fake the doris script
-                sl2h_dat = collections.OrderedDict()
-                sl2h_dat['Method'] = 'schwabisch'
-                sl2h_dat['Data_output_file'] = 'dem_radar.raw'
-                sl2h_dat['Data_output_format'] = 'real4'
-                sl2h_dat['First_line (w.r.t. original_master)'] = resultfile.processes['comp_refdem'][
-                    'First_line (w.r.t. original_master)']
-                sl2h_dat['Last_line (w.r.t. original_master)'] = resultfile.processes['comp_refdem'][
-                    'Last_line (w.r.t. original_master)']
-                sl2h_dat['First_pixel (w.r.t. original_master)'] = resultfile.processes['comp_refdem'][
-                    'First_pixel (w.r.t. original_master)']
-                sl2h_dat['Last_pixel (w.r.t. original_master)'] = resultfile.processes['comp_refdem'][
-                    'Last_pixel (w.r.t. original_master)']
-                sl2h_dat['Multilookfactor_azimuth_direction'] = resultfile.processes['comp_refdem'][
-                    'Multilookfactor_azimuth_direction']
-                sl2h_dat['Multilookfactor_range_direction'] = resultfile.processes['comp_refdem'][
-                    'Multilookfactor_range_direction']
-                sl2h_dat['Ellipsoid (name,a,b)'] = 'WGS84 6.37814e+06 6.35675e+06'
-
-                resultfile.insert(sl2h_dat, 'slant2h')
-                resultfile.write()
-
-            for burst in self.stack[date].keys():
-                path = self.burst_path(date,burst)
-                geocode_inputfile = os.path.join(self.input_files, 'input.geocode')
-                # Generate lat / lon files
-                if not doris_dir:
-                    command = 'doris ' + geocode_inputfile
-                    job_list2.append([path, command])
-                    if (not (self.parallel)):
-                        os.system(command)
-                else:
-                    command = doris_dir + ' ' + geocode_inputfile
-                    job_list2.append([path, command])
-                    if (not (self.parallel)):
-                        os.system(command)
-
-            if (self.parallel):
-                jobs = Jobs(self.nr_of_jobs)
-                jobs.run(job_list2)
+                geocode_master(folder, geocode_inputfile, dem_inputfile, doris_dir)
 
         self.concatenate('phi.raw', 'phi.raw',dt=np.dtype('float32'))
         self.concatenate('lam.raw', 'lam.raw',dt=np.dtype('float32'))

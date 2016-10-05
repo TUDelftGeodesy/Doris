@@ -22,11 +22,12 @@ class Jobs(object):
         """max_jobs: maximum number of jobs to run simultaniously
            verbose: print status to stdout during execution of job list"""
         self.max_jobs = max_jobs
-        self.sleep_time = 1
         self.pid = str(os.getpid())
         self.doris_parameters = DorisParameters()
         self.verbose = self.doris_parameters.verbose
         self.flag_dir = self.doris_parameters.doris_parallel_flag_dir
+        self.between_sleep_time = self.doris_parameters.between_sleep_time
+        self.end_sleep_time = self.doris_parameters.end_sleep_time
         self._cleanup()
         os.mkdir(self.flag_dir)
 
@@ -95,8 +96,9 @@ class Jobs(object):
         while len(active_job_list):
             if(self.verbose):
                 print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs busy"
-            time.sleep(self.sleep_time)
+            time.sleep(self.between_sleep_time)
             active_job_list = self._active_jobs(active_job_list)
             [job_list, active_job_list] = self._start_jobs(job_list, active_job_list, self.max_jobs - len(active_job_list))
         if (self.verbose):
             print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs finished"
+        time.sleep(self.end_sleep_time)
