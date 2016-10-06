@@ -7,7 +7,6 @@ import copy
 from copy import deepcopy
 import shutil
 from resdata import ResData
-from geocode_master import geocode_master
 from ESD_administration import get_BOL_lines, get_f_DC_difference, get_interfero, get_parameter, freadbk, apply_ESD_Nida
 from scipy import linalg
 import resdata
