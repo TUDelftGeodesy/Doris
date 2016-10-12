@@ -22,40 +22,29 @@ class DorisParameters():
         self.master_date = '2016-01-13'
         self.end_date = datetime.strptime('2016-02-06','%Y-%m-%d')
 
-    	project_path = '/data2/Projects/datastacks/china_s1'
-        data_path = '/data2/Projects/datastacks/china_s1_dat'
+    	project_path = '/home/dlevelt/src/Doris_s1_git/test/china_s1'
+        data_path = '/home/everybody/test_cases/Doris_s1/china_s1_dat'
         #
-        # used in single_master.py
-        #
-        #
-        # used in test_dat_ESD
+        # used in doris_sentinel_1.py
         #
         self.shape_dat = project_path + '/shape/AOI.shp'
         self.track_dir = data_path
         self.stack_path = project_path + '/stack/'
-        self.precise_orbits = project_path + '/orbits/'
+        self.precise_orbits = data_path + '/orbits/'
         # Start data of datastack. If end date not given it searches till current.
         self.input_files = project_path + '/input_files/'
 
 
-#        self.main_code_folder = source_path + '/sentinel1/main_code/'
-#        self.script_folder = source_path + '/sentinel1/functions/'
-
         self.parallel = True
-        self.nr_of_jobs = 1
+        self.nr_of_jobs = 4
         self.between_sleep_time = 1
         self.end_sleep_time = 5
         self.initialize_flag = True
         self.profile_log = project_path + '/profile_log'
         self.doris_parallel_flag_dir = project_path + '/.Doris_parallel'
         #
-        # used in Jobs
-        #
-#        self.job_handler_script = source_path + "/sentinel1/main_code/jobHandlerScript"
-        #
         # Print parameters, check if paths exist
         #
-
         print 'self.shape_dat: ' + self.shape_dat
         self._check_path_exists(self.shape_dat)
         print 'self.track_dir:	' + self.track_dir
@@ -69,10 +58,6 @@ class DorisParameters():
         print 'self.end_date:	' + str(self.end_date)
         print 'self.input_files:	' + self.input_files
         self._check_path_exists(self.input_files)
-#        print 'self.main_code_folder:	' + self.main_code_folder
-#        self._check_path_exists(self.main_code_folder)
-#        print 'self.script_folder:	' + self.script_folder
-#        self._check_path_exists(self.script_folder)
         print 'self.nr_of_jobs:	' + str(self.nr_of_jobs)
         print 'self.initialize_flag:	' + str(self.initialize_flag)
         print 'self.jobHandlerScript:	' + self.job_handler_script
