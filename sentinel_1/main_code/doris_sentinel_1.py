@@ -12,7 +12,7 @@ class DorisSentinel1(object):
 
     def run(self, doris_parameters_path, start_date, end_date, master_date):
 
-	print 'start sentinel 1 processing'
+        print 'start sentinel 1 processing'
         dorisParameters_Path = DorisParameters_Path()
         dorisParameters_Path.set(doris_parameters_path)
 
@@ -28,6 +28,8 @@ class DorisSentinel1(object):
 
         # cpxfiddle executable
         cpxfiddle_folder = dorisParameters.cpxfiddle_path  #'/...../cpxfiddle'
+
+        # function
 
         # The shapefile to select the area of interest. You can easily find a shapefile countries or regions on the internet.
         # For example via diva-gis.org. Shapefile for the Netherlands can be found in the same folder under shapes.
@@ -62,10 +64,12 @@ class DorisSentinel1(object):
 
         profile.log_time_stamp('start')
         # Create a datastack using the stack function
-        stack = StackData(track_dir=track_dir,shape_dat=shape_dat,start_date=start_date,end_date=end_date,polarisation='vv',path=stack_path,db_type=1,precise_dir=precise_orbits)
+        stack = StackData(track_dir=track_dir,shape_dat=shape_dat,start_date=start_date,end_date=end_date,polarisation='vv',path=stack_path,db_type=2,precise_dir=precise_orbits)
         profile.log_time_stamp('StackData')
         # All images which correspond with the start and end date are selected
         stack.select_image()
+        # Then these images are unzipped
+        stack.unpack_image()
         # Based on the shape file bursts are selected for one date
         stack.select_burst()
         # And also for the other dates the needed bursts are selected
@@ -83,6 +87,8 @@ class DorisSentinel1(object):
         # Write the shapes from the bursts and swaths to a shapefile to check in a GIS program like Qgis.
         stack.write_shapes()
         profile.log_time_stamp('stack preparation finished')
+        # Finally delete unzipped images
+        stack.del_unpacked_image()
 
         # Now we import the script to create a single master interferogram
         processing = single_master_stack.SingleMaster(master_date=master_date, start_date=start_date,
@@ -185,5 +191,5 @@ class DorisSentinel1(object):
 
         profile.log_time_stamp('end')
 
-	print 'end sentinel 1 processing'
+    print 'end sentinel 1 processing'
 

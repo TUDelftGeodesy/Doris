@@ -3,9 +3,6 @@ import os,sys,time
 import numpy as np
 from numpy import *
 from get_ramp import get_ramp, freadbk, get_parameter
-import scipy.linalg
-import gdal
-from gdalconst import *
 
 def usage():
     print '\nUsage: python do_deramp_SLC_nom.py dataFilename  resFilename plotFlag'

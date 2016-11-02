@@ -142,10 +142,10 @@ class StackData(object):
                 print(dates)
                 date = os.path.join(track_dir,dates)
 
-                for files in next(os.walk(date))[1]:
+                for files in next(os.walk(date))[2]:
 
                     data = os.path.join(date,files)
-                    if data.endswith('.SAFE'):
+                    if data.endswith('.SAFE.zip'):
                         images.append(data)
 
         if images:
@@ -177,6 +177,17 @@ class StackData(object):
             return
 
         self.buffer = buffer
+
+    def unpack_image(self):
+        # This program unpacks the images which are needed for processing.
+        for image in self.images:
+            image.unzip()
+            image.init_unzipped()
+
+    def del_unpacked_image(self):
+        # This program unpacks the images which are needed for processing.
+        for image in self.images:
+            image.del_unzip()
 
     def select_image(self,start_date='',end_date=''):
         # This function selects usable images based on .kml files and dates

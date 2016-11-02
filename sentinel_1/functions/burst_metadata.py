@@ -215,9 +215,14 @@ def burst_precise(meta,burst_num,precise_folder,type='POE'):
     input_time = np.arange(date_orbit-100,date_orbit+100)
     date = time.mktime(time.strptime(meta['aux']['azimuthTimeStart'][burst_num-1], '%Y-%m-%dT%H:%M:%S.%f'))
 
-    X,Y,Z=interpolate_orbit(precise_folder,  input_time, date , type, 'spline')
+    X,Y,Z=interpolate_orbit(precise_folder, input_time, date, type, 'spline', satellite =meta['Product type specifier'])
+
+    if len(X) == 0 and type == 'POE':
+        X, Y, Z = interpolate_orbit(precise_folder, input_time, date, 'RES', 'spline', satellite =meta['Product type specifier'])
+        print 'There is no precise orbit file available, we try the restituted files'
+
     if len(X) == 0:
-        print 'There is no precise orbit file available'
+        print 'There is no precise or restituted orbit file available'
         return
 
     datapoints = collections.OrderedDict()

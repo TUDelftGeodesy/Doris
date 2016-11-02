@@ -36,6 +36,9 @@ class SingleMaster(object):
         else:
             self.end_date = end_date
 
+        self.start_date = datetime.strptime(self.start_date,'%Y-%m-%d')
+        self.end_date = datetime.strptime(self.end_date, '%Y-%m-%d')
+
         self.nr_of_jobs = doris_parameters.nr_of_jobs
         self.parallel = doris_parameters.parallel
 
@@ -45,8 +48,10 @@ class SingleMaster(object):
         self.master_key = ''
         self.folder = processing_folder
         self.stack_folder = stack_folder
-        self.doris_path = doris_path
-        self.cpxfiddle = cpxfiddle_folder
+
+        self.doris_path = doris_parameters.doris_path
+        self.cpxfiddle = doris_parameters.cpxfiddle_path  # '/...../cpxfiddle'
+        self.function_path = doris_parameters.function_path
         self.input_files = input_files
         self.ESD_shift = dict()
         self.pi_shift = dict()
@@ -63,6 +68,7 @@ class SingleMaster(object):
             self.stack_read()
 
         if master_date:
+            master_date = datetime.strptime(master_date, '%Y-%m-%d')
             self.master(master_date)
 
         if processing_folder and not self.datastack:
@@ -396,14 +402,14 @@ class SingleMaster(object):
                 master_file = self.dat_file(burst,date='master',full_path=False)
                 slave_file = self.dat_file(burst,date='slave',full_path=False)
                 #TODO david command
-                command1 = 'python -m ' + 'do_deramp_SLC' + ' ' + master_file + ' master.res'
+                command1 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res'
                 job_list1.append([path, command1])
-                command2 = 'python -m ' + 'do_deramp_SLC' + ' ' + slave_file + ' slave.res'
+                command2 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
                 job_list2.append([path, command2])
                 if(not(self.parallel)):
                     os.chdir(path)
-                    os.system('python -m ' + 'do_deramp_SLC.py' + ' ' + master_file + ' master.res')
-                    os.system('python -m ' + 'do_deramp_SLC.py' + ' ' + slave_file + ' slave.res')
+                    os.system('python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res')
+                    os.system('python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res')
         if(self.parallel):
             jobs = Jobs(self.nr_of_jobs)
             jobs.run(job_list1)
@@ -736,7 +742,7 @@ class SingleMaster(object):
                 command1 = 'cp slave_rsmp.raw slave_rsmp_deramped.raw'
                 jobList1.append([path, command1])
                 #TODO david command
-                command2 = 'python -m' + 'do_reramp_SLC' + ' slave_rsmp.raw slave.res'
+                command2 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
                 jobList2.append([path, command2])
                 master_file = self.dat_file(burst, 'master')
                 if(master):
@@ -751,7 +757,7 @@ class SingleMaster(object):
                     os.chdir(path)
                     # Save the original deramped slave
                     os.system(command1)
-                    os.system('python -m ' + 'do_reramp_SLC.py' + ' slave_rsmp.raw slave.res')
+                    os.system('python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res')
 
                     if master == True:
                         master_deramped = 'master_deramped.raw'
@@ -1677,3 +1683,4 @@ class SingleMaster(object):
 
         self.concatenate('phi.raw', 'phi.raw',dt=np.dtype('float32'))
         self.concatenate('lam.raw', 'lam.raw',dt=np.dtype('float32'))
+        self.concatenate('dem_radar.raw', 'dem_radar.raw', dt=np.dtype('float32'))

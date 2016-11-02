@@ -59,7 +59,7 @@ def orbit_read(input_EOF_FileName):
     return container
 
 #--------------------------------------------------------
-def interpolate_orbit(input_orbit_dir,input_time,date,input_orbit_type,input_interpolation_method):
+def interpolate_orbit(input_orbit_dir,input_time,date,input_orbit_type,input_interpolation_method, satellite='S1A'):
 
     L=os.listdir(input_orbit_dir)
     orbit_path_abs=os.path.abspath(input_orbit_dir)
@@ -69,34 +69,40 @@ def interpolate_orbit(input_orbit_dir,input_time,date,input_orbit_type,input_int
     orbit_start=0
     orbit_end=0
     for temp_L in L:
-        if input_orbit_type=='POE':
-            Index_result=re.findall("^S1A_OPER_AUX_POEORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
-        elif input_orbit_type=='RES':
-            Index_result=re.findall("^S1A_OPER_AUX_RESORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
-        if len(Index_result)!=0:
-            orbit_end_time=p.findall(str(Index_result))[-1]
-            orbit_end_day =p.findall(str(Index_result))[-2]
-            orbit_end = time.mktime(time.strptime(orbit_end_day+orbit_end_time,'%Y%m%d%H%M%S'))
+        if temp_L.startswith(satellite):
+            if input_orbit_type=='POE' and satellite=='S1A':
+                Index_result=re.findall("^S1A_OPER_AUX_POEORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
+            elif input_orbit_type=='RES' and satellite=='S1A':
+                Index_result=re.findall("^S1A_OPER_AUX_RESORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
+            elif input_orbit_type=='POE' and satellite=='S1B':
+                Index_result=re.findall("^S1B_OPER_AUX_POEORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
+            elif input_orbit_type=='RES' and satellite=='S1B':
+                Index_result=re.findall("^S1B_OPER_AUX_RESORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
+            if len(Index_result)!=0:
+                orbit_end_time=p.findall(str(Index_result))[-1]
+                orbit_end_day =p.findall(str(Index_result))[-2]
+                orbit_end = time.mktime(time.strptime(orbit_end_day+orbit_end_time,'%Y%m%d%H%M%S'))
 
-            orbit_start_time=p.findall(str(Index_result))[-3]
-            orbit_start_day =p.findall(str(Index_result))[-4]
-            orbit_start=time.mktime(time.strptime(orbit_start_day+orbit_start_time,'%Y%m%d%H%M%S'))
+                orbit_start_time=p.findall(str(Index_result))[-3]
+                orbit_start_day =p.findall(str(Index_result))[-4]
+                orbit_start=time.mktime(time.strptime(orbit_start_day+orbit_start_time,'%Y%m%d%H%M%S'))
 
-        Tuple_orbit=(0,0,0,0)
-        if (date > orbit_start) and (date < orbit_end):
+            Tuple_orbit=(0,0,0,0)
+            if (date > orbit_start) and (date < orbit_end):
 
-            meta = orbit_read(os.path.join(input_orbit_dir, temp_L))
-            print(temp_L)
+                meta = orbit_read(os.path.join(input_orbit_dir, temp_L))
 
-            temp_L=orbit_path_abs+'/'+temp_L
-            for i in range(len(meta['orbitTime'])):
+                temp_L=orbit_path_abs+'/'+temp_L
+                for i in range(len(meta['orbitTime'])):
 
-                orbitTime = time.mktime(time.strptime(meta['orbitTime'][i][4:],'%Y-%m-%dT%H:%M:%S.%f'))
-                if (date > orbitTime-290) and (date < orbitTime+290):
-                    Tuple_orbit=(float(hms2sec(meta['orbitTime'][i][4:].split('T')[1])),\
-                                 float(meta['orbitX'][i]), float(meta['orbitY'][i]),\
-                                 float(meta['orbitZ'][i]) )
-                    Orbit_info.append(Tuple_orbit)
+                    orbitTime = time.mktime(time.strptime(meta['orbitTime'][i][4:],'%Y-%m-%dT%H:%M:%S.%f'))
+                    if (date > orbitTime-290) and (date < orbitTime+290):
+                        print(temp_L)
+
+                        Tuple_orbit=(float(hms2sec(meta['orbitTime'][i][4:].split('T')[1])),\
+                                     float(meta['orbitX'][i]), float(meta['orbitY'][i]),\
+                                     float(meta['orbitZ'][i]) )
+                        Orbit_info.append(Tuple_orbit)
     set_list=[]
     Orbit_info=sorted(Orbit_info)
 

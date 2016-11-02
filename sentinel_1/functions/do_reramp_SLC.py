@@ -3,9 +3,6 @@ import sys
 import os
 import numpy as np
 from numpy import *
-import gdal
-from gdalconst import *
-# from resdata import ResData
 from get_ramp import get_ramp, freadbk, get_parameter
 
 def usage():
