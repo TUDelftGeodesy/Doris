@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Document created by: Gert Mulder additional options can be found in the doris guide-->
+<sensors>
+	<sentinel-1>sentinel-1
+		<header_settings>Settings for the headers
+			<MEMORY comment="MB" c="off">2000</MEMORY>
+			<BEEP comment="level of beeping" c="off">error</BEEP>
+			<OVERWRITE comment="overwrite existing files" c="off">on</OVERWRITE>
+			<PREVIEW comment="on" c="off">on</PREVIEW>
+			<BATCH comment="non-interactive" c="off">on</BATCH>
+			<LISTINPUT comment="prevents copy of this file to log" c="off">on</LISTINPUT>
+			<SCREEN comment="level of output to standard out" c="off">info</SCREEN>
+			<PROCESS></PROCESS>
+			<S_RESFILE comment="slave parameter file" c="off">slave.res</S_RESFILE>
+			<LOGFILE comment="log file" c="off">log.out</LOGFILE>
+			<I_RESFILE comment="interferogram parameter file" c="off">ifgs.res</I_RESFILE>
+			<M_RESFILE comment="master parameter file" c="off">master.res</M_RESFILE>
+			
+			<HEIGHT comment="average WGS84 height" c="off">0.0</HEIGHT>
+			<ORB_INTERP comment="orbit interpolation method" c="off">POLYFIT</ORB_INTERP>
+			<ELLIPSOID comment="WGS84, GRS80, BESSEL or define major and minor axis" c="off">WGS84</ELLIPSOID>
+		</header_settings>
+		<coarsecorr>coarse correlation
+			<PROCESS>COARSECORR</PROCESS>
+			<CC_METHOD comment="magfft" c="off">magfft</CC_METHOD>
+			<CC_ACC comment="only for magspace" c="on">30 30</CC_ACC>
+			<CC_NWIN comment="number of windows only magspace" c="off">10</CC_NWIN>
+			<CC_WINSIZE comment="size of windows" c="off">1024 256</CC_WINSIZE>
+			<CC_INITOFF comment="use result of orbits for initial offset" c="off">orbit</CC_INITOFF>
+		</coarsecorr>
+		<coarseorb>coarse orbits
+			<PROCESS>COARSEORB</PROCESS>
+		</coarseorb>
+		<coherence>coherence between master and slave
+			<PROCESS>COHERENCE</PROCESS>
+			<COH_METHOD comment="" c="off">INCLUDE_REFDEM</COH_METHOD>
+			<COH_OUT_COH comment="output image" c="off">coherence.raw</COH_OUT_COH>
+			<COH_MULTILOOK comment="" c="off">1 1</COH_MULTILOOK>
+			<COH_WINSIZE comment="" c="off">2 10</COH_WINSIZE>
+		</coherence>
+		<comprefdem>compute the reference phase due to DEM
+			<PROCESS>COMPREFDEM</PROCESS>
+			<CRD_INCLUDE_FE comment="phase w.r.t. ellipsoid" c="on">OFF</CRD_INCLUDE_FE>
+			<CRD_OUT_FILE comment="" c="off">refdem.raw</CRD_OUT_FILE>
+			<CRD_OUT_DEM_LP comment="" c="off">dem_radar.raw</CRD_OUT_DEM_LP>
+			<CRD_OUT_DEM_H2PH comment="" c="off">h2ph_srd.raw</CRD_OUT_DEM_H2PH>
+			<CRD_OUT_FILE comment="" c="off">master_slave.crd</CRD_OUT_FILE>
+			<CRD_IN_DEM comment="" c="off" var='in_dem'></CRD_IN_DEM>
+			<CRD_IN_FORMAT comment="" c="off" var='in_format'></CRD_IN_FORMAT>
+			<CRD_IN_SIZE comment="" c="off" var='in_size'></CRD_IN_SIZE>
+			<CRD_IN_DELTA comment="" c="off" var='in_delta'></CRD_IN_DELTA>
+			<CRD_IN_UL comment="" c="off" var='in_ul'></CRD_IN_UL>
+			<CRD_IN_NODATA comment="" c="off" var='in_nodata'></CRD_IN_NODATA>
+		</comprefdem>
+		<comprefpha>compute reference phase due to earth curvature
+			<PROCESS>COMPREFPHA</PROCESS>
+			<FE_METHOD comment="" c="off">porbits</FE_METHOD>
+			<FE_DEGREE comment="" c="off">3</FE_DEGREE>
+			<FE_NPOINTS comment="" c="off">101</FE_NPOINTS>
+		</comprefpha>
+		<coregpm>combine DEM and windows coregistration
+			<PROCESS>COREGPM</PROCESS>
+			<CPM_THRESHOLD comment="" c="off">0.5</CPM_THRESHOLD>
+			<CPM_DEGREE comment="" c="off">1</CPM_DEGREE>
+			<CPM_WEIGHTS comment="" c="off">bamler</CPM_WEIGHTS>
+			<CPM_MAXITER comment="" c="off">5000</CPM_MAXITER>
+			<CPM_PLOT comment="" c="on">NOBG</CPM_PLOT>
+		</coregpm>
+		<dembased>dem assisted coregistration
+			<PROCESS>DEMASSIST</PROCESS>
+			<DAC_IN_DEM comment="" c="off" var='in_dem'></DAC_IN_DEM>
+			<DAC_IN_FORMAT comment="" c="off" var='in_format'></DAC_IN_FORMAT>
+			<DAC_IN_SIZE comment="" c="off" var='in_size'></DAC_IN_SIZE>
+			<DAC_IN_DELTA comment="" c="off" var='in_delta'></DAC_IN_DELTA>
+			<DAC_IN_UL comment="" c="off" var='in_ul'></DAC_IN_UL>
+			<DAC_IN_NODATA comment="" c="off" var='in_nodata'></DAC_IN_NODATA>
+		</dembased>
+		<finecoreg>fine coregistration (windows)
+			<PROCESS>FINE</PROCESS>
+			<FC_METHOD comment="" c="off">coherence</FC_METHOD>
+			<FC_NWIN comment="number of windows" c="off">200</FC_NWIN>
+			<FC_IN_POS comment="used when PS points are used" c="on">fc_pos.in</FC_IN_POS>
+			<FC_WINSIZE comment="number of windows" c="off">64 64</FC_WINSIZE>
+			<FC_ACC comment="search window" c="off">8 8</FC_ACC>
+			<FC_INITOFF comment="use coarse correlation result as first guess" c="off">coarsecorr</FC_INITOFF>
+			<FC_OSFACTOR comment="oversampling factor" c="off">32</FC_OSFACTOR>
+			<FC_PLOT comment="" c="on">0.65 BG</FC_PLOT>
+		</finecoreg>
+		<geocode>calculate lat/lon of radar pixels
+			<PROCESS>GEOCODE</PROCESS>
+			<GEO_OUT_LAM comment="longitude coordinates" c="off">lam.raw</GEO_OUT_LAM>
+			<GEO_OUT_PHI comment="latitude coordinates" c="off">phi.raw</GEO_OUT_PHI>
+		</geocode>
+		<interferogram>calculate lat/lon of radar pixels
+			<PROCESS>INTERFERO</PROCESS>
+			<INT_OUT_INT comment="" c="off">cint.raw</INT_OUT_INT>
+			<INT_MULTILOOK comment="" c="off">1 1</INT_MULTILOOK>
+		</interferogram>	
+		<resample>resample image
+			<PROCESS>RESAMPLE</PROCESS>
+			<RS_METHOD comment="" c="off">rc12p</RS_METHOD>
+			<RS_SHIFTAZI comment="" c="off">off</RS_SHIFTAZI>
+			<RS_OUT_FILE comment="" c="off">slave_rsmp.raw</RS_OUT_FILE>
+			<RS_OUT_FORMAT comment="" c="off">cr4</RS_OUT_FORMAT>
+			<RS_DBOW_GEO comment="" c="on">52.13 4.38 5000 1000</RS_DBOW_GEO>
+		</resample>
+		<subtrefdem>remove DEM induced reference phase
+			<PROCESS>SUBTRREFDEM</PROCESS>
+			<SRD_OUT_CINT comment="" c="off">cint_srd.raw</SRD_OUT_CINT>
+			<SRD_OFFSET comment="" c="off">1 1</SRD_OFFSET>
+		</subtrefdem>
+		<subtrefpha>remove DEM induced reference phase
+			<PROCESS>SUBTRREFPHA</PROCESS>
+			<SRP_METHOD comment="" c="off">exact</SRP_METHOD>
+			<SRP_OUT_CINT comment="" c="off">cint_srp.raw</SRP_OUT_CINT>
+			<SRP_MULTILOOK comment="" c="off">1 1</SRP_MULTILOOK>
+			<SRP_DUMPREFPHA comment="" c="off">OFF</SRP_DUMPREFPHA>
+			<SRP_OUT_REFPHA comment="" c="off">refphase.raw</SRP_OUT_REFPHA>
+			<SRD_OUT_H2PH comment="" c="off">h2ph_srp.raw</SRD_OUT_H2PH>
+		</subtrefpha>
+		<unwrap>remove DEM induced reference phase
+			<PROCESS>SUBTRREFPHA</PROCESS>
+			<UW_METHOD comment="" c="off">SNAPHU</UW_METHOD>
+			<UW_OUT_FILE comment="" c="off">unwrapped.raw</UW_OUT_FILE>
+			<UW_OUT_FORMAT comment="" c="off">REAL4</UW_OUT_FORMAT>
+			<UW_SNAPHU_LOG comment="" c="off">snaphu.log</UW_SNAPHU_LOG>
+			<UW_SNAPHU_coh comment="" c="off">unwrap_input.raw</UW_SNAPHU_coh>
+			<UW_SNAPHU_MODE comment="" c="off">SMOOTH</UW_SNAPHU_MODE>
+			<UW_SNAPHU_INIT comment="" c="off">MST</UW_SNAPHU_INIT>
+			<UW_SNAPHU_VERBOSE comment="" c="off">ON</UW_SNAPHU_VERBOSE>
+		</unwrap>
+	</sentinel-1>
+</sensors>
+
+
+
+
+
+
