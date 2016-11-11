@@ -39,6 +39,7 @@ from fiona import collection
 # border = 0.1
 # create_binary('', out_file, resample, doris_input, lats, lons, rounding, border, data_folder, quality)
 
+
 def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris_input=True, lats=[], lons=[],
                   rounding=1, border=0.1, data_folder='', quality='SRTM1'):
     # This function stitches the different files together. If no data is available values will be zero. Which is
@@ -152,7 +153,7 @@ def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris
 
         return heights
 
-    if doris_input:
+    if doris_input == True:
         # Create a binary output file
         command = 'gdal_translate -of MFF ' + dem_tiff + ' ' + dem_tiff[:-5] + '.raw'
         os.system(command)
@@ -160,6 +161,8 @@ def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris
 
         # And create the scripts that go with them.
         output_doris_inputfiles(dem_tiff, out_file)
+
+    return out_file, out_file + '.var',  out_file + '.doris_inputfile'
 
 
 def add_tiles(outputdata, tiles, quality, latlim, lonlim, quality_file=False):
@@ -461,8 +464,8 @@ def output_doris_inputfiles(dem_tiff, out_file):
     georef = dem.GetGeoTransform()
     dlat = georef[1]
     dlon = abs(georef[5])
-    latmax = georef[0] - (dlat * 0.5)
-    lonmin = georef[3] + (dlon * 0.5)
+    lonmin = georef[0] + (dlon * 0.5)
+    latmax = georef[3] - (dlat * 0.5)
 
     output_txt = out_file + '.doris_inputfile'
     output_var = out_file + '.var'
@@ -472,7 +475,7 @@ def output_doris_inputfiles(dem_tiff, out_file):
     dem_var = dict()
     dem_var['in_dem'] = out_file
     dem_var['in_format'] = 'r4'
-    dem_var['in_size'] = str(xsize) + " " + str(ysize)
+    dem_var['in_size'] = str(ysize) + " " + str(xsize)
     dem_var['in_delta'] = str(dlat) + " " + str(dlon)
     dem_var['in_ul'] = str(latmax) + " " + str(lonmin)
     dem_var['in_nodata'] = '-32768'
@@ -487,7 +490,7 @@ def output_doris_inputfiles(dem_tiff, out_file):
     txtfile.write("c                             \n")
     txtfile.write("SAM_IN_DEM     " + out_file + " \n")
     txtfile.write("SAM_IN_FORMAT   r4 \t\t\t // default is short integer \n")
-    txtfile.write("SAM_IN_SIZE    " + str(xsize) + " " + str(ysize) + " \n")
+    txtfile.write("SAM_IN_SIZE    " + str(ysize) + " " + str(xsize) + " \n")
     txtfile.write("SAM_IN_DELTA   " + str(dlat) + " " + str(dlon) + " \n")
     txtfile.write("SAM_IN_UL      " + str(latmax) + " " + str(lonmin) + " \n")
     txtfile.write("SAM_IN_NODATA  -32768 \n")
@@ -498,7 +501,7 @@ def output_doris_inputfiles(dem_tiff, out_file):
     txtfile.write("c                             \n")
     txtfile.write("DAC_IN_DEM     $dempath/$outfile5 \n")
     txtfile.write("DAC_IN_FORMAT   r4 \t\t\t // default is short integer \n")
-    txtfile.write("DAC_IN_SIZE    " + str(xsize) + " " + str(ysize) + " \n")
+    txtfile.write("DAC_IN_SIZE    " + str(ysize) + " " + str(xsize) + " \n")
     txtfile.write("DAC_IN_DELTA   " + str(dlat) + " " + str(dlon) + " \n")
     txtfile.write("DAC_IN_UL      " + str(latmax) + " " + str(lonmin) + " \n")
     txtfile.write("DAC_IN_NODATA  -32768 \n")
@@ -510,7 +513,7 @@ def output_doris_inputfiles(dem_tiff, out_file):
     txtfile.write("## CRD_METHOD   DEMINTRPMETHOD \n")
     txtfile.write("CRD_IN_DEM     $dempath/$outfile5 \n")
     txtfile.write("CRD_IN_FORMAT   r4 \t\t\t // default is short integer \n")
-    txtfile.write("CRD_IN_SIZE    " + str(xsize) + " " + str(ysize) + " \n")
+    txtfile.write("CRD_IN_SIZE    " + str(ysize) + " " + str(xsize) + " \n")
     txtfile.write("CRD_IN_DELTA   " + str(dlat) + " " + str(dlon) + " \n")
     txtfile.write("CRD_IN_UL      " + str(latmax) + " " + str(lonmin) + " \n")
     txtfile.write("CRD_IN_NODATA  -32768 \n")

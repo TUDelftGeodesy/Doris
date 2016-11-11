@@ -11,14 +11,13 @@
 			<LISTINPUT comment="prevents copy of this file to log" c="off">on</LISTINPUT>
 			<SCREEN comment="level of output to standard out" c="off">info</SCREEN>
 			<PROCESS></PROCESS>
-			<S_RESFILE comment="slave parameter file" c="off">slave.res</S_RESFILE>
 			<LOGFILE comment="log file" c="off">log.out</LOGFILE>
 			<I_RESFILE comment="interferogram parameter file" c="off">ifgs.res</I_RESFILE>
 			<M_RESFILE comment="master parameter file" c="off">master.res</M_RESFILE>
-			
-			<HEIGHT comment="average WGS84 height" c="off">0.0</HEIGHT>
-			<ORB_INTERP comment="orbit interpolation method" c="off">POLYFIT</ORB_INTERP>
-			<ELLIPSOID comment="WGS84, GRS80, BESSEL or define major and minor axis" c="off">WGS84</ELLIPSOID>
+			<S_RESFILE comment="slave parameter file" c="off">slave.res</S_RESFILE>
+			<HEIGHT comment="average WGS84 height" c="on">0.0</HEIGHT>
+			<ORB_INTERP comment="orbit interpolation method" c="on">POLYFIT</ORB_INTERP>
+			<ELLIPSOID comment="WGS84, GRS80, BESSEL or define major and minor axis" c="on">WGS84</ELLIPSOID>
 		</header_settings>
 		<coarsecorr>coarse correlation
 			<PROCESS>COARSECORR</PROCESS>
@@ -93,7 +92,7 @@
 		</geocode>
 		<interferogram>calculate lat/lon of radar pixels
 			<PROCESS>INTERFERO</PROCESS>
-			<INT_OUT_INT comment="" c="off">cint.raw</INT_OUT_INT>
+			<INT_OUT_CINT comment="" c="off">cint.raw</INT_OUT_CINT>
 			<INT_MULTILOOK comment="" c="off">1 1</INT_MULTILOOK>
 		</interferogram>	
 		<resample>resample image
@@ -104,12 +103,12 @@
 			<RS_OUT_FORMAT comment="" c="off">cr4</RS_OUT_FORMAT>
 			<RS_DBOW_GEO comment="" c="on">52.13 4.38 5000 1000</RS_DBOW_GEO>
 		</resample>
-		<subtrefdem>remove DEM induced reference phase
+		<subtrrefdem>remove DEM induced reference phase
 			<PROCESS>SUBTRREFDEM</PROCESS>
 			<SRD_OUT_CINT comment="" c="off">cint_srd.raw</SRD_OUT_CINT>
 			<SRD_OFFSET comment="" c="off">1 1</SRD_OFFSET>
-		</subtrefdem>
-		<subtrefpha>remove DEM induced reference phase
+		</subtrrefdem>
+		<subtrrefpha>remove DEM induced reference phase
 			<PROCESS>SUBTRREFPHA</PROCESS>
 			<SRP_METHOD comment="" c="off">exact</SRP_METHOD>
 			<SRP_OUT_CINT comment="" c="off">cint_srp.raw</SRP_OUT_CINT>
@@ -117,7 +116,7 @@
 			<SRP_DUMPREFPHA comment="" c="off">OFF</SRP_DUMPREFPHA>
 			<SRP_OUT_REFPHA comment="" c="off">refphase.raw</SRP_OUT_REFPHA>
 			<SRD_OUT_H2PH comment="" c="off">h2ph_srp.raw</SRD_OUT_H2PH>
-		</subtrefpha>
+		</subtrrefpha>
 		<unwrap>remove DEM induced reference phase
 			<PROCESS>SUBTRREFPHA</PROCESS>
 			<UW_METHOD comment="" c="off">SNAPHU</UW_METHOD>
@@ -129,6 +128,15 @@
 			<UW_SNAPHU_INIT comment="" c="off">MST</UW_SNAPHU_INIT>
 			<UW_SNAPHU_VERBOSE comment="" c="off">ON</UW_SNAPHU_VERBOSE>
 		</unwrap>
+		<phasefilt>phase filter
+			<PROCESS>FILTPHASE</PROCESS>
+			<PF_BLOCKSIZE comment="" c="off">32</PF_BLOCKSIZE>
+			<PF_OVERLAP comment="" c="off">3</PF_OVERLAP>
+			<PF_KERNEL comment="" c="off">1 2 3 2 1</PF_KERNEL>
+			<PF_METHOD comment="" c="off">goldstein</PF_METHOD>
+			<PF_ALPHA comment="" c="off">0.2</PF_ALPHA>
+			<PF_KERNEL comment="" c="off">5 1 1 1 1 1</PF_KERNEL>
+		</phasefilt>
 	</sentinel-1>
 </sensors>
 

@@ -320,14 +320,14 @@ class SingleMaster(object):
                     master_file = self.dat_file(burst,date='master',full_path=False)
                     command1 = 'python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc'
                     job_list1.append([path, command1])
-                    command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr_pointscat')
+                    command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr')
                     job_list2.append([path, command2])
                     if(not(self.parallel)):
                         # TODO David
                         os.system('python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc')
                         os.system(command2)
                 if ps is False:
-                    command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr_random')
+                    command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr')
                     job_list1.append([path, command])
                     if(not(self.parallel)):
                         os.system(command)
@@ -406,7 +406,7 @@ class SingleMaster(object):
                 job_list1.append([path, command1])
                 command2 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
                 job_list2.append([path, command2])
-                if(not(self.parallel)):_no_kernel_shift
+                if(not(self.parallel)):
                     os.chdir(path)
                     os.system('python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res')
                     os.system('python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res')
@@ -438,7 +438,7 @@ class SingleMaster(object):
                         os.system(command1)
                         os.system(command2)
                 elif ps == False:
-                    command = self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg_icc_random')
+                    command = self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg')
                     job_list1.append([path,command])
                     if (not(self.parallel)):
                         os.system(command)
@@ -1334,6 +1334,82 @@ class SingleMaster(object):
         self.update_res()
 
     def multilook(self, ra=20, az= 5,step='filtphase'):
+        # This function does the multilooking using cpxfiddle and updates the resolution of the step variable. You
+        # have to careful that if you want to perform this step to follow on with a smaller data file, for e.g. unwrapping
+        # this should be the last mentioned step.
+
+        if step == 'filtphase':
+            filename = 'cint_filt.raw'
+            filename2 = 'cint_filt_ml.raw'
+            type = 'cr4'
+        elif step == 'coherence':
+            filename = 'coherence.raw'
+            filename2 = 'coherence_ml.raw'
+            type = 'r4'
+        elif step == 'subtrefdem':
+            filename = 'cint_srd.raw'
+            filename2 = 'cint_srd_ml.raw'
+            type = 'cr4'
+        elif step == 'subtrefpha':
+            filename = 'cint_srp.raw'
+            filename2 = 'cint_srp_ml.raw'
+            type = 'cr4'
+        elif step == 'interfero':
+            filename = 'cint.raw'
+            filename2 = 'cint_ml.raw'
+            type = 'cr4'
+        else:
+            print('Choose for step between filtphase, coherence, subtrefdem, subtrefpha and interfero')
+
+        self.read_res()
+
+        for date in self.stack.keys():
+            lines = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original'])
+            pixels = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original'])
+
+            date_path = self.image_path(date)
+            os.chdir(date_path)
+
+            # Create cpxfiddle command
+            command = ' -w ' + str(pixels) + ' -o float -M ' + str(ra) + '/'+ str(az) + ' -f ' + type + ' ' \
+                                             '-l1 -p1 -P' + str(pixels) + ' -q normal ' + filename + ' > ' + filename2
+            os.system(self.cpxfiddle + command)
+
+            # Update res file
+            new_lines = str(int(np.floor(lines / az)))
+            new_pixels = str(int(np.floor(pixels / ra)))
+
+            res = self.full_swath[date]['ifgs'].processes[step]
+
+            res['Data_output_file'] = filename2
+            res['Multilookfactor_azimuth_direction'] = str(az)
+            res['Multilookfactor_range_direction'] = str(ra)
+            res['Number of lines (multilooked)'] = new_lines
+            res['Number of pixels (multilooked)'] = new_pixels
+
+            self.full_swath[date]['ifgs'].processes[step] = res
+
+            # Finally create an image using cpxfiddle (full resolution)
+            if type == 'r4':
+                # Only show the magnitude
+                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q normal -o sunraster -b -c gray -M 1/1 -f r4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '.ras'
+                os.system(self.cpxfiddle + mag)
+            elif type == 'cr4':
+                # Show the 3 images
+                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 1/1 -f cr4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_mag.ras'
+                os.system(self.cpxfiddle + mag)
+                mix = ' -w ' + new_pixels + ' -e 0.3 -s 1.2 -q mixed -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename[:-4] + '_mix.ras'
+                os.system(self.cpxfiddle + mix)
+                pha = ' -w ' + new_pixels + ' -q phase -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
+                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_pha.ras'
+                os.system(self.cpxfiddle + pha)
+
+        self.update_res()
+
+    def downscale(self, lats, lons, step='filtphase'):
         # This function does the multilooking using cpxfiddle and updates the resolution of the step variable. You
         # have to careful that if you want to perform this step to follow on with a smaller data file, for e.g. unwrapping
         # this should be the last mentioned step.

@@ -1,6 +1,7 @@
-
-# File created by Gert Mulder, TU Delft, the Netherlands
-#
+# Function created by Gert Mulder
+# Institute TU Delft
+# Date 9-11-2016
+# Part of Doris 5.0
 
 # This function will create the needed files for a datastack based on input information from the datastack.
 import xml.etree.ElementTree as ET
@@ -33,8 +34,8 @@ class CreateInputFiles:
         dem_var = pickle.load(dem_info)
 
         inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'comprefdem', 'comprefpha', 'coregpm',
-                          'dembased', 'finecoreg', 'geocode', 'interferogram', 'resample', 'subtrefdem', 'subtrefpha',
-                          'unwrap']
+                          'dembased', 'finecoreg', 'geocode', 'interferogram', 'resample', 'subtrrefdem', 'subtrrefpha',
+                          'unwrap', 'phasefilt']
 
         for filename in inputfilenames:
             # Create file
@@ -71,6 +72,8 @@ class CreateInputFiles:
                     txtfile.write(c + node.tag.ljust(20) + '\t' + dem_var[node.attrib['var']].ljust(20) + '\n')
                 elif not 'var' in node.attrib and not node.attrib['comment']:
                     txtfile.write(c + node.tag.ljust(20) + '\t' + node.text.ljust(20) + '\n')
+
+        txtfile.write("STOP                          \n")
 
         return txtfile
 

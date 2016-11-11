@@ -6,6 +6,8 @@
 
 import sys
 from dorisparameters_path import DorisParameters_Path
+import os
+
 
 class DorisSentinel1(object):
 
@@ -16,12 +18,23 @@ class DorisSentinel1(object):
         dorisParameters_Path = DorisParameters_Path()
         dorisParameters_Path.set(doris_parameters_path)
 
+        print(sys.path)
+
+        from prepare_processing_folder import prepare_datastack
         from dorisparameters import DorisParameters
         from grs_profile import GRS_Profile
 
         #Set your input variables here. You should use absolute paths.
 
         dorisParameters = DorisParameters()
+        sys.path.extend([dorisParameters.function_path])
+
+        print sys.path
+
+        if not os.path.exists(dorisParameters.project_path):
+            prepare_datastack(dorisParameters.project_path, dorisParameters.source_shapefile,
+                              dorisParameters.dem_source_path, dorisParameters.satellite, doris_parameters_path)
+
         profile = GRS_Profile(dorisParameters.profile_log + '_' + str(dorisParameters.nr_of_jobs), dorisParameters.verbose)
         # doris executable
         doris_path = dorisParameters.doris_path
@@ -51,7 +64,6 @@ class DorisSentinel1(object):
 
         # Specify here the path to the functions folder with seperate python functions.
 #        script_folder = dorisParameters.script_folder  #'/....../doris_v5.0.0_beta/sentinel1/functions'
-
 
         #################################
 

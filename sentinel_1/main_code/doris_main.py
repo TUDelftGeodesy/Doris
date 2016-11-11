@@ -31,6 +31,7 @@ args = parser.parse_args()
 
 #start doris sentinel1 run
 doris_sentinel_1 = DorisSentinel1()
-doris_sentinel_1.run(args.parameterfilepath, args.startdate, args.enddate, args.masterdate)
+doris_sentinel_1.run(args.parameterfilepath, args.startdate.strftime("%Y-%m-%d"), args.enddate.strftime("%Y-%m-%d"),
+                     args.masterdate.strftime("%Y-%m-%d"))
 
 

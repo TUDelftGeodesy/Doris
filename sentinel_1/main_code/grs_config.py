@@ -10,4 +10,5 @@ class GrsConfig(object):
         self.doris_path = '/usr/local/bin/doris'
         self.cpxfiddle_path = '/usr/local/bin/cpxfiddle'
         self.job_handler_script = self.source_path + "/sentinel_1/main_code/jobHandlerScript"
-	self.function_path = self.source_path + "/sentinel_1/functions/"
+        self.function_path = self.source_path + "/sentinel_1/functions/"
+
