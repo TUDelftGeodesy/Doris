@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os,sys,time
-import resdata
+import sentinel_1.main_code.resdata as resdata
 
 
 def dump_data(input_file,res_file,output_file='',coordinates=[]):

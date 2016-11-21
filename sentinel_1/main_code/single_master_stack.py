@@ -2,18 +2,17 @@ import os
 import numpy as np
 from datetime import datetime
 from collections import OrderedDict
-from baselines import baselines
+from sentinel_1.functions.baselines import baselines
 import copy
 from copy import deepcopy
 import shutil
 from resdata import ResData
-from ESD_administration import get_BOL_lines, get_f_DC_difference, get_interfero, get_parameter, freadbk, apply_ESD_Nida
+from sentinel_1.functions.ESD_administration import get_BOL_lines, get_f_DC_difference, get_interfero, get_parameter, freadbk, apply_ESD_Nida
 from scipy import linalg
 import resdata
 import collections
 
 from jobs import Jobs
-from dorisparameters import DorisParameters
 
 class SingleMaster(object):
 
@@ -25,7 +24,7 @@ class SingleMaster(object):
         # Dates should be given as 'yyyy-mm-dd'. If stack_read is True information is read from the stack_folder. Otherwise
         # the datastack from an StackData object should be given as input.
 
-        doris_parameters = DorisParameters()
+        doris_parameters = dorisParameters # Global variable
 
         if not start_date:
             self.start_date = doris_parameters.start_date_default

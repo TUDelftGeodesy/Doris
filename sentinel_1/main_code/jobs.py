@@ -1,6 +1,5 @@
 import os
 import time
-from dorisparameters import DorisParameters
 
 class Jobs(object):
     """The Jobs class runs a list of jobs in parallel.
@@ -23,7 +22,7 @@ class Jobs(object):
            verbose: print status to stdout during execution of job list"""
         self.max_jobs = max_jobs
         self.pid = str(os.getpid())
-        self.doris_parameters = DorisParameters()
+        self.doris_parameters = dorisParameters
         self.verbose = self.doris_parameters.verbose
         self.flag_dir = self.doris_parameters.doris_parallel_flag_dir
         self.between_sleep_time = self.doris_parameters.between_sleep_time

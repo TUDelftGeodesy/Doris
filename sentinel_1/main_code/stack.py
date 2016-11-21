@@ -12,7 +12,7 @@ import image
 import subprocess
 from copy import deepcopy
 from collections import Counter, OrderedDict
-from sentinel_dump_data_function import dump_data
+from sentinel_1.functions.sentinel_dump_data_function import dump_data
 
 # TODO Make a function that describes an iteration over the burst in the datastack
 # TODO Split this function in initialization (single products) and processing part (ifgs)

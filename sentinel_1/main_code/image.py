@@ -1,13 +1,14 @@
 # This files defines a class for metadata objects of sentinel images. Large part of the work depends on python readers
 # from the tops toolbox.
 import os
-from swath import SwathMeta
+from sentinel_1.main_code.swath import SwathMeta
 import warnings
 import xml.etree.cElementTree as etree
 from shapely.geometry import Polygon
 import copy
 import zipfile
 import shutil
+
 
 class ImageMeta(object):
     # Object for image files for sentinel data

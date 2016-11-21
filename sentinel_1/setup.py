@@ -8,5 +8,7 @@ setup(
     license='',
     author='Gert Mulder',
     author_email='g.mulder-1@tudelft.nl',
-    description='Doris 5.0'
+    description='Doris 5.0',
+
+    install_requires=['numpy, datetime, requests, os, sys, numpy, shapely, fiona', 'gdal', 'osr', 'xml']
 )

@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 from numpy import *
-from get_ramp import get_ramp, freadbk, get_parameter
+from sentinel_1.functions.get_ramp import get_ramp, freadbk, get_parameter
 
 def usage():
     print '\nUsage: python  do_reramp_SLC.py dataFilename resFilename resampled'

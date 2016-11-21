@@ -5,9 +5,7 @@
 ##############################
 
 import sys
-from dorisparameters_path import DorisParameters_Path
 import os
-
 
 class DorisSentinel1(object):
 
@@ -15,18 +13,17 @@ class DorisSentinel1(object):
     def run(self, doris_parameters_path, start_date, end_date, master_date):
 
         print 'start sentinel 1 processing'
-        dorisParameters_Path = DorisParameters_Path()
-        dorisParameters_Path.set(doris_parameters_path)
 
         print(sys.path)
 
-        from prepare_processing_folder import prepare_datastack
-        from dorisparameters import DorisParameters
-        from grs_profile import GRS_Profile
+        from sentinel_1.main_code.prepare_processing_folder import prepare_datastack
+        from sentinel_1.main_code.dorisparameters import DorisParameters
+        from sentinel_1.main_code.grs_profile import GRS_Profile
 
         #Set your input variables here. You should use absolute paths.
 
-        dorisParameters = DorisParameters()
+        global dorisParameters
+        dorisParameters = DorisParameters(doris_parameters_path)
         sys.path.extend([dorisParameters.function_path])
 
         print sys.path

@@ -2,7 +2,7 @@
 import os,sys,time
 import numpy as np
 from numpy import *
-from get_ramp import get_ramp, freadbk, get_parameter
+from sentinel_1.functions.get_ramp import get_ramp, freadbk, get_parameter
 
 def usage():
     print '\nUsage: python do_deramp_SLC_nom.py dataFilename  resFilename plotFlag'

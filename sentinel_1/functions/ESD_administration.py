@@ -12,7 +12,7 @@ import struct,shutil
 import gdal,gdalconst
 from gdalconst import *
 from scipy import stats
-from get_ramp import get_ramp, get_parameter
+from sentinel_1.functions.get_ramp import get_ramp, get_parameter
 
 # Definition to extract data
 # In Matlab:

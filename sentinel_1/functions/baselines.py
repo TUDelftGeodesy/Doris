@@ -4,10 +4,9 @@ import os
 import numpy as np
 import warnings
 from shutil import copyfile
-from resdata import ResData
+from sentinel_1.main_code.resdata import ResData
 import datetime
 import subprocess
-
 
 
 def baselines(dir_in,inputfile,start_date='2014-01-01',end_date='2018-01-01',doris=''):
