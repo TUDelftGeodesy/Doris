@@ -8,8 +8,7 @@ from datetime import datetime, timedelta
 from shapely.geometry import Polygon, shape, mapping, box
 from shapely.ops import cascaded_union
 import fiona
-import image
-import subprocess
+import sentinel_1.main_code.image as image
 from copy import deepcopy
 from collections import Counter, OrderedDict
 from sentinel_1.functions.sentinel_dump_data_function import dump_data
@@ -61,6 +60,7 @@ class StackData(object):
         self.burst_centers = list()
 
         # Some important characteristics of the dataset of bursts. (matrices with names on y and dates on x axis)
+        self.burst_no = 0
         self.burst_availability = []
         self.burst_lon = []
         self.burst_lat = []
@@ -109,11 +109,6 @@ class StackData(object):
                 self.precise_orbits = precise_dir
             else:
                 print 'Precise orbit path does not exist'
-
-    def read_existing(self,path):
-        # This function reads an existing datastack. If needed also the interferograms which are already created.
-
-        print('In development')
 
     def add_path(self,path):
         # This function adds the output path.
@@ -179,10 +174,13 @@ class StackData(object):
         self.buffer = buffer
 
     def unpack_image(self):
-        # This program unpacks the images which are needed for processing.
-        for image in self.images:
-            image.unzip()
-            image.init_unzipped()
+        # This program unpacks the images which are needed for processing. If unpacking fails, they are removed..
+        for imagefile in self.images[:]:
+            succes = imagefile.unzip()
+            if succes:
+                imagefile.init_unzipped()
+            else:
+                self.images.remove(imagefile)
 
     def del_unpacked_image(self):
         # This program unpacks the images which are needed for processing.
@@ -256,25 +254,30 @@ class StackData(object):
                         break
 
                     for burst in self.images[i].swaths[swath_no].bursts:
-                        if burst.burst_coverage.intersects(self.shape):
+                        if __name__ == '__main__':
+                            if burst.burst_coverage.intersects(self.shape):
 
-                            # If there are bursts in this swath, which intersect, add burst to list.
-                            if swath_name not in self.datastack[date].keys(): # If there are burst and no burst list exists
-                                self.datastack[date][swath_name] = dict()
-                                if swath_name not in self.swath_names:
-                                    self.swath_names.append(swath_name)
+                                # If there are bursts in this swath, which intersect, add burst to list.
+                                if swath_name not in self.datastack[date].keys(): # If there are burst and no burst list exists
+                                    self.datastack[date][swath_name] = dict()
+                                    if swath_name not in self.swath_names:
+                                        self.swath_names.append(swath_name)
 
-                            # Assign burst to data stack
-                            burst_name = 'burst_' + str(burst_no)
-                            burst.new_burst_num = burst_no
-                            burst.res_burst(precise_folder=self.precise_orbits)
-                            self.datastack[date][swath_name][burst_name] = burst
+                                # Assign burst to data stack
+                                burst_name = 'burst_' + str(burst_no)
+                                burst.new_burst_num = burst_no
+                                burst.res_burst(precise_folder=self.precise_orbits)
+                                self.datastack[date][swath_name][burst_name] = burst
 
-                            # Assign coverage, center coordinates and burst name.
-                            self.burst_shapes.append(burst.burst_coverage)
-                            self.burst_centers.append(burst.burst_center)
-                            self.burst_names.append(swath_name + '_' + burst_name)
-                            burst_no += 1
+                                # Assign coverage, center coordinates and burst name.
+                                self.burst_shapes.append(burst.burst_coverage)
+                                self.burst_centers.append(burst.burst_center)
+                                self.burst_names.append(swath_name + '_' + burst_name)
+                                burst_no += 1
+
+                                # Finally add also to the number of bursts from the image
+                                self.images[i].burst_no += 1
+                                self.burst_no += 1
 
     def swath_coverage(self):
         # Create a convex hull for the different swaths.
@@ -331,6 +334,16 @@ class StackData(object):
                             burst.new_burst_num = int(self.burst_names[burst_id][17:])
                             burst.res_burst(precise_folder=self.precise_orbits)
                             self.datastack[date_str][swath][self.burst_names[burst_id][11:]] = burst
+
+                            # Finally add also to the number of bursts from the image
+                            self.images[i].burst_no += 1
+
+    def remove_incomplete_images(self):
+        # This function removes all the images with less than maximum bursts. This will make a stack more consistent.
+
+        for imagedat in self.images[:]:
+            if imagedat.burst_no < self.burst_no:
+                self.images.remove(imagedat)
 
     def define_burst_coordinates(self,slaves=False):
         # This function defines the exact coordinates in pixels of every burst based on the lower left corner of the first
@@ -486,22 +499,6 @@ class StackData(object):
                     self.burst_lon[d,b] = self.datastack[date][swath][burst].burst_center[0]
                     self.burst_lat[d,b] = self.datastack[date][swath][burst].burst_center[1]
 
-    def baseline(self):
-        # This function gives the baseline based on doris function. The selected burst will be given as reference.
-
-        if not self.burst_lat:
-            self.lat_lon_availability()
-
-        date_no = len(self.dates)
-        burst_no = len(self.burst_names)
-
-        print('In progress')
-
-    def make_network(self):
-        # This function will create a network of interferograms
-
-        print('In progress')
-
     def write_stack(self,write_path='',no_data=False):
         # This function writes the full datastack to a given folder using the dates / swaths / bursts setup. This
         # also generates the res readfiles data.
@@ -535,36 +532,7 @@ class StackData(object):
                     swath_res = os.path.join(swath_path,xml_base[15:23] + '_iw_' + xml_base[6] + '.res')
                     outdata =  os.path.join(swath_path,xml_base[15:23] + '_iw_' + xml_base[6] + '_burst_' + stack_no + '.raw')
 
-                    # First create res file
-
-                    # Old method
-                    #create_res = ('python sentinel_dump_header2doris_single.py ' + xml + ' ' + stack_no + ' ' + image_no
-                    #              + ' ' + swath_path)
-                    #os.system(create_res)
-
-                    #if not no_data:
-                    #    # Then add precise orbits
-                    #    if precise_orbits:
-                    #        try:
-                    #            add_precise = 'python orbit_read.py ' + res_name + ' ' + precise_orbits + ' cubic POE'
-                    #            os.system(add_precise)
-                    #        except:
-                    #            warnings.warn('File will be written without precise orbits')
-
-                    #    # Finally write data
-                    #    crop = 'python get_parameter_coord_single.py ' + swath_res + ' ' + stack_no
-                    #    crop = subprocess.Popen(crop , shell=True, stdout=subprocess.PIPE,).communicate()[0][:-1]
-                    #    write_data = 'python sentinel_dump_data.py ' + data + ' ' + outdata + ' ' + crop + ' -res ' + res_name
-                    #    os.system(write_data)
-
-                    # Write res file
                     self.datastack[date][swath][burst].write(res_name)
-
-                    # Save data
-                    # crop = 'python get_parameter_coord_single.py ' + swath_res + ' ' + stack_no
-                    # crop = subprocess.Popen(crop , shell=True, stdout=subprocess.PIPE,).communicate()[0][:-1]
-                    # write_data = 'python sentinel_dump_data.py ' + data + ' ' + outdata + ' ' + crop + ' -res ' + res_name
-                    # os.system(write_data)
 
                     dump_data(data,res_name,output_file=outdata)
 
@@ -578,19 +546,6 @@ class StackData(object):
            # Otherwise it is fine...
         else:
             print 'Please run functions to create datastack and coordinates first!'
-
-    def setup_single_master(self,start_date='',end_date='',master=''):
-        # This function makes a setup for the single master of sentinel data.
-
-        print('in progress')
-
-    def do_coreg(self,dem=True):
-        # This function does the coregistration for this datastack
-        print('in progress')
-
-    def create_coreg_concatenate(self):
-        # This function reads
-        print('in progress')
 
     def write_shapes(self,coverage=True,images=True,swaths=True,bursts=True,coordinates=True):
         # This function writes shapefiles of the area of interest, images and bursts.

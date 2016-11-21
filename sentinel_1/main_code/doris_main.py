@@ -1,6 +1,6 @@
 import argparse
 from datetime import datetime
-from doris_sentinel_1 import DorisSentinel1
+from sentinel_1.main_code.doris_sentinel_1 import DorisSentinel1
 """Doris processing
 arguments:  --parameterfilepath, -p
             --startdate -s

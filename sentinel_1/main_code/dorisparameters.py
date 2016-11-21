@@ -18,6 +18,8 @@ class DorisParameters():
         self.doris_path = grs_config.doris_path
         self.cpxfiddle_path = grs_config.cpxfiddle_path
         self.job_handler_script = grs_config.job_handler_script
+        self.function_path = grs_config.function_path
+        self.source_path = grs_config.source_path
 
         self.verbose = True
 
@@ -25,7 +27,9 @@ class DorisParameters():
         settings = tree.getroot()
 
         project_path = settings.find('.project_path').text
+        self.project_path = project_path
         data_path = settings.find('.data_path').text
+        self.data_path = data_path
         #
         # used in single_master.py
         #

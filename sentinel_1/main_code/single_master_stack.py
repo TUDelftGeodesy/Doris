@@ -6,10 +6,11 @@ from sentinel_1.functions.baselines import baselines
 import copy
 from copy import deepcopy
 import shutil
-from resdata import ResData
+from sentinel_1.main_code.resdata import ResData
 from sentinel_1.functions.ESD_administration import get_BOL_lines, get_f_DC_difference, get_interfero, get_parameter, freadbk, apply_ESD_Nida
 from scipy import linalg
-import resdata
+import sentinel_1.main_code.resdata as resdata
+from sentinel_1.main_code.dorisparameters import DorisParameters
 import collections
 
 from jobs import Jobs
@@ -24,7 +25,7 @@ class SingleMaster(object):
         # Dates should be given as 'yyyy-mm-dd'. If stack_read is True information is read from the stack_folder. Otherwise
         # the datastack from an StackData object should be given as input.
 
-        doris_parameters = dorisParameters # Global variable
+        doris_parameters = DorisParameters(os.path.dirname(processing_folder)) # (assuming it is stored in the stackfolder
 
         if not start_date:
             self.start_date = doris_parameters.start_date_default
@@ -279,7 +280,7 @@ class SingleMaster(object):
 
     def coarse_orbits(self):
         # Run coarse orbits for all bursts.
-## aanpassen DLEVELT TODO
+        ## aanpassen DLEVELT TODO
         job_list1 = []
         for date in self.stack.keys():
             job_list2 = []
@@ -708,71 +709,83 @@ class SingleMaster(object):
 
         self.update_res()
 
-    def resample(self):
+    def resample(self, type=''):
         # Resample slave bursts
-        jobList = []
+        jobList1 = []
+        jobList2 = []
 
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
-                command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.resample')
-                jobList.append([path, command])
+
+                if type == 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw')):
+                    # If we are after ESD save the old data first
+                    command1 = 'cp slave_rsmp.raw slave_rsmp.raw.old'
+                elif type != 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw.old')):
+                    # If there is old data available and we are before the ESD step.
+                    command1 = '\cp slave_rsmp.raw.old slave_rsmp.raw'
+                else:
+                    command1 = ''
+
+                command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.resample')
+
+                jobList1.append([path, command1])
+                jobList2.append([path, command2])
+
                 if(not(self.parallel)):
                     os.chdir(path)
-                    os.system(command)
+                    # Resample
+                    os.system(command1)
+                    os.system(command2)
 
-        if (self.parallel):
+        if(self.parallel):
             jobs = Jobs(self.nr_of_jobs)
-            jobs.run(jobList)
+            if type != 'ESD':
+                jobs.run(jobList1)
+                jobs.run(jobList2)
+            else:
+                jobs.run(jobList2)
 
-    def reramp(self, master=False):
+
+    def reramp(self, type='ESD'):
         # This function reramps the radar data. If master is True, we assume that there is still an original master file
         # Which means that it is not needed to reramp that one. If master is false, only the slave is reramped.
         jobList1 = []
         jobList2 = []
-        jobList3 = []
-        jobList4 = []
 
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
-                command1 = 'cp slave_rsmp.raw slave_rsmp_deramped.raw'
-                jobList1.append([path, command1])
-                #TODO david command
-                command2 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
-                jobList2.append([path, command2])
-                master_file = self.dat_file(burst, 'master')
-                if(master):
-                    master_deramped = 'master_deramped.raw'
-                    command3 = 'cp ' + master_file + ' ' + master_deramped
-                    master_orig = master_file + '.orig'
-                    command4 = 'cp ' + master_orig + ' ' + master_file
 
-                    jobList3.append([path, command3])
-                    jobList4.append([path, command4])
+                if type == 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw')):
+                    # If we are after ESD save the old data first
+                    command1 = 'cp slave_rsmp.raw slave_rsmp.raw.old_ramp'
+                elif type != 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw.old_ramp')):
+                    # If there is old data available and we are before the ESD step.
+                    command1 = '\cp slave_rsmp.raw.old_ramp slave_rsmp.raw'
+                else:
+                    command1 = ''
+
+                command2 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
+
+                jobList1.append([path, command1])
+                jobList2.append([path, command2])
+
                 if(not(self.parallel)):
                     os.chdir(path)
                     # Save the original deramped slave
                     os.system(command1)
-                    os.system('python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res')
 
-                    if master == True:
-                        master_deramped = 'master_deramped.raw'
-                        os.system('cp ' + master_file + ' ' + master_deramped)
-                        master_orig = master_file + '.orig'
-                        os.system('cp ' + master_orig + ' ' + master_file)
-# TODO Gert: is for all dates OK or should is be per date?
+                # TODO Gert: is for all dates OK or should is be per date?
 
         if(self.parallel):
             jobs = Jobs(self.nr_of_jobs)
             jobs.run(jobList1)
-            jobs.run(jobList2)
-            jobs.run(jobList3)
-            jobs.run(jobList4)
 
-    def interferogram(self,concatenate = True):
+
+    def interferogram(self,concatenate = True, type=''):
 
         self.read_res()
         # Make an interferogram for the different bursts. (Not always necessary)
@@ -781,6 +794,7 @@ class SingleMaster(object):
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
+
                 command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.interferogram')
                 jobList.append([path, command])
                 if (not(self.parallel)):
@@ -789,6 +803,7 @@ class SingleMaster(object):
         if (self.parallel):
             jobs = Jobs(self.nr_of_jobs)
             jobs.run(jobList)
+
         if concatenate == True:
             self.concatenate('cint.raw', 'cint.raw', dt= np.dtype('complex64'))
             for date in self.stack.keys():
@@ -911,9 +926,21 @@ class SingleMaster(object):
             ESD_pixels = self.ESD_shift[date]
 
             dac_delta_line_dir = self.image_path(date,file_path='dac_delta_line.raw')
+            dac_delta_line_dir_old = self.image_path(date,file_path='dac_delta_line_old.raw')
             dt = np.dtype('float64')
             lines = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original'])
             pixels = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original'])
+
+            if os.path.exists(dac_delta_line_dir_old):
+                # ESD_correct is run before first copy the old to the current file.
+                command = 'rm dac_delta_line.raw'
+                os.system(command)
+                command = 'cp dac_delta_line_old.raw dac_delta_line.raw'
+            else:
+                # first time for ESD. First copy to old.
+                command = 'cp dac_delta_line.raw dac_delta_line_old.raw'
+
+            os.system(command)
             data_dac = np.memmap(dac_delta_line_dir, dtype=dt, mode='r+', shape=(lines, pixels))
 
             # Write and save data
@@ -1333,82 +1360,6 @@ class SingleMaster(object):
         self.update_res()
 
     def multilook(self, ra=20, az= 5,step='filtphase'):
-        # This function does the multilooking using cpxfiddle and updates the resolution of the step variable. You
-        # have to careful that if you want to perform this step to follow on with a smaller data file, for e.g. unwrapping
-        # this should be the last mentioned step.
-
-        if step == 'filtphase':
-            filename = 'cint_filt.raw'
-            filename2 = 'cint_filt_ml.raw'
-            type = 'cr4'
-        elif step == 'coherence':
-            filename = 'coherence.raw'
-            filename2 = 'coherence_ml.raw'
-            type = 'r4'
-        elif step == 'subtrefdem':
-            filename = 'cint_srd.raw'
-            filename2 = 'cint_srd_ml.raw'
-            type = 'cr4'
-        elif step == 'subtrefpha':
-            filename = 'cint_srp.raw'
-            filename2 = 'cint_srp_ml.raw'
-            type = 'cr4'
-        elif step == 'interfero':
-            filename = 'cint.raw'
-            filename2 = 'cint_ml.raw'
-            type = 'cr4'
-        else:
-            print('Choose for step between filtphase, coherence, subtrefdem, subtrefpha and interfero')
-
-        self.read_res()
-
-        for date in self.stack.keys():
-            lines = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original'])
-            pixels = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original'])
-
-            date_path = self.image_path(date)
-            os.chdir(date_path)
-
-            # Create cpxfiddle command
-            command = ' -w ' + str(pixels) + ' -o float -M ' + str(ra) + '/'+ str(az) + ' -f ' + type + ' ' \
-                                             '-l1 -p1 -P' + str(pixels) + ' -q normal ' + filename + ' > ' + filename2
-            os.system(self.cpxfiddle + command)
-
-            # Update res file
-            new_lines = str(int(np.floor(lines / az)))
-            new_pixels = str(int(np.floor(pixels / ra)))
-
-            res = self.full_swath[date]['ifgs'].processes[step]
-
-            res['Data_output_file'] = filename2
-            res['Multilookfactor_azimuth_direction'] = str(az)
-            res['Multilookfactor_range_direction'] = str(ra)
-            res['Number of lines (multilooked)'] = new_lines
-            res['Number of pixels (multilooked)'] = new_pixels
-
-            self.full_swath[date]['ifgs'].processes[step] = res
-
-            # Finally create an image using cpxfiddle (full resolution)
-            if type == 'r4':
-                # Only show the magnitude
-                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q normal -o sunraster -b -c gray -M 1/1 -f r4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '.ras'
-                os.system(self.cpxfiddle + mag)
-            elif type == 'cr4':
-                # Show the 3 images
-                mag = ' -w ' + new_pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 1/1 -f cr4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_mag.ras'
-                os.system(self.cpxfiddle + mag)
-                mix = ' -w ' + new_pixels + ' -e 0.3 -s 1.2 -q mixed -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename[:-4] + '_mix.ras'
-                os.system(self.cpxfiddle + mix)
-                pha = ' -w ' + new_pixels + ' -q phase -o sunraster -b -c jet -M 1/1 -f cr4 -l1 ' \
-                                                 '-p1 -P' + new_pixels + ' ' + filename2 + ' > ' + filename2[:-4] + '_pha.ras'
-                os.system(self.cpxfiddle + pha)
-
-        self.update_res()
-
-    def downscale(self, lats, lons, step='filtphase'):
         # This function does the multilooking using cpxfiddle and updates the resolution of the step variable. You
         # have to careful that if you want to perform this step to follow on with a smaller data file, for e.g. unwrapping
         # this should be the last mentioned step.

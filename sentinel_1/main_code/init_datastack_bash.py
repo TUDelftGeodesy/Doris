@@ -8,7 +8,7 @@ def create_bash(stack_folder, python_source_path):
     f = open(os.path.join(stack_folder, 'run.sh'), 'w')
 
     doris_run_script = os.path.join(python_source_path, 'main_code', 'doris_main.py')
-    processing = os.path.join(stack_folder, 'stack_info.xml')
+    processing = stack_folder
 
     f.write('#!/bin/bash \n')
     f.write('\n')

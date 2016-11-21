@@ -35,6 +35,10 @@ class ImageMeta(object):
         self.steps = []
         self.steps_res = []
 
+        # The following variable is to check the total number of bursts for this image. This is used to remove time
+        # slots with less bursts.
+        self.burst_no = 0
+
         ######################################################
 
     def init_unzipped(self):
@@ -74,9 +78,14 @@ class ImageMeta(object):
     def unzip(self):
         # This function unzips the corresponding image
         if not os.path.exists(self.path):
-            zip = zipfile.ZipFile(self.path + '.zip')
-            path = os.path.abspath(os.path.join(self.path, os.pardir))
-            zip.extractall(path)
+            try:
+                zip = zipfile.ZipFile(self.path + '.zip')
+                path = os.path.abspath(os.path.join(self.path, os.pardir))
+                zip.extractall(path)
+                return True
+            except:
+                print('Failed to unpack!')
+                return False
 
     def del_unzip(self):
         # This function deletes the unzipped files.

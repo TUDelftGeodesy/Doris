@@ -83,6 +83,8 @@ class DorisSentinel1(object):
         stack.select_burst()
         # And also for the other dates the needed bursts are selected
         stack.extend_burst()
+        # Remove the images which are not fully present
+        stack.remove_incomplete_images()
         # Now the exact coordinates of the different burst in the concatenated image is calculated
         stack.define_burst_coordinates(slaves=True)
         # Write the datastack to the stack_path folder
@@ -106,9 +108,9 @@ class DorisSentinel1(object):
                                                       doris_path=doris_path, cpxfiddle_folder=cpxfiddle_folder)
 
         # These lines can be used if you want to skip the initialize step because a some calculation steps are already performed....
-        #del processing.stack[master_date.strftime('%Y-%m-%d')]
-        #del processing.full_swath[master_date.strftime('%Y-%m-%d')]
-        #processing.read_res()
+        # del processing.stack[master_date.strftime('%Y-%m-%d')]
+        # del processing.full_swath[master_date.strftime('%Y-%m-%d')]
+        # processing.read_res()
 
         # Copy the necessary files to start processing
         processing.initialize()
@@ -144,7 +146,7 @@ class DorisSentinel1(object):
         processing.resample()
         profile.log_time_stamp('resample')
         # Reramp burst
-        processing.reramp(master=True)
+        processing.reramp()
         profile.log_time_stamp('reramp')
         # Make interferograms for individual bursts
         processing.interferogram(concatenate=True)
@@ -157,13 +159,13 @@ class DorisSentinel1(object):
         processing.ESD_correct()
         profile.log_time_stamp('ESD_correct')
         # Remove resample and interferogram steps
-        processing.del_process('resample' ,type='slave')
-        processing.del_process('interfero' , type='ifgs')
+        processing.del_process('resample', type='slave')
+        processing.del_process('interfero', type='ifgs')
         # Resample again with additional ESD shift
-        processing.resample()
+        processing.resample('ESD')
         profile.log_time_stamp('resample')
         # Reramp data based on last resampling
-        processing.reramp()
+        processing.reramp('ESD')
         profile.log_time_stamp('reramp')
         # Create interferogram and combine to full swath
         processing.interferogram()
@@ -191,12 +193,12 @@ class DorisSentinel1(object):
         processing.calc_coordinates()
         profile.log_time_stamp('calc_coordinates')
         # Multilook filtered image and coherence image
-        processing.multilook(step='coherence')
-        processing.multilook(step='filtphase')
-        profile.log_time_stamp('multilooking')
+        # processing.multilook(step='coherence')
+        # processing.multilook(step='filtphase')
+        # profile.log_time_stamp('multilooking')
         # Unwrap image
-        processing.unwrap()
-        profile.log_time_stamp('unwrapping')
+        # processing.unwrap()
+        # profile.log_time_stamp('unwrapping')
 
         profile.log_time_stamp('end')
 

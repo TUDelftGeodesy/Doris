@@ -10,5 +10,8 @@ setup(
     author_email='g.mulder-1@tudelft.nl',
     description='Doris 5.0',
 
-    install_requires=['numpy, datetime, requests, os, sys, numpy, shapely, fiona', 'gdal', 'osr', 'xml']
+    install_requires=['warnings', 'datetime', 'shutil', 'subprocess', 'numpy', 'shapely', 'requests', 'shapely',
+                      'fiona', 'gdal', 'osr', 'xml', 'copy', 'httplib', 'pickle', 'urllib', 'os', 'sys', 'time',
+                      'collections', 'math', 'scipy', 'struct', 'gdalconst', 'osr', 'HTMLParser', 'zipfile', 'fastkml'
+                      , 'argparse']
 )

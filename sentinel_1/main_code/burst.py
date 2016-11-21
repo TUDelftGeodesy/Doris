@@ -3,7 +3,7 @@
 
 from sentinel_1.functions.xml_query import xml_query
 from sentinel_1.functions.burst_metadata import burst_header, burst_readfiles, burst_datapoints, burst_crop, burst_precise
-from resdata import ResData
+from sentinel_1.main_code.resdata import ResData
 import warnings
 import os
 import copy
