@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Document created by: Gert Mulder additional options can be found in the doris guide-->
+<paths>
+    <data_path>FINE</data_path>
+    <project_path>coherence</project_path>
+    <orbit_path>200</orbit_path>
+    <nr_of_jobs>fc_pos.in</nr_of_jobs>
+    <parallel>64 64</parallel>
+    <initialize_flag>8 8</initialize_flag>
+</paths>
