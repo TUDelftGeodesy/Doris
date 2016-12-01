@@ -204,14 +204,16 @@ class StackData(object):
             acq_time = np.datetime64(d[0:4] + '-' + d[4:6] + '-' + d[6:11] + ':' + d[11:13] + ':' + d[13:] + '-0000')
             if acq_time >= self.start_date and acq_time <= self.end_date:
                 im = image.ImageMeta(path=i)
-                im.read_kml()
-                im_shape = deepcopy(im.coverage)
+                succes = im.read_kml()
 
-                if im_shape.intersects(self.shape):
-                    self.images.append(im)
-                    self.image_shapes.append(im_shape)
-                    self.image_dates.append(acq_time)
-                    self.image_files.append(os.path.basename(i))
+                if succes:
+                    im_shape = deepcopy(im.coverage)
+
+                    if im_shape.intersects(self.shape):
+                        self.images.append(im)
+                        self.image_shapes.append(im_shape)
+                        self.image_dates.append(acq_time)
+                        self.image_files.append(os.path.basename(i))
         self.dates = sorted(list(set([d.astype('datetime64[D]') for d in self.image_dates])))
 
     def select_burst(self,date=''):
@@ -222,8 +224,8 @@ class StackData(object):
         image_dates = [im.astype('datetime64[D]') for im in self.image_dates]
         # First select which date will be the master
         if date:
-            date = np.datenum64(date).astype('datetime64[D]')
-            date = deepcopy(image_dates[min(abs(self.image.dates-date))])
+            date = np.datetime64(date).astype('datetime64[D]')
+            date = deepcopy(image_dates[min(abs(self.image_dates-date))])
         else:  # if no date is specified
             date = Counter(image_dates).most_common(1)[0][0]
 
@@ -244,6 +246,7 @@ class StackData(object):
                 swath_id = 'iw' + swath + '-slc-' + p
                 swath_name = 'swath_' + swath + '_' + p
                 burst_no = 1
+                data = []
 
                 for i in image_id:
                     # Check which swath should be selected.
@@ -254,30 +257,32 @@ class StackData(object):
                         break
 
                     for burst in self.images[i].swaths[swath_no].bursts:
-                        if __name__ == '__main__':
-                            if burst.burst_coverage.intersects(self.shape):
+                        if burst.burst_coverage.intersects(self.shape):
 
-                                # If there are bursts in this swath, which intersect, add burst to list.
-                                if swath_name not in self.datastack[date].keys(): # If there are burst and no burst list exists
-                                    self.datastack[date][swath_name] = dict()
-                                    if swath_name not in self.swath_names:
-                                        self.swath_names.append(swath_name)
+                            # If there are bursts in this swath, which intersect, add burst to list.
+                            if swath_name not in self.datastack[date].keys(): # If there are burst and no burst list exists
+                                self.datastack[date][swath_name] = dict()
+                                if swath_name not in self.swath_names:
+                                    self.swath_names.append(swath_name)
 
-                                # Assign burst to data stack
-                                burst_name = 'burst_' + str(burst_no)
-                                burst.new_burst_num = burst_no
-                                burst.res_burst(precise_folder=self.precise_orbits)
-                                self.datastack[date][swath_name][burst_name] = burst
+                            # Assign burst to data stack
+                            burst_name = 'burst_' + str(burst_no)
+                            burst.new_burst_num = burst_no
+                            if data:
+                                data = burst.res_burst(precise_folder=self.precise_orbits, data=data)
+                            else:
+                                data = burst.res_burst(precise_folder=self.precise_orbits)
+                            self.datastack[date][swath_name][burst_name] = burst
 
-                                # Assign coverage, center coordinates and burst name.
-                                self.burst_shapes.append(burst.burst_coverage)
-                                self.burst_centers.append(burst.burst_center)
-                                self.burst_names.append(swath_name + '_' + burst_name)
-                                burst_no += 1
+                            # Assign coverage, center coordinates and burst name.
+                            self.burst_shapes.append(burst.burst_coverage)
+                            self.burst_centers.append(burst.burst_center)
+                            self.burst_names.append(swath_name + '_' + burst_name)
+                            burst_no += 1
 
-                                # Finally add also to the number of bursts from the image
-                                self.images[i].burst_no += 1
-                                self.burst_no += 1
+                            # Finally add also to the number of bursts from the image
+                            self.images[i].burst_no += 1
+                            self.burst_no += 1
 
     def swath_coverage(self):
         # Create a convex hull for the different swaths.
@@ -301,13 +306,13 @@ class StackData(object):
             # Append data to datastack variable
             date_str = date.astype(datetime).strftime('%Y-%m-%d')
             self.datastack[date_str] = dict()
+            data = []
 
             # Load the metadata for this date for the bursts and swaths
             image_id = np.where(image_dates == date)[0]
             for i in image_id:
                 self.images[i].meta_swath()
                 self.images[i].meta_burst(corners=False)
-                # TODO Change precise orbits script to image wise approach (will be the same for all bursts in image)
 
             for swath in self.swath_names:
                 # Add swath to datastack
@@ -332,18 +337,21 @@ class StackData(object):
                         if dist[burst_id] < 0.1:
                             # Assign burst to data stack
                             burst.new_burst_num = int(self.burst_names[burst_id][17:])
-                            burst.res_burst(precise_folder=self.precise_orbits)
+                            if data:
+                                data = burst.res_burst(precise_folder=self.precise_orbits, data=data)
+                            else:
+                                data = burst.res_burst(precise_folder=self.precise_orbits)
                             self.datastack[date_str][swath][self.burst_names[burst_id][11:]] = burst
-
-                            # Finally add also to the number of bursts from the image
-                            self.images[i].burst_no += 1
 
     def remove_incomplete_images(self):
         # This function removes all the images with less than maximum bursts. This will make a stack more consistent.
 
-        for imagedat in self.images[:]:
-            if imagedat.burst_no < self.burst_no:
-                self.images.remove(imagedat)
+        for key in self.datastack.keys():
+            burst_no = 0
+            for key_swath in self.datastack[key].keys():
+                burst_no += len(self.datastack[key][key_swath])
+            if burst_no < self.burst_no:
+                self.datastack.pop(key)
 
     def define_burst_coordinates(self,slaves=False):
         # This function defines the exact coordinates in pixels of every burst based on the lower left corner of the first
@@ -533,8 +541,8 @@ class StackData(object):
                     outdata =  os.path.join(swath_path,xml_base[15:23] + '_iw_' + xml_base[6] + '_burst_' + stack_no + '.raw')
 
                     self.datastack[date][swath][burst].write(res_name)
-
-                    dump_data(data,res_name,output_file=outdata)
+                    if not os.path.exists(res_name) or not os.path.exists(outdata):
+                        dump_data(data,res_name,output_file=outdata)
 
     def create_concatenate_stack(self,slaves=True):
         # This function creates a folder and res files for the concatenated files

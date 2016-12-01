@@ -17,7 +17,7 @@ class Jobs(object):
        Methods:
            Run: executes list of jobs
            """
-    def __init__(self, max_jobs):
+    def __init__(self, max_jobs, dorisParameters):
         """max_jobs: maximum number of jobs to run simultaniously
            verbose: print status to stdout during execution of job list"""
         self.max_jobs = max_jobs

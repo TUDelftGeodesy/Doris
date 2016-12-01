@@ -92,7 +92,7 @@ class BurstMeta(ResData):
         self.burst_coverage = coverage
         self.burst_center = [readfiles['Scene_centre_longitude'],readfiles['Scene_centre_latitude']]
 
-    def res_burst(self,swath_meta=[],precise_folder=''):
+    def res_burst(self,swath_meta=[],precise_folder='', data=[]):
         # Here the details for the res file are loaded.
 
         if not swath_meta:
@@ -107,7 +107,9 @@ class BurstMeta(ResData):
         # Read metadata from xml and inserts in resdata of burst
         self.header = header
 
-        if not precise_folder:
+        if data:
+            self.insert(data, process='precise_orbits')
+        elif not precise_folder:
             datapoints = burst_datapoints(self.swath_meta,self.burst_num)
             self.insert(datapoints,process='leader_datapoints')
         else:
@@ -115,15 +117,20 @@ class BurstMeta(ResData):
                 datapoints = burst_precise(self.swath_meta,self.burst_num,precise_folder,type='POE')
                 if datapoints: # If it is empty, fall back to leader datapoints.
                     self.insert(datapoints,process='precise_orbits')
+                    data = datapoints
                 else:
                     datapoints = burst_datapoints(self.swath_meta,self.burst_num)
                     self.insert(datapoints,process='leader_datapoints')
+                    data = []
             else:
                 datapoints = burst_datapoints(self.swath_meta,self.burst_num)
                 self.insert(datapoints,process='leader_datapoints')
+                data = []
 
         # Insert crop after precise orbits..
         self.insert(crop,process='crop')
+
+        return data
 
     def precise_orbits(self,swath_meta=[],precise_folder=''):
         # If the precise orbits where not added in an earlier step it can be done here.

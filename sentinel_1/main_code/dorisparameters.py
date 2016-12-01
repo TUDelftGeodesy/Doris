@@ -43,12 +43,14 @@ class DorisParameters():
         # Start data of datastack. If end date not given it searches till current.
         self.input_files = project_path + '/input_files/'
 
-        self.parallel = settings.find('.parallel').text
-        self.nr_of_jobs = settings.find('.nr_of_jobs').text
-        self.initialize_flag = settings.find('.initialize_flag').text
+        self.parallel = bool(settings.find('.parallel').text)
+        self.nr_of_jobs = int(settings.find('.nr_of_jobs').text)
+        self.initialize_flag = bool(settings.find('.initialize_flag').text)
 
         self.profile_log = project_path + '/profile_log'
         self.doris_parallel_flag_dir = project_path + '/.Doris_parallel'
+        self.between_sleep_time = 1
+        self.end_sleep_time = 1
         #
         # used in Jobs
         #

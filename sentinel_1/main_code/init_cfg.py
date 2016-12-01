@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 import os
 
+
+
 def init_cfg():
     xml_file = os.path.join(os.path.dirname(__file__), 'grs_config.xml')
     tree = ET.parse(xml_file)

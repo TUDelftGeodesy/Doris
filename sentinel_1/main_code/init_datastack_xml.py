@@ -38,8 +38,9 @@ def init_datastack_xml(datastack_folder):
             print('You should use either True or False')
 
     if user_input == 'True':
-        user_input = raw_input("How many cores do you want to use: ")
-        settings.find('.nr_of_jobs').text = user_input
+        nodes = raw_input("How many cores do you want to use: ")
+        settings.find('.nr_of_jobs').text = nodes
 
     tree.write(open(os.path.join(datastack_folder, 'stack_info.xml'), 'w'))
 
+    return nodes

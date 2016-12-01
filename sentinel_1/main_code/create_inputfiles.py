@@ -14,6 +14,7 @@ import pickle
 # sensor = 'sentinel-1'
 # dem_info = inputfile_folder + 'output.dem.var'
 
+
 class CreateInputFiles:
     # Input for the class to create inputfiles are:
     # - dem_info > variable or file with variable with information on the dem.

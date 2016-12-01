@@ -162,6 +162,9 @@ def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris
         # And create the scripts that go with them.
         output_doris_inputfiles(dem_tiff, out_file)
 
+        # Finally also move .tiff file
+        shutil.move(dem_tiff, out_file[:-4] + '.tiff')
+
     return out_file, out_file + '.var',  out_file + '.doris_inputfile'
 
 
@@ -606,8 +609,8 @@ def create_georeference(latlim, lonlim, dlat, dlon, dtype='int16', filename=''):
     if filename:
         driver = gdal.GetDriverByName('Gtiff')
         dataset = driver.Create(filename,
-                                int((lonlim[1] - lonlim[0]) / dlon),
-                                int((latlim[1] - latlim[0]) / dlat),
+                                int(np.round((lonlim[1] - lonlim[0]) / dlon)),
+                                int(np.round((latlim[1] - latlim[0]) / dlat)),
                                 1,
                                 conversion[dtype],  ['COMPRESS=LZW'])
     else:

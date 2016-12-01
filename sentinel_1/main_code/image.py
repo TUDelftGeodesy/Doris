@@ -86,6 +86,8 @@ class ImageMeta(object):
             except:
                 print('Failed to unpack!')
                 return False
+        else:
+            return True
 
     def del_unzip(self):
         # This function deletes the unzipped files.
@@ -111,13 +113,18 @@ class ImageMeta(object):
         self.image_kml = self.path[:-5] + '.kml'
         if not os.path.exists(self.image_kml):
             warnings.warn('.kml file does not exist.')
-            return
+            return False
 
-        in_kml = etree.parse(self.image_kml)
-        in_kml = in_kml.getroot()
-        coor = in_kml[0][1][1][2][0].text
-        coor = [i.split(',') for i in coor.split(' ')]
-        self.coverage = Polygon([[float(i[0]),float(i[1])] for i in coor])
+        try:
+            in_kml = etree.parse(self.image_kml)
+            in_kml = in_kml.getroot()
+            coor = in_kml[0][1][1][2][0].text
+            coor = [i.split(',') for i in coor.split(' ')]
+            self.coverage = Polygon([[float(i[0]),float(i[1])] for i in coor])
+            return True
+        except:
+            warnings.warn('.kml file is corrupt')
+            return False
 
     def meta_burst(self,corners=True,precise_dir=''):
         # This function reads and stores metadata of different bursts in the bursts objects.

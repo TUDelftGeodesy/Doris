@@ -112,9 +112,11 @@ class DorisSentinel1(object):
         # del processing.full_swath[master_date.strftime('%Y-%m-%d')]
         # processing.read_res()
 
+        processing.remove_finished(step='filtphase')
         # Copy the necessary files to start processing
         processing.initialize()
         profile.log_time_stamp('initialize')
+
         # Calculate the coarse orbits of individual bursts
         processing.coarse_orbits()
         profile.log_time_stamp('coarse_orbits')
@@ -152,6 +154,15 @@ class DorisSentinel1(object):
         processing.interferogram(concatenate=True)
         profile.log_time_stamp('interferogram')
 
+        # Calculate earth reference phase from interferograms and combine for full swath
+        processing.compref_phase()
+        profile.log_time_stamp('compref_phase')
+        # Calculate height effects from interferograms and combine for full swath
+        processing.compref_dem()
+        profile.log_time_stamp('compref_dem')
+        # Compute coherence
+        processing.coherence()
+        profile.log_time_stamp('coherence')
         # Perform enhanced spectral diversity for full swath
         processing.ESD()
         profile.log_time_stamp('ESD')
@@ -183,9 +194,6 @@ class DorisSentinel1(object):
         # Remove height effects from interferograms and combine for full swath
         processing.ref_dem()
         profile.log_time_stamp('ref_dem')
-        # Compute coherence
-        processing.coherence()
-        profile.log_time_stamp('coherence')
         # Apply phase filtering
         processing.phasefilt()
         profile.log_time_stamp('phasefilt')

@@ -20,3 +20,8 @@ class GrsConfig(object):
 
         self.job_handler_script = self.source_path + "/sentinel_1/main_code/jobHandlerScript"
         self.function_path = self.source_path + "/sentinel_1/functions/"
+        self.main_code_path = self.source_path + "/sentinel_1/main_code/"
+
+        # Extend path
+        sys.path.extend([self.function_path])
+        sys.path.extend([self.main_code_path])
