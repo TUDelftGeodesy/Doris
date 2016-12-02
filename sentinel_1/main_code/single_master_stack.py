@@ -7,7 +7,7 @@ import copy
 from copy import deepcopy
 import shutil
 from sentinel_1.main_code.resdata import ResData
-from sentinel_1.functions.ESD_functions import get_f_DC_difference, get_offset
+from sentinel_1.functions.ESD_functions import get_f_DC_difference, get_offset, get_coordinates, freadbk
 from scipy import linalg
 import sentinel_1.main_code.resdata as resdata
 from sentinel_1.main_code.dorisparameters import DorisParameters
@@ -921,6 +921,283 @@ class SingleMaster(object):
 
             for b1 in range(len(bursts)):
                 print 'hello'
+
+    def save_overlapping(self):
+
+        esd_folder = os.path.join(self.folder, 'esd')
+        if not os.path.exists(esd_folder):
+            os.mkdir(esd_folder)
+
+        for date in self.stack.keys():
+            self.pi_shift[date] = dict()
+            z = 0
+
+            bursts = self.stack[date].keys()
+            sort_id = [int(dat[6])*100 + int(dat[17:]) for dat in bursts]
+            bursts = [x for (y,x) in sorted(zip(sort_id, bursts))]
+
+            for burst, id in zip(bursts, range(len(bursts))):
+
+                nBurst = int(burst[17:])
+                next_burst = burst[:17] + str(nBurst + 1)
+
+                if next_burst in bursts:
+
+                    path = self.swath_path(date,burst)
+                    os.chdir(path)
+
+                    overlap = burst + '_' + next_burst
+                    overlap_path = os.path.join(self.folder, overlap)
+                    if not os.path.exists(overlap_path):
+                        os.mkdir(overlap_path)
+
+                    data_path = os.path.join(overlap_path, date)
+                    master_path = os.path.join(overlap_path, self.master_key)
+                    df_dc_path = os.path.join(overlap_path, 'df_dc')
+
+                    line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, \
+                    this_nr_ofpixels, next_nr_oflines, next_nr_ofpixels, PRF = get_coordinates(nBurst)
+
+                    burst1 = 'burst_' + str(nBurst) + '/'
+                    burst2 = 'burst_' + str(nBurst + 1) + '/'
+
+                    slave_1 =  freadbk(burst1 + 'slave.resample.old', line_start, first_pixel_this, line_length, pixel_length , 'complex64',  this_nr_oflines, this_nr_ofpixels)
+                    slave_2  = freadbk(burst2 + 'slave.resample.old', 1, first_pixel_next, line_length, pixel_length, 'complex64', next_nr_oflines, next_nr_ofpixels)
+                    slave_1_file = np.memmap(data_path + '_1', 'complex64', shape=slave_1.shape, mode='w')
+                    slave_2_file = np.memmap(data_path + '_2', 'complex64', shape=slave_2.shape, mode='w')
+                    slave_1_file[:,:] = slave_1
+                    slave_2_file[:,:] = slave_2
+
+                    if not os.path.exists(master_path):
+                        master_path_1 = self.dat_file(burst, date='master')
+                        master_path_2 = self.dat_file(next_burst, date='master')
+                        master_1 = freadbk(master_path_1, line_start, first_pixel_this, line_length,
+                                          pixel_length, 'cpxshort', this_nr_oflines, this_nr_ofpixels)
+                        master_2 = freadbk(master_path_2, 1, first_pixel_next, line_length, pixel_length,
+                                          'cpxshort', next_nr_oflines, next_nr_ofpixels)
+                        master_1_file = np.memmap(data_path + '_1', 'complex64', shape=master_1.shape, mode='w')
+                        master_2_file = np.memmap(data_path + '_2', 'complex64', shape=master_2.shape, mode='w')
+                        master_1_file[:, :] = master_1
+                        master_2_file[:, :] = master_2
+
+                    if not os.path.exists(df_dc_path):
+                        df_dc = get_f_DC_difference(nBurst)
+                        df_dc_file = np.memmap(df_dc_path, 'complex64', shape=df_dc.shape, mode='w')
+                        df_dc_file[:,:] = df_dc[:,:]
+
+
+    def find_ps_overlapping(self):
+        # This is used to find the ps point in overlapping areas
+
+        esd_folder = os.path.join(self.folder, 'esd')
+        if not os.path.exists(esd_folder):
+            os.mkdir(esd_folder)
+
+        overlaps = [os.path.abspath(name) for name in os.listdir(esd_folder) if os.path.isdir(name)]
+
+        for overlap in overlaps:
+            files = os.listdir(overlap)
+
+            nBurst = int(overlap.split('_')[0][17:])
+            line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, \
+            this_nr_ofpixels, next_nr_oflines, next_nr_ofpixels, PRF = get_coordinates(nBurst)
+
+            # First calculate the ps point for first overlap
+            first_files = [f for f in files if f.endswith('_1')]
+            first_name = os.path.join(overlap, 'first')
+            first = np.memmap(first_name, 'complex64', shape=(line_length, pixel_length, len(first_files)), mode='w+')
+
+            for f, n in zip(first_files, range(len(first_files))):
+                first_dat = np.memmap(f, 'float32', mode='r+', shape=(line_length, pixel_length))
+                first[:,:,n] = np.abs(first_dat[:,:])
+
+                mean = np.mean(first_dat, axis=2)
+                std = np.std(first_dat, axis=2)
+                ps1 = (std/mean) > 0.4
+                ps1_file = os.path.join(overlap, 'ps_1')
+                ps1_dat = np.memmap(ps1_file, 'bool', mode= 'w+', shape=first_dat.shape)
+                ps1_dat[:,:] = ps1[:,:]
+
+            # Then calculate the ps point for second overlap
+            second_files = [f for f in files if f.endswith('_2')]
+            second_name = os.path.join(overlap, 'second')
+            second = np.memmap(second_name, 'complex64', shape=(line_length, pixel_length, len(second_files)), mode='w+')
+
+            for f, n in zip(second_files, range(len(second_files))):
+                second_dat = np.memmap(f, 'float32', mode='r+', shape=(line_length, pixel_length))
+                second[:, :, n] = np.abs(second_dat[:, :])
+
+                mean = np.mean(second_dat, axis=2)
+                std = np.std(second_dat, axis=2)
+                ps2 = (std/mean) > 0.4
+                ps2_file = os.path.join(overlap, 'ps_2')
+                ps2_dat = np.memmap(ps2_file, 'bool', mode= 'w+', shape=second_dat.shape)
+                ps2_dat[:,:] = ps2[:,:]
+
+            ps_file = os.path.join(overlap, 'ps')
+            ps_dat = np.memmap(ps_file, 'bool', mode='w+', shape=second_dat.shape)
+            ps_dat[:, :] = (ps1_dat == 1 and ps2_dat == 1)
+
+
+    def network_esd_ps(self, max_t_baseline):
+        # Based on ps point esd is calculated using a network approach
+
+        esd_folder = os.path.join(self.folder, 'esd')
+        if not os.path.exists(esd_folder):
+            os.mkdir(esd_folder)
+
+        overlaps = [os.path.abspath(name) for name in os.listdir(esd_folder) if os.path.isdir(name)]
+
+        for overlap, i in zip(overlaps, range(len(overlaps))):
+            files = os.listdir(overlap)
+            line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, \
+            this_nr_ofpixels, next_nr_oflines, next_nr_ofpixels, PRF = get_coordinates(nBurst)
+
+            ps_file = os.path.join(overlap, 'ps')
+            ps_dat = np.memmap(ps_file, 'bool', mode='r', shape=(line_length, pixel_length))
+
+            if not dates:
+                dates = [f[:-2] for f in files if f.endswith('_1')].sort()
+            if not diff_matrix:
+                diff_matrix = np.zeros(shape=(len(dates), len(dates), len(overlaps)))
+            if not weights:
+                weights = np.zeros(len(overlaps))
+
+
+            ps_id = np.where(ps_dat == 1)
+            if not ps_id:  # If there are no ps points
+                continue
+            else:
+                weights[i] += len(ps_id)
+
+            df_dc_file = np.memmap(os.path.join(overlap, 'dc_df'), 'complex64', mode='r+', shape=(line_length, pixel_length))
+            df_dc_ps = df_dc_file[ps_id]
+
+            for date, n in zip(dates, range(len(dates))):
+                for date_2, num in zip(dates[n+1:], range(n+1, len(dates))):
+                    time_diff = np.abs(
+                        (datetime.datetime(date, '%Y-%m-%d') - datetime.datetime(date_2, '%Y-%m-%d')).days)
+
+                    if time_diff < max_t_baseline:
+                        first_master = np.memmap(os.path.join(overlap, date + '_1'), 'complex64', mode='r+',
+                                                 shape=(line_length, pixel_length))
+                        first_slave = np.memmap(os.path.join(overlap, date_2 + '_1'), 'complex64', mode='r+',
+                                                shape=(line_length, pixel_length))
+                        second_master = np.memmap(os.path.join(overlap, date + '_2'), 'complex64', mode='r+',
+                                                  shape=(line_length, pixel_length))
+                        second_slave = np.memmap(os.path.join(overlap, date_2 + '_2'), 'complex64', mode='r+',
+                                                 shape=(line_length, pixel_length))
+
+                        double_diff = (first_slave[ps_id] * first_master[ps_id].conj()) * \
+                                      (second_slave[ps_id] * second_master[ps_id].conj()).conj()
+                        pixel_diff = np.angle(np.sum(double_diff)) / (PRF/(2*np.pi*np.nanmean(df_dc_ps)))
+
+                        diff_matrix[i, n, num] = pixel_diff
+
+        weight_matrix = np.zeros(shape=(len(dates), len(dates)))
+
+        for date, n in zip(dates, range(len(dates))):
+            for date_2, num in zip(dates[n + 1:], range(n + 1, len(dates))):
+                time_diff = np.abs((datetime.datetime(date, '%Y-%m-%d') - datetime.datetime(date_2, '%Y-%m-%d')).days)
+                coherence_date = np.exp(-(time_diff / 100))
+                weight_matrix[n, num] = coherence_date
+
+        diff_matrix = np.sum(diff_matrix * weights[:, None, None], 0) / np.sum(weights)
+
+        return diff_matrix, weight_matrix, dates
+
+    def network_esd_coh(self, max_t_baseline):
+        # Based on ps point esd is calculated using a network approach
+
+        esd_folder = os.path.join(self.folder, 'esd')
+        if not os.path.exists(esd_folder):
+            os.mkdir(esd_folder)
+
+        overlaps = [os.path.abspath(name) for name in os.listdir(esd_folder) if os.path.isdir(name)]
+
+        for overlap, i in zip(overlaps, range(len(overlaps))):
+            files = os.listdir(overlap)
+            line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, \
+            this_nr_ofpixels, next_nr_oflines, next_nr_ofpixels, PRF = get_coordinates(nBurst)
+
+            if not dates:
+                dates = [f[:-2] for f in files if f.endswith('_1')].sort()
+            if not diff_matrix:
+                diff_matrix = np.zeros(shape=(len(dates), len(dates), len(overlaps)))
+            if not weight_matrix:
+                weight_matrix = np.zeros(shape=(len(dates), len(dates), len(overlaps)))
+
+            Nra = 10
+            Naz = 2
+            new_ra = pixel_length / Nra
+            new_az = line_length / Naz
+
+            df_dc = np.memmap(os.path.join(overlap, 'dc_df'), 'complex64', mode='r+', shape=(line_length, pixel_length))
+            df_dc = df_dc[:new_az * 2, :new_ra * 10].reshape([new_az, Naz, new_ra, Nra]).mean(3).mean(1)
+
+            for date, n in zip(dates, range(len(dates))):
+                first_master = np.memmap(os.path.join(overlap, date + '_1'), 'complex64', mode='r+',
+                                         shape=(line_length, pixel_length))
+                second_master = np.memmap(os.path.join(overlap, date + '_2'), 'complex64', mode='r+',
+                                          shape=(line_length, pixel_length))
+
+                for date_2, num in zip(dates[n+1:], range(n+1, len(dates))):
+
+                    if time_diff < max_t_baseline:
+                        first_slave = np.memmap(os.path.join(overlap, date_2 + '_1'), 'complex64', mode='r+',
+                                                shape=(line_length, pixel_length))
+                        second_slave = np.memmap(os.path.join(overlap, date_2 + '_2'), 'complex64', mode='r+',
+                                                 shape=(line_length, pixel_length))
+
+                        ifgs_1 = (first_master * first_slave.conj())[:new_az * 2, :new_ra * 10].reshape([new_az, Naz, new_ra, Nra])
+                        ifgs_2 = (second_master * second_slave.conj())[:new_az * 2, :new_ra * 10].reshape([new_az, Naz, new_ra, Nra])
+
+                        coh = np.abs(ifgs_1 * ifgs_2.conj().sum(3).sum(1)) / \
+                              np.sqrt((ifgs_1.real**2 + ifgs_1.imag**2).sum(3).sum(1) *
+                                      (ifgs_2.real**2 + ifgs_2.imag**2).sum(3).sum(1))
+                        double_diff = ifgs_1.mean(3).mean(1) * ifgs_2.mean(3).mean(1).conj()
+
+                        weights = 2 * coh*coh / (1 - coh*coh)
+                        weight = np.sum(weights[weights > 0.4])
+                        pixel_diff = np.angle(np.sum(double_diff[weights > 0.4] * weights[weights > 0.4])) / \
+                                     (PRF/(2*np.pi*np.sum(df_dc[weights > 0.4] * weights[weights > 0.4]) / weight))
+
+                        diff_matrix[i, n, num] = pixel_diff
+                        weight_matrix[i, n, num] = weight
+
+        diff_matrix = diff_matrix.sum(0)
+        weight_matrix = weight_matrix.sum(0)
+
+        return diff_matrix, weight_matrix, dates
+
+
+    def network_esd(diff_matrix, weight_matrix, dates):
+        # Finally calculate the network
+
+        # Find the connections in the difference matrix
+        m_s = np.where(diff_matrix > 0)
+        weight = weight_matrix[diff_matrix > 0]
+
+        # Find the master date
+        master_num = dates.index(self.master_key)
+
+        # Create the A matrix
+        A = np.zeros(shape=(len(m_s[0], np.max(np.max(m_s[0]), np.max(m_s[1])))))
+        A[range(len(m_s[0])), m_s[0]] = 1
+        A[range(len(m_s[0])), m_s[1]] = -1
+        A = np.concatenate(A[:,:master_num-1], A[:, master_num:])
+
+        # Create the weight matrix
+        W = np.zeros((len(m_s[0]), len(m_s[0])))
+        id = range(len(m_s[0]))
+
+        W[id,id] = 1 / weight
+        W = np.linalg.inv(W)
+
+        esd_diff = np.dot(np.dot(np.dot(np.linalg.inv(np.dot(np.dot(A.T, W), A)), A.T), W), diff_matrix[diff_matrix > 0])
+
+
+
 
     def ESD(self):
         # Do ESD for individual bursts, combine results for all bursts and combine with coregistration parameters.

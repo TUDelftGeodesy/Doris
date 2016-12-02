@@ -125,8 +125,8 @@ def get_f_DC_difference(nBurst):
 
     line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, this_nr_ofpixels, next_nr_oflines, next_nr_ofpixels, PRF = get_coordinates(nBurst)
 
-    Df_DC = f_DC_1[line_start -1:line_start + line_length, first_pixel_this-1:first_pixel_this + pixel_length] - \
-            f_DC_2[0:line_length, first_pixel_next-1: first_pixel_next + pixel_length]
+    Df_DC = f_DC_1[line_start - 1:line_start + line_length - 1, first_pixel_this - 1:first_pixel_this + pixel_length - 1] - \
+            f_DC_2[0:line_length - 1, first_pixel_next - 1: first_pixel_next + pixel_length - 1]
 
     return Df_DC
 
@@ -136,7 +136,6 @@ def get_coordinates(nBurst):
     burst2 = 'burst_' + str(nBurst+1) + '/'
     this_m_resData = burst1 + 'master.res'
     next_m_resData = burst2 + 'master.res'
-
 
     # Get variables from first burst
     this_line_first     = int(get_parameter('First_line (w.r.t. output_image)',this_m_resData,1))

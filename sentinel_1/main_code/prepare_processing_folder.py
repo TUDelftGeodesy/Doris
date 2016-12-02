@@ -61,10 +61,10 @@ def prepare_datastack():
         os.mkdir(folder)
 
     # Now initialize the first .xml file with basic information
-    init_datastack_xml(folder)
+    nodes = init_datastack_xml(folder)
     # And create the .bash script
     python_folder = os.path.dirname(os.path.dirname(__file__))
-    create_bash(folder, python_folder)
+    create_bash(folder, python_folder, nodes)
 
     dorisparameters = DorisParameters(folder)
 
@@ -74,7 +74,7 @@ def prepare_datastack():
             os.mkdir(os.path.join(folder, foldername))
 
     # move the shapefile
-    suffixes = ['.shp', '.cpg', '.dbf', '.prj', '.qpj', '.shx']
+    suffixes = ['.shp', '.dbf', '.prj', '.qpj', '.shx']
 
     for suffix in suffixes:
         shape_dest = os.path.join(folder, 'shape', 'AOI' + suffix)
@@ -84,7 +84,7 @@ def prepare_datastack():
     dem_out = os.path.join(folder, 'dem', 'dem.raw')
     dem_out, dem_var, dem_inputfile = create_binary(os.path.join(folder, 'shape', 'AOI.shp'), dem_out, resample=None,
                                                     doris_input=True, rounding=0.1, border=1.5,
-                                                    data_folder=dem_folder, quality='SRTM1')
+                                                    data_folder=dem_folder, quality='SRTM3')
 
     # Then create the inputfiles
     inputfiles_folder = os.path.join(folder, 'input_files')
