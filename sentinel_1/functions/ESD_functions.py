@@ -126,7 +126,7 @@ def get_f_DC_difference(nBurst):
     line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, this_nr_ofpixels, next_nr_oflines, next_nr_ofpixels, PRF = get_coordinates(nBurst)
 
     Df_DC = f_DC_1[line_start - 1:line_start + line_length - 1, first_pixel_this - 1:first_pixel_this + pixel_length - 1] - \
-            f_DC_2[0:line_length - 1, first_pixel_next - 1: first_pixel_next + pixel_length - 1]
+            f_DC_2[0:line_length, first_pixel_next - 1: first_pixel_next + pixel_length - 1]
 
     return Df_DC
 
