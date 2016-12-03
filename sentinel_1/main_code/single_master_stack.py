@@ -1263,7 +1263,7 @@ class SingleMaster(object):
             dt = np.dtype('float64')
             lines = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_lines_original'])
             pixels = int(self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original'])
-            path = self.burst_path(date, burst)
+            path = self.image_path(date)
 
             if os.path.exists(dac_delta_line_dir_old):
                 # ESD_correct is run before first copy the old to the current file.
