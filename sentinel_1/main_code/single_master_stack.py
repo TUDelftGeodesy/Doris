@@ -422,13 +422,13 @@ class SingleMaster(object):
                 master_file = self.dat_file(burst,date='master',full_path=False)
                 slave_file = self.dat_file(burst,date='slave',full_path=False)
                 #TODO david command
-                if os.path.exists(master_file + '.old'):
+                if os.path.exists(master_file + '.orig'):
                     command1 = ''
                 else:
                     command1 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res'
                 job_list1.append([path, command1])
 
-                if os.path.exists(slave_file + '.old'):
+                if os.path.exists(slave_file + '.orig'):
                     command2 = ''
                 else:
                     command2 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
@@ -779,6 +779,8 @@ class SingleMaster(object):
         # Which means that it is not needed to reramp that one. If master is false, only the slave is reramped.
         jobList1 = []
         jobList2 = []
+        jobList3 = []
+        jobList4 = []
 
         for date in self.stack.keys():
             for burst in self.stack[date].keys():
@@ -787,36 +789,47 @@ class SingleMaster(object):
                 master_file = self.dat_file(burst, date='master', full_path=False)
                 os.chdir(path)
 
-                if type == 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw.orig')):
-                    # If we are after ESD
-                    command1 = ''
-                    command2 = ''
-                elif type == 'ESD':
-                    # If we are after ESD
+                command1 = ''
+                command2 = ''
+                command3 = ''
+                command4 = ''
+
+                if type == 'ESD' and not os.path.exists(os.path.join(path, 'slave_rsmp.raw.orig')):
+                    # If we are after ESD and reramp is not jet done
                     command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
-                    command2 = 'cp ' + master_file + '.orig ' + master_file
-                elif type != 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw.old.orig')):
-                    # If we are after ESD
-                    command1 = ''
-                    command2 = ''
-                elif type != 'ESD':
-                    # If we are before the ESD step.
+
+                    if os.path.exists(os.path.join(path, master_file + '.orig')):
+                        command2 = 'cp ' + master_file + ' master_deramped.raw'
+                        command3 = 'cp ' + master_file + '.orig ' + master_file
+                        command4 = '\rm -f ' + master_file + '.orig'
+                elif type != 'ESD' and not os.path.exists(os.path.join(path, 'slave_rsmp.raw.old.orig')):
+                    # If we are before the ESD step and reramp is not jet done.
                     command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw.old slave.res'
-                    command2 = 'cp ' + master_file + '.orig ' + master_file
+
+                    if os.path.exists(os.path.join(path, master_file + '.orig')):
+                        command2 = 'cp ' + master_file + ' master_deramped.raw'
+                        command3 = 'cp ' + master_file + '.orig ' + master_file
+                        command4 = '\rm -f ' + master_file + '.orig'
 
                 jobList1.append([path, command1])
-                jobList1.append([path, command2])
+                jobList2.append([path, command2])
+                jobList3.append([path, command3])
+                jobList4.append([path, command4])
 
                 if(not(self.parallel)):
                     os.chdir(path)
                     # Save the original deramped slave
                     os.system(command1)
                     os.system(command2)
+                    os.system(command3)
+                    os.system(command4)
 
         if(self.parallel):
             jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
             jobs.run(jobList1)
             jobs.run(jobList2)
+            jobs.run(jobList3)
+            jobs.run(jobList4)
 
     def interferogram(self,concatenate=True, type=''):
 
@@ -1318,7 +1331,7 @@ class SingleMaster(object):
 
         self.read_res()
         self.concatenate('slave_rsmp.raw', 'slave_rsmp.raw', dt= np.dtype('complex64'))
-        self.concatenate('slave_rsmp.raw.old_ramp', 'slave_rsmp_deramped.raw', dt=np.dtype('complex64'))
+        self.concatenate('slave_rsmp.raw.orig', 'slave_rsmp_deramped.raw', dt=np.dtype('complex64'))
 
         # Add the resample step to the .res file
         for date in self.stack.keys():
@@ -1697,6 +1710,11 @@ class SingleMaster(object):
                     master_path = self.burst_path(date,burst)
                     master_file = self.dat_file(burst,date='master',full_path=False)
                     burst_dat = os.path.join(master_path, master_file)
+                elif burst_file == 'master_deramped':
+                    master_path = self.burst_path(date,burst)
+                    master_file = self.dat_file(burst,date='master',full_path=False) + '.orig'
+                    burst_dat = os.path.join(master_path, master_file)
+
                 else:
                     burst_dat = self.burst_path(date,burst,burst_file)
 
