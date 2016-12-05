@@ -804,9 +804,9 @@ class SingleMaster(object):
 
                 if os.path.exists(os.path.join(path, master_file + '.orig')):
                     # If this image was deramped before.
-                    command2 = 'cp ' + master_file + ' master_deramped.raw'
-                    command3 = 'cp ' + master_file + '.orig ' + master_file
-                    command4 = '\rm -f ' + master_file + '.orig'
+                    command2 = 'cp ' + os.path.basename(master_file) + ' master_deramped.raw'
+                    command3 = 'cp ' + os.path.basename(master_file) + '.orig ' + os.path.basename(master_file)
+                    command4 = '\rm -f ' + os.path.basename(master_file) + '.orig'
 
                 jobList1.append([path, command1])
                 jobList2.append([path, command2])
