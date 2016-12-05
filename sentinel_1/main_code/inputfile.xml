@@ -77,7 +77,7 @@
 		<finecoreg>fine coregistration (windows)
 			<PROCESS>FINE</PROCESS>
 			<FC_METHOD comment="" c="off">coherence</FC_METHOD>
-			<FC_NWIN comment="number of windows" c="off">200</FC_NWIN>
+			<FC_NWIN comment="number of windows" c="off">3</FC_NWIN>
 			<FC_IN_POS comment="used when PS points are used" c="on">fc_pos.in</FC_IN_POS>
 			<FC_WINSIZE comment="number of windows" c="off">64 64</FC_WINSIZE>
 			<FC_ACC comment="search window" c="off">8 8</FC_ACC>

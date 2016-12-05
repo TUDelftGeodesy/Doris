@@ -422,13 +422,13 @@ class SingleMaster(object):
                 master_file = self.dat_file(burst,date='master',full_path=False)
                 slave_file = self.dat_file(burst,date='slave',full_path=False)
                 #TODO david command
-                if os.path.exists(master_file + '.orig'):
+                if os.path.exists(os.path.join(path, master_file + '.orig')):
                     command1 = ''
                 else:
                     command1 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res'
                 job_list1.append([path, command1])
 
-                if os.path.exists(slave_file + '.orig'):
+                if os.path.exists(os.path.join(path, slave_file + '.orig')):
                     command2 = ''
                 else:
                     command2 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
@@ -798,18 +798,15 @@ class SingleMaster(object):
                     # If we are after ESD and reramp is not jet done
                     command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
 
-                    if os.path.exists(os.path.join(path, master_file + '.orig')):
-                        command2 = 'cp ' + master_file + ' master_deramped.raw'
-                        command3 = 'cp ' + master_file + '.orig ' + master_file
-                        command4 = '\rm -f ' + master_file + '.orig'
                 elif type != 'ESD' and not os.path.exists(os.path.join(path, 'slave_rsmp.raw.old.orig')):
                     # If we are before the ESD step and reramp is not jet done.
                     command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw.old slave.res'
 
-                    if os.path.exists(os.path.join(path, master_file + '.orig')):
-                        command2 = 'cp ' + master_file + ' master_deramped.raw'
-                        command3 = 'cp ' + master_file + '.orig ' + master_file
-                        command4 = '\rm -f ' + master_file + '.orig'
+                if os.path.exists(os.path.join(path, master_file + '.orig')):
+                    # If this image was deramped before.
+                    command2 = 'cp ' + master_file + ' master_deramped.raw'
+                    command3 = 'cp ' + master_file + '.orig ' + master_file
+                    command4 = '\rm -f ' + master_file + '.orig'
 
                 jobList1.append([path, command1])
                 jobList2.append([path, command2])
