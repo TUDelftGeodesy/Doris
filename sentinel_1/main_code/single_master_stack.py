@@ -806,7 +806,7 @@ class SingleMaster(object):
                     # If this image was deramped before.
                     command2 = 'cp ' + os.path.basename(master_file) + ' master_deramped.raw'
                     command3 = 'cp ' + os.path.basename(master_file) + '.orig ' + os.path.basename(master_file)
-                    command4 = '\rm -f ' + os.path.basename(master_file) + '.orig'
+                    command4 = 'rm -f ' + os.path.basename(master_file) + '.orig'
 
                 jobList1.append([path, command1])
                 jobList2.append([path, command2])
@@ -839,11 +839,12 @@ class SingleMaster(object):
             for burst in self.stack[date].keys():
 
                 path = self.burst_path(date, burst)
+                os.chdir(path)
 
                 if type != 'ESD':
-                    command1 = 'cp ' + os.path.join(path, 'slave_rsmp.raw.old') + ' ' + os.path.join(path, 'slave_rsmp.raw')
+                    command1 = 'cp slave_rsmp.raw.old slave_rsmp.raw'
                     command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.interferogram')
-                    command3 = 'cp ' + os.path.join(path, 'cint.raw') + ' ' + os.path.join(path, 'cint.raw.old')
+                    command3 = 'cp cint.raw cint.raw.old'
                 else:
                     command1 = ''
                     command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.interferogram')
