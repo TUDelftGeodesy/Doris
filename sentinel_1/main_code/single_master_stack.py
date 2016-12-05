@@ -1689,46 +1689,58 @@ class SingleMaster(object):
         # Concatenate all burst to a single full swath product. If burst_file = 'master' then the input master files are read...
 
         self.read_res()
+        job_list1 = []
 
         for date in self.stack.keys():
+            path = self.image_path(date)
+
+            command1 = os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' concatenate ' + master_file + ' ' + burst_file)
+            job_list1.append([path, command1])
+            if not(self.parallel):
+                os.chdir(path)
+                os.system(command1)
+        if (self.parallel):
+            jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
+            jobs.run(job_list1)
+
             # Create master path
-            master = self.image_path(date,file_path=master_file)
-
-            # Read image size
-            bursts = self.stack[date].keys()
-            no_lines = int(self.full_swath[date][type].processes['readfiles']['Number_of_lines_original'])
-            no_pixels = int(self.full_swath[date][type].processes['readfiles']['Number_of_pixels_original'])
-
-            # First use memmap to get a memory map of the full file.
-            full_image = np.memmap(master, dtype=dt, mode='w+', shape=(no_lines, no_pixels))
-
-            for burst in bursts:
-                # Finally write all data from individual bursts to master file. We assume a simple 20 pixel offset from
-                # the side to prevent copying data without information.
-
-                if burst_file == 'master':
-                    master_path = self.burst_path(date,burst)
-                    master_file = self.dat_file(burst,date='master',full_path=False)
-                    burst_dat = os.path.join(master_path, master_file)
-                elif burst_file == 'master_deramped':
-                    master_path = self.burst_path(date,burst)
-                    master_file = self.dat_file(burst,date='master',full_path=False) + '.orig'
-                    burst_dat = os.path.join(master_path, master_file)
-
-                else:
-                    burst_dat = self.burst_path(date,burst,burst_file)
-
-                line_0 = int(self.stack[date][burst][type].processes['readfiles']['First_line (w.r.t. output_image)'])
-                line_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_line (w.r.t. output_image)'])
-                pix_0 = int(self.stack[date][burst][type].processes['readfiles']['First_pixel (w.r.t. output_image)'])
-                pix_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_pixel (w.r.t. output_image)'])
-
-                burst_pix = pix_1 - pix_0 + 1
-                burst_line = line_1 - line_0 + 1
-
-                # Cut out data with border of 20 px and write to file.
-                burst_image = np.memmap(burst_dat, dtype=dt, mode='r', shape=(burst_line,burst_pix))
-                full_image[(line_0+19):(line_1-20),(pix_0+19):(pix_1-20)] = burst_image[20:-20,20:-20]
+            # master = self.image_path(date,file_path=master_file)
+            #
+            # # Read image size
+            # bursts = self.stack[date].keys()
+            # no_lines = int(self.full_swath[date][type].processes['readfiles']['Number_of_lines_original'])
+            # no_pixels = int(self.full_swath[date][type].processes['readfiles']['Number_of_pixels_original'])
+            #
+            # # First use memmap to get a memory map of the full file.
+            # full_image = np.memmap(master, dtype=dt, mode='w+', shape=(no_lines, no_pixels))
+            #
+            # for burst in bursts:
+            #     # Finally write all data from individual bursts to master file. We assume a simple 20 pixel offset from
+            #     # the side to prevent copying data without information.
+            #
+            #     if burst_file == 'master':
+            #         master_path = self.burst_path(date,burst)
+            #         master_file = self.dat_file(burst,date='master',full_path=False)
+            #         burst_dat = os.path.join(master_path, master_file)
+            #     elif burst_file == 'master_deramped':
+            #         master_path = self.burst_path(date,burst)
+            #         master_file = self.dat_file(burst,date='master',full_path=False) + '.orig'
+            #         burst_dat = os.path.join(master_path, master_file)
+            #
+            #     else:
+            #         burst_dat = self.burst_path(date,burst,burst_file)
+            #
+            #     line_0 = int(self.stack[date][burst][type].processes['readfiles']['First_line (w.r.t. output_image)'])
+            #     line_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_line (w.r.t. output_image)'])
+            #     pix_0 = int(self.stack[date][burst][type].processes['readfiles']['First_pixel (w.r.t. output_image)'])
+            #     pix_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_pixel (w.r.t. output_image)'])
+            #
+            #     burst_pix = pix_1 - pix_0 + 1
+            #     burst_line = line_1 - line_0 + 1
+            #
+            #     # Cut out data with border of 20 px and write to file.
+            #     burst_image = np.memmap(burst_dat, dtype=dt, mode='r', shape=(burst_line,burst_pix))
+            #     full_image[(line_0+19):(line_1-20),(pix_0+19):(pix_1-20)] = burst_image[20:-20,20:-20]
 
         self.update_res()
 
@@ -1812,38 +1824,52 @@ class SingleMaster(object):
         # Split full swath into different burst products. (to be used for DEM result splitting)
 
         self.read_res()
+        job_list1 = []
 
         for date in self.stack.keys():
-            # Create master path
-            master = self.image_path(date,file_path=master_file)
+            path = self.image_path(date)
 
-            # Read image size
-            bursts = self.stack[date].keys()
-            no_lines = int(self.stack[date][bursts[0]][type].processes['readfiles']['Number_of_lines_output_image'])
-            no_pixels = int(self.stack[date][bursts[0]][type].processes['readfiles']['Number_of_pixels_output_image'])
+            command1 = os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' decatenate ' + master_file + ' ' + burst_file)
+            job_list1.append([path, command1])
+            if not(self.parallel):
+                os.chdir(path)
+                os.system(command1)
+        if (self.parallel):
+            jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
+            jobs.run(job_list1)
 
-            # First use memmap to get a memory map of the full file.
-            full_image = np.memmap(master, dtype=dt, mode='r', shape=(no_lines, no_pixels))
-
-            for burst in bursts:
-                # Finally write all data from individual bursts to master file. We assume a simple 20 pixel offset from
-                # the side to prevent copying data without information.
-
-                burst_dat = self.burst_path(date,burst,burst_file)
-
-                line_0 = int(self.stack[date][burst][type].processes['readfiles']['First_line (w.r.t. output_image)'])
-                line_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_line (w.r.t. output_image)'])
-                pix_0 = int(self.stack[date][burst][type].processes['readfiles']['First_pixel (w.r.t. output_image)'])
-                pix_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_pixel (w.r.t. output_image)'])
-
-                burst_pix = pix_1 - pix_0 + 1
-                burst_line = line_1 - line_0 + 1
-
-                # Cut out data with border of 20 px and write to file.
-                burst_image = np.memmap(burst_dat, dtype=dt, mode='w+', shape=(burst_line,burst_pix))
-                burst_image[:,:] = full_image[line_0-1:line_1,pix_0-1:pix_1]
-                burst_image.flush()
-
+        #
+        # for date in self.stack.keys():
+        #     # Create master path
+        #     master = self.image_path(date,file_path=master_file)
+        #
+        #     # Read image size
+        #     bursts = self.stack[date].keys()
+        #     no_lines = int(self.stack[date][bursts[0]][type].processes['readfiles']['Number_of_lines_output_image'])
+        #     no_pixels = int(self.stack[date][bursts[0]][type].processes['readfiles']['Number_of_pixels_output_image'])
+        #
+        #     # First use memmap to get a memory map of the full file.
+        #     full_image = np.memmap(master, dtype=dt, mode='r', shape=(no_lines, no_pixels))
+        #
+        #     for burst in bursts:
+        #         # Finally write all data from individual bursts to master file. We assume a simple 20 pixel offset from
+        #         # the side to prevent copying data without information.
+        #
+        #         burst_dat = self.burst_path(date,burst,burst_file)
+        #
+        #         line_0 = int(self.stack[date][burst][type].processes['readfiles']['First_line (w.r.t. output_image)'])
+        #         line_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_line (w.r.t. output_image)'])
+        #         pix_0 = int(self.stack[date][burst][type].processes['readfiles']['First_pixel (w.r.t. output_image)'])
+        #         pix_1 = int(self.stack[date][burst][type].processes['readfiles']['Last_pixel (w.r.t. output_image)'])
+        #
+        #         burst_pix = pix_1 - pix_0 + 1
+        #         burst_line = line_1 - line_0 + 1
+        #
+        #         # Cut out data with border of 20 px and write to file.
+        #         burst_image = np.memmap(burst_dat, dtype=dt, mode='w+', shape=(burst_line,burst_pix))
+        #         burst_image[:,:] = full_image[line_0-1:line_1,pix_0-1:pix_1]
+        #         burst_image.flush()
+        #
         self.update_res()
 
     # Following functions are helper function which help acces the correct folders and files more easily:
