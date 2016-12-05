@@ -59,10 +59,10 @@
 		</comprefpha>
 		<coregpm>combine DEM and windows coregistration
 			<PROCESS>COREGPM</PROCESS>
-			<CPM_THRESHOLD comment="" c="off">0.5</CPM_THRESHOLD>
+			<CPM_THRESHOLD comment="" c="off">0.001</CPM_THRESHOLD>
 			<CPM_DEGREE comment="" c="off">1</CPM_DEGREE>
 			<CPM_WEIGHTS comment="" c="off">bamler</CPM_WEIGHTS>
-			<CPM_MAXITER comment="" c="off">5000</CPM_MAXITER>
+			<CPM_MAXITER comment="" c="off">1</CPM_MAXITER>
 			<CPM_PLOT comment="" c="on">NOBG</CPM_PLOT>
 		</coregpm>
 		<dembased>dem assisted coregistration

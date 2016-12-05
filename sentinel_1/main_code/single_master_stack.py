@@ -1691,7 +1691,7 @@ class SingleMaster(object):
         for date in self.stack.keys():
             path = self.image_path(date)
 
-            command1 = os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' concatenate ' + master_file + ' ' + burst_file)
+            command1 = os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' concatenate ' + master_file + ' ' + burst_file
             job_list1.append([path, command1])
             if not(self.parallel):
                 os.chdir(path)
@@ -1826,7 +1826,7 @@ class SingleMaster(object):
         for date in self.stack.keys():
             path = self.image_path(date)
 
-            command1 = os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' decatenate ' + master_file + ' ' + burst_file)
+            command1 = os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' decatenate ' + master_file + ' ' + burst_file
             job_list1.append([path, command1])
             if not(self.parallel):
                 os.chdir(path)
