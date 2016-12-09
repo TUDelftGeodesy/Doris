@@ -91,3 +91,9 @@ def prepare_datastack():
     xml_file = os.path.join(os.path.dirname(__file__), 'inputfile.xml')
     CreateInputFiles(dem_var, inputfiles_folder, xml_file, satellite)
 
+
+# Actually execute the code...
+if __name__ == "__main__":
+
+    prepare_datastack()
+    
