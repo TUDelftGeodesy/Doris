@@ -16,7 +16,7 @@ class DorisSentinel1(object):
 
         print(sys.path)
 
-        from sentinel_1.main_code.prepare_processing_folder import prepare_datastack
+        from sentinel_1.main_code.create_datastack import prepare_datastack
         from sentinel_1.main_code.dorisparameters import DorisParameters
         from sentinel_1.main_code.grs_profile import GRS_Profile
 
@@ -108,11 +108,11 @@ class DorisSentinel1(object):
                                                       doris_path=doris_path, cpxfiddle_folder=cpxfiddle_folder)
 
         # These lines can be used if you want to skip the initialize step because a some calculation steps are already performed....
-        # del processing.stack[master_date.strftime('%Y-%m-%d')]
-        # del processing.full_swath[master_date.strftime('%Y-%m-%d')]
-        # processing.read_res()
+        #del processing.stack[master_date]
+        #del processing.full_swath[master_date]
+        #processing.read_res()
 
-        processing.remove_finished(step='filtphase')
+        #processing.remove_finished(step='filtphase')
         # Copy the necessary files to start processing
         processing.initialize()
         profile.log_time_stamp('initialize')
@@ -147,12 +147,6 @@ class DorisSentinel1(object):
         # Resample individual bursts
         processing.resample()
         profile.log_time_stamp('resample')
-        # Reramp burst
-        processing.reramp()
-        profile.log_time_stamp('reramp')
-        # Make interferograms for individual bursts
-        processing.interferogram(concatenate=True)
-        profile.log_time_stamp('interferogram')
 
         # Calculate earth reference phase from interferograms and combine for full swath
         processing.compref_phase()
@@ -161,9 +155,18 @@ class DorisSentinel1(object):
         processing.compref_dem()
         profile.log_time_stamp('compref_dem')
         # Compute coherence
+        #processing.del_process('coherence', type='ifgs')
         processing.coherence()
         profile.log_time_stamp('coherence')
         # Perform enhanced spectral diversity for full swath
+
+        # Reramp burst
+        processing.reramp()
+        profile.log_time_stamp('reramp')
+        # Make interferograms for individual bursts
+        processing.del_process('interfero', type='ifgs')
+        processing.interferogram(concatenate=True)
+        profile.log_time_stamp('interferogram')
         processing.ESD()
         profile.log_time_stamp('ESD')
         # Correct for ESD shift
@@ -201,12 +204,13 @@ class DorisSentinel1(object):
         processing.calc_coordinates()
         profile.log_time_stamp('calc_coordinates')
         # Multilook filtered image and coherence image
-        # processing.multilook(step='coherence')
-        # processing.multilook(step='filtphase')
-        # profile.log_time_stamp('multilooking')
+        processing.multilook(step='coherence')
+        processing.multilook(step='filtphase')
+        profile.log_time_stamp('multilooking')
         # Unwrap image
-        # processing.unwrap()
-        # profile.log_time_stamp('unwrapping')
+        processing.del_process('unwrap', type='ifgs', images=True)
+        processing.unwrap()
+        profile.log_time_stamp('unwrapping')
 
         profile.log_time_stamp('end')
 

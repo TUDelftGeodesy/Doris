@@ -72,6 +72,7 @@ def concatenate(date_folder, image_file, burst_file, datatype):
             string = burst_file
 
         burst_dat = os.path.join(date_folder, burst[0:7], burst[8:], string)
+        print('adding' + burst_dat)
 
         line_0 = int(burst_res[burst]['master'].processes['readfiles']['First_line (w.r.t. output_image)'])
         line_1 = int(burst_res[burst]['master'].processes['readfiles']['Last_line (w.r.t. output_image)'])
@@ -84,6 +85,8 @@ def concatenate(date_folder, image_file, burst_file, datatype):
         # Cut out data with border of 20 px and write to file.
         burst_image = np.memmap(burst_dat, dtype=datatype, mode='r', shape=(burst_line,burst_pix))
         full_image[(line_0+19):(line_1-20),(pix_0+19):(pix_1-20)] = burst_image[20:-20,20:-20]
+
+
 
 
 def read_res(date_folder):

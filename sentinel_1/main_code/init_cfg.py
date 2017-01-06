@@ -1,8 +1,6 @@
 import xml.etree.ElementTree as ET
 import os
 
-
-
 def init_cfg():
     xml_file = os.path.join(os.path.dirname(__file__), 'grs_config.xml')
     tree = ET.parse(xml_file)
@@ -29,3 +27,9 @@ def init_cfg():
             print('The path is incorrect, use another path')
 
     tree.write(open(xml_file, 'w'))
+
+# Actually execute the code...
+if __name__ == "__main__":
+
+    # Initialize...
+    init_cfg()

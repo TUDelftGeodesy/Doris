@@ -15,7 +15,7 @@ class DorisSentinel1(object):
 
         print(sys.path)
 
-        from sentinel_1.main_code.prepare_processing_folder import prepare_datastack
+        from sentinel_1.main_code.create_datastack import prepare_datastack
         from sentinel_1.main_code.dorisparameters import DorisParameters
         from sentinel_1.main_code.grs_profile import GRS_Profile
 
@@ -135,7 +135,7 @@ class DorisSentinel1(object):
         #processing.coherence()
         #profile.log_time_stamp('coherence')
         # Perform enhanced spectral diversity for full swath
-        processing.ESD()
+        # processing.ESD()
         #profile.log_time_stamp('ESD')
         # Correct for ESD shift
         #processing.ESD_correct()
@@ -150,34 +150,36 @@ class DorisSentinel1(object):
         #processing.reramp('ESD')
         #profile.log_time_stamp('reramp')
         # Create interferogram and combine to full swath
-        processing.interferogram(type='ESD')
-        profile.log_time_stamp('interferogram')
+        #processing.interferogram(type='ESD')
+        # profile.log_time_stamp('interferogram')
         # Combine all slave bursts to full swath
-        processing.combine_slave()
-        profile.log_time_stamp('combine_slave')
+        # processing.combine_slave()
+        # profile.log_time_stamp('combine_slave')
         # Combine all master bursts to full swath
-        processing.combine_master()
-        profile.log_time_stamp('combine_master')
+        #processing.combine_master()
+        #profile.log_time_stamp('combine_master')
 
         # Remove earth reference phase from interferograms and combine for full swath
-        processing.ref_phase()
-        profile.log_time_stamp('ref_phase')
+        #processing.ref_phase()
+        #profile.log_time_stamp('ref_phase')
         # Remove height effects from interferograms and combine for full swath
-        processing.ref_dem()
-        profile.log_time_stamp('ref_dem')
+        #processing.ref_dem()
+        #profile.log_time_stamp('ref_dem')
         # Apply phase filtering
         processing.phasefilt()
-        profile.log_time_stamp('phasefilt')
+        #profile.log_time_stamp('phasefilt')
         # Geocode data
-        processing.calc_coordinates()
-        profile.log_time_stamp('calc_coordinates')
+        #processing.calc_coordinates()
+        #profile.log_time_stamp('calc_coordinates')
         # Multilook filtered image and coherence image
-        # processing.multilook(step='coherence')
-        # processing.multilook(step='filtphase')
-        # profile.log_time_stamp('multilooking')
+        #processing.multilook(step='coherence')
+        #processing.multilook(step='subtr_refdem')
+        processing.multilook(step='filtphase')
+        #profile.log_time_stamp('multilooking')
         # Unwrap image
-        # processing.unwrap()
-        # profile.log_time_stamp('unwrapping')
+        #processing.del_process('filtphase', type='ifgs', images=True)
+        processing.unwrap()
+        profile.log_time_stamp('unwrapping')
 
         profile.log_time_stamp('end')
 

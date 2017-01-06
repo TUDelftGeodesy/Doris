@@ -2,7 +2,15 @@
 import os,sys,time
 import numpy as np
 from numpy import *
-from get_ramp import get_ramp, freadbk, get_parameter
+
+if __name__ == "__main__":
+    # If calling script directly we have to load the package first to our python path
+    folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    print(folder)
+    sys.path.extend([folder])
+
+from sentinel_1.functions.get_ramp import get_ramp, freadbk, get_parameter
+
 
 def usage():
     print '\nUsage: python do_deramp_SLC_nom.py dataFilename  resFilename plotFlag'

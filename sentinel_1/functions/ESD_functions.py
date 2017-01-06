@@ -1,18 +1,8 @@
-import os,sys,time
-import math
 import numpy as np
 from numpy import *
-import scipy as Sci
-import scipy.linalg
-import scipy.io as sio
-from  scipy  import ndimage
-import scipy.optimize as optimization
-# import matplotlib.pyplot as plt
-import struct,shutil
-import gdal,gdalconst
-from gdalconst import *
-from scipy import stats
 from sentinel_1.functions.get_ramp import get_ramp, get_parameter
+import os, sys
+
 
 ########################################################################################################################
 # Function to get parameters from files
@@ -81,12 +71,10 @@ def freadbk(path_file, line_start=1, pixel_start=1, nofLines=None, nofPixels=Non
     # First use memmap to get a memory map of the full file, than extract the requested part.
 
     if dt == 'cpxint16':
-
-        file_dat = np.memmap(path_file, dtype=np.dtype(np.int16), mode='r', shape=(lines, pixels * 2))
-        data = 1j * file_dat[:, 0::2].astype('float32', subok=False)
-        data += file_dat[:, 1::2].astype('float32', subok=False)
-        data = data[line_start - 1:line_start + nofLines - 1, pixel_start - 1:pixel_start + nofPixels - 1]
-
+        dtype = np.dtype([('re', np.int16), ('im', np.int16)])
+        file_dat = np.memmap(path_file, dtype=dtype, mode='r', shape=(lines, pixels)).view(np.int16).astype(np.float32).view(np.complex64)
+        data = file_dat[line_start - 1:line_start + nofLines - 1, pixel_start - 1:pixel_start + nofPixels - 1].astype(
+            'complex64', subok=False)
     elif dt == 'cpxshort':
 
         file_dat = np.memmap(path_file, dtype=np.dtype(np.float16), mode='r', shape=(lines, pixels * 2))
@@ -95,7 +83,6 @@ def freadbk(path_file, line_start=1, pixel_start=1, nofLines=None, nofPixels=Non
         data = data[line_start - 1:line_start + nofLines - 1, pixel_start - 1:pixel_start + nofPixels - 1]
 
     else:
-
         dt = np.dtype(dt)
         file_dat = np.memmap(path_file, dtype=dt, mode='r', shape=(lines, pixels))
         data = file_dat[line_start - 1:line_start + nofLines - 1, pixel_start - 1:pixel_start + nofPixels - 1].astype(

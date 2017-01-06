@@ -1,7 +1,16 @@
 import numpy as np
 import os, sys
-from get_ramp import get_ramp
 from datetime import datetime
+
+if __name__ == "__main__":
+    # If calling script directly we have to load the package first to our python path
+    folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    print(folder)
+    sys.path.extend([folder])
+
+from sentinel_1.functions.get_ramp import get_ramp
+
+
 
 def save_overlapping(stack_path, master_date, dates, overlap):
 
@@ -215,28 +224,8 @@ def dat_file(stack_path, key, date, full_path=False, swath=False):
 
     return string
 
-def freadbk(path_file, line_start=1, pixel_start=1, nofLines=None, nofPixels=None, dt='float32', lines=0, pixels=0):
-    # First use memmap to get a memory map of the full file, than extract the requested part.
 
-    if dt == 'cpxint16':
-        dtype = np.dtype([('re', np.int16), ('im', np.int16)])
-        file_dat = np.memmap(path_file, dtype=dtype, mode='r', shape=(lines, pixels)).view(np.int16).astype(np.float32).view(np.complex64)
-        data = file_dat[line_start - 1:line_start + nofLines - 1, pixel_start - 1:pixel_start + nofPixels - 1].astype(
-            'complex64', subok=False)
-    elif dt == 'cpxshort':
 
-        file_dat = np.memmap(path_file, dtype=np.dtype(np.float16), mode='r', shape=(lines, pixels * 2))
-        data = 1j * file_dat[:, 1::2].astype('float32', subok=False)
-        data += file_dat[:, 0::2].astype('float32', subok=False)
-        data = data[line_start - 1:line_start + nofLines - 1, pixel_start - 1:pixel_start + nofPixels - 1]
-
-    else:
-        dt = np.dtype(dt)
-        file_dat = np.memmap(path_file, dtype=dt, mode='r', shape=(lines, pixels))
-        data = file_dat[line_start - 1:line_start + nofLines - 1, pixel_start - 1:pixel_start + nofPixels - 1].astype(
-            dt, subok=False)
-
-    return data
 
 def get_f_DC_difference(nBurst):
 

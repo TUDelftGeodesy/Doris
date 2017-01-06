@@ -84,24 +84,19 @@ def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris
 
     lat_size = int((latlim[1] - latlim[0]) * pixel_degree) + 1
     lon_size = int((lonlim[1] - lonlim[0]) * pixel_degree) + 1
+    print('Bounding box is:')
+    print('from ' + str(latlim[0]) + ' latitude to ' + str(latlim[1]))
+    print('from ' + str(lonlim[0]) + ' longitude to ' + str(lonlim[1]))
 
     # Create final grid and add tiles.
     if quality == 'SRTM1' or quality == 'SRTM3':
         # Create file for DEM data
         bin_data = np.memmap(out_file, dtype=np.int16, shape=(lat_size, lon_size), mode='w+')
         bin_data = add_tiles(bin_data, tiles, quality, latlim, lonlim)
+
         # Create file for quality data
         bin_q_data = np.memmap(out_file + '.q', dtype=np.uint8, shape=(lat_size, lon_size), mode='w+')
         bin_q_data = add_tiles(bin_q_data, q_tiles, quality, latlim, lonlim, quality_file=True)
-
-        # Create file for 30 sec data (not needed because there are no voids)
-        #lat_size = int((latlim[1] - latlim[0]) * 120)
-        #lon_size = int((lonlim[1] - lonlim[0]) * 120)
-        #bin_30sec_data = np.zeros(dtype=np.uint16 ,shape=(lat_size, lon_size))
-        #bin_30sec_data = add_tiles(bin_30sec_data, tiles_30, 'SRTM30', latlim, lonlim)
-
-        # Fill voids with 30 seconds data (not necessary...)
-        # bin_data = fill_voids(bin_data, bin_30sec_data, quality)
 
         # Save quality file to geotiff
         temp_q = os.path.join(data_folder, 'temp_q.tiff')
@@ -119,8 +114,8 @@ def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris
         n_latlim = latlim
         n_lonlim = lonlim
 
-    # If to regular grid is used, we convert using gdal.
-    # First create a geotiff file, then resample geotiff file. We always use cubic interpolation.
+    # Save the binary data as a geotiff
+    print('Save data to geotiff')
     dem_tiff = os.path.join(data_folder, 'temp_dem.tiff')
     dem_data = create_georeference(n_latlim, n_lonlim, 1.0 / pixel_degree, 1.0 / pixel_degree, 'int16', dem_tiff)
     dem_data.GetRasterBand(1).WriteArray(bin_data)
@@ -128,13 +123,18 @@ def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris
 
     # First remove the egm96 from this raster.
     # Pre assign the egm tiff file first.
+    print('Calculate geoid correction for SRTM data')
     egm_tiff = os.path.join(data_folder, 'egm96_resample.tiff')
     egm_data = create_georeference(n_latlim, n_lonlim, 1.0 / pixel_degree, 1.0 / pixel_degree, 'float32', egm_tiff)
     egm_data = None
 
+    print('Correct DEM for geoid')
     add_egm96(dem_tiff, egm_tiff, data_folder)
 
     if resample == 'regular_grid':
+        # If regular grid is used, we convert using gdal.
+        # First create a geotiff file, then resample geotiff file. We always use cubic interpolation.
+        print('Resampling to new regular grid')
         dlat = lats[1] - lats[0]
         dlon = lons[1] - lons[0]
         dem_tiff_final = os.path.join(data_folder, 'dem.tiff')
@@ -149,6 +149,7 @@ def create_binary(shape_filename='', out_file='' ,resample='regular_grid', doris
 
     elif resample == 'irregular_grid':
         # Use a simple bilinear approach to find values for specific points.
+        print('Resampling to new irregular grid')
         heights = simple_bilinear(lats, lons, dem_tiff)
 
         return heights
@@ -190,6 +191,8 @@ def add_tiles(outputdata, tiles, quality, latlim, lonlim, quality_file=False):
         print('quality should be either SRTM1, SRTM3 or SRTM30!')
         return
 
+    print('total file size is ' + str(outputdata.shape[0]) + ' in latitude and ' + str(outputdata.shape[1]) + ' in longitude')
+
     for tile in tiles:
         if quality_file:
             image = np.fromfile(tile, dtype='>u1').reshape(shape)
@@ -208,20 +211,27 @@ def add_tiles(outputdata, tiles, quality, latlim, lonlim, quality_file=False):
             lat = lat - 50 + (s_size / 2)
             lon += (s_size / 2)
 
+        print('adding ' + tile)
+
         # Find the coordinates of the part of the tile that should be written to the output data.
         t_latlim = [max(lat, latlim[0]), min(lat + step_lat, latlim[1])]
         t_lonlim = [max(lon, lonlim[0]), min(lon + step_lon, lonlim[1])]
         t_latid = [shape[0] - int(round((t_latlim[0] - lat) / s_size)), shape[0] - (int(round((t_latlim[1] - lat) / s_size)) + 1)]
         t_lonid = [int(round((t_lonlim[0] - lon) / s_size)), int(round((t_lonlim[1] - lon) / s_size)) + 1]
-        latsize = int((latlim[1] - latlim[0]) / s_size) + 1
+        latsize = int(round((latlim[1] - latlim[0]) / s_size)) + 1
         latid = [latsize - int(round((t_latlim[0] - latlim[0]) / s_size)), latsize - (int(round((t_latlim[1] - latlim[0]) / s_size)) + 1)]
         lonid = [int(round((t_lonlim[0] - lonlim[0]) / s_size)), int(round((t_lonlim[1] - lonlim[0]) / s_size)) + 1]
 
+        print('Adding tile lat ' + str(t_latid[1] + 1) + ' to ' + str(t_latid[0]) + ' into dem file ' +
+              str(latid[1] + 1) + ' to ' + str(latid[0]))
+        print('Adding tile lon ' + str(t_lonid[0] + 1) + ' to ' + str(t_lonid[1]) + ' into dem file ' +
+              str(lonid[0] + 1) + ' to ' + str(lonid[1]))
+
         # Assign values from tiles to outputdata
         if quality == 'SRTM30':
-            outputdata[latid[1]: latid[0]-1, lonid[0]: lonid[1]-1] = image[t_latid[1]: t_latid[0]-1, t_lonid[0]: t_lonid[1]-1]
+            outputdata[latid[1]: latid[0]-2, lonid[0]: lonid[1]-2] = image[t_latid[1]: t_latid[0]-2, t_lonid[0]: t_lonid[1]-2]
         else:
-            outputdata[latid[1]: latid[0], lonid[0]: lonid[1]] = image[t_latid[1]: t_latid[0], t_lonid[0]: t_lonid[1]]
+            outputdata[latid[1]: latid[0]-1, lonid[0]: lonid[1]-1] = image[t_latid[1]: t_latid[0]-1, t_lonid[0]: t_lonid[1]-1]
 
     return outputdata
 
@@ -284,6 +294,7 @@ def download_dem_files(latlim, lonlim, quality, data_folder):
                         shutil.copyfileobj(source, target, length=-1)
                         target.close()
                         outfiles.append(extracted_file)
+                        os.remove(filename)
 
                         os.system(q_command)
                         zip_data = zipfile.ZipFile(q_file)
@@ -292,8 +303,10 @@ def download_dem_files(latlim, lonlim, quality, data_folder):
                         shutil.copyfileobj(source, target, length=-1)
                         target.close()
                         q_files.append(q_extracted)
+                        os.remove(q_file)
                     except:
                         print('Failed to download or process ' + filename)
+
                 else:
                     outfiles.append(extracted_file)
                     q_files.append(q_extracted)

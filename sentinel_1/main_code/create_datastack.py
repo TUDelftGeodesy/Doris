@@ -10,13 +10,20 @@
 # - the processing folder we want to create
 # - the dem source folder where the intermediate DEM data is stored
 
+import os, sys
+import shutil
+
+if __name__ == "__main__":
+    # If calling script directly we have to load the package first to our python path
+    folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    print(folder)
+    sys.path.extend([folder])
+
 from sentinel_1.main_code.create_dem import create_binary
 from sentinel_1.main_code.create_inputfiles import CreateInputFiles
 from sentinel_1.main_code.init_datastack_xml import init_datastack_xml
 from sentinel_1.main_code.dorisparameters import DorisParameters
 from sentinel_1.main_code.init_datastack_bash import create_bash
-import os
-import shutil
 
 
 def prepare_datastack():
@@ -96,4 +103,3 @@ def prepare_datastack():
 if __name__ == "__main__":
 
     prepare_datastack()
-    

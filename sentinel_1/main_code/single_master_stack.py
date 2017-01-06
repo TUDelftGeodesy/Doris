@@ -434,7 +434,9 @@ class SingleMaster(object):
                     command1 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res'
                 job_list1.append([path, command1])
 
-                if os.path.exists(os.path.join(path, slave_file + '.orig')):
+                if os.path.exists(os.path.join(path, 'slave_rsmp.raw.orig')):
+                    command2 = 'cp slave_rsmp.raw.orig slave_rsmp.raw'
+                elif os.path.exists(os.path.join(path, slave_file + '.orig')):
                     command2 = ''
                 else:
                     command2 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
@@ -688,26 +690,24 @@ class SingleMaster(object):
                 offset_l = int(self.stack[date][burst]['ifgs'].processes['coarse_correl']['Coarse_correlation_translation_lines'])
 
                 file_path = self.burst_path(date, burst, file_path='dac_delta_pixel.raw')
-                d_pixel = np.memmap(file_path, dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
-                n_pixel = np.memmap(file_path + '.new', mode='w+', dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
-                n_pixel[:,:] = d_pixel[:,:] - (offset_p - ref_offset_p)
-                n_pixel.flush()
-                file_path = self.burst_path(date, burst, file_path='dac_delta_line.raw')
-                d_line = np.memmap(file_path, dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
-                n_line = np.memmap(file_path + '.new', mode='w+', dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
-                n_line[:,:] = d_line[:,:] - (offset_l - ref_offset_l)
-                n_line.flush()
+
+                if not os.path.exists(file_path + '.new'):
+                    d_pixel = np.memmap(file_path, dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
+                    n_pixel = np.memmap(file_path + '.new', mode='w+', dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
+                    n_pixel[:,:] = d_pixel[:,:] - (offset_p - ref_offset_p)
+                    n_pixel.flush()
+
+                if not os.path.exists(file_path + '.new'):
+                    file_path = self.burst_path(date, burst, file_path='dac_delta_line.raw')
+                    d_line = np.memmap(file_path, dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
+                    n_line = np.memmap(file_path + '.n', mode='w+', dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
+                    n_line[:,:] = d_line[:,:] - (offset_l - ref_offset_l)
+                    n_line.flush()
 
         # Write delta line/pixel to burst folder
-        self.concatenate('dac_delta_line.raw.new', 'dac_delta_line.raw',dt=np.dtype('float64'))
-        self.concatenate('dac_delta_pixel.raw.new', 'dac_delta_pixel.raw',dt=np.dtype('float64'))
+        self.concatenate('dac_delta_line.raw.new', 'dac_delta_line.raw.new',dt=np.dtype('float64'))
+        self.concatenate('dac_delta_pixel.raw.new', 'dac_delta_pixel.raw.new',dt=np.dtype('float64'))
 
-        for date in self.stack.keys():
-            for burst in self.stack[date].keys():
-                file_path = self.burst_path(date, burst, file_path='dac_delta_pixel.raw.new')
-                os.remove(file_path)
-                file_path = self.burst_path(date, burst, file_path='dac_delta_line.raw.new')
-                os.remove(file_path)
 
         for date in self.stack.keys():
 
@@ -728,8 +728,12 @@ class SingleMaster(object):
 
             # Load image data
             file_path = self.image_path(date, file_path='dac_delta_pixel.raw')
+            command = 'mv ' + file_path + '.new ' + file_path
+            os.system(command)
             d_pixel = np.memmap(file_path, dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
             file_path = self.image_path(date, file_path='dac_delta_line.raw')
+            command = 'mv ' + file_path + '.new ' + file_path
+            os.system(command)
             d_line = np.memmap(file_path, dtype=np.dtype('float64'), shape=(lines+1,pixels+1))
 
             # Correct for corner information.
@@ -803,15 +807,15 @@ class SingleMaster(object):
                     command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
                 elif type == 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw.orig')):
                     command1 = 'cp slave_rsmp.raw.orig slave_rsmp.raw'
-                    command2 = 'python ' + os.path.join(self.function_path,
-                                                        'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
+                    #command2 = 'python ' + os.path.join(self.function_path,
+                    #                                    'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
                 elif type != 'ESD' and not os.path.exists(os.path.join(path, 'slave_rsmp.raw.old.orig')):
                     # If we are before the ESD step and reramp is not jet done.
                     command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw.old slave.res'
-                elif type == 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw.orig')):
+                elif type != 'ESD' and os.path.exists(os.path.join(path, 'slave_rsmp.raw.old.orig')):
                     command1 = 'cp slave_rsmp.raw.old.orig slave_rsmp.raw.old'
-                    command2 = 'python ' + os.path.join(self.function_path,
-                                                        'do_reramp_SLC.py') + ' slave_rsmp.raw.old slave.res'
+                    #command2 = 'python ' + os.path.join(self.function_path,
+                    #                                    'do_reramp_SLC.py') + ' slave_rsmp.raw.old slave.res'
 
                 if os.path.exists(os.path.join(path, master_file + '.orig')):
                     # If this image was deramped before.
@@ -1214,8 +1218,8 @@ class SingleMaster(object):
             data_dac = np.memmap(dac_delta_line_dir, dtype=dt, mode='r+', shape=(lines, pixels))
 
             # Write and save data
-            for diff, i in zip(ESD_pixels, range(len(ESD_pixels))):
-                data_dac[:,:] = data_dac[:,:] + diff[0]
+            # for diff, i in zip(ESD_pixels, range(len(ESD_pixels))):
+            data_dac[:,:] = data_dac[:,:] + ESD_pixels
             data_dac.flush()
 
         for date in self.stack.keys():
@@ -1235,9 +1239,8 @@ class SingleMaster(object):
                 data_dac = np.memmap(dac_delta_line_dir, dtype=dt, mode='r+', shape=(lines, pixels))
 
                 # Write and save data
-                ESD_diff = self.ESD_shift[date][line_0-1: line_1]
-                for diff, i in zip(ESD_diff, range(len(ESD_diff))):
-                    data_dac[i,:] = data_dac[i,:] + diff
+                ESD_diff = self.ESD_shift[date]
+                data_dac[:,:] = data_dac[:,:] + ESD_diff
                 data_dac.flush()
 
                 # Correct for corner information.
@@ -1488,7 +1491,7 @@ class SingleMaster(object):
         self.read_res()
 
         if concatenate == True:
-            self.concatenate('coherence.raw', 'coherence.raw', dt= np.dtype('float32'))
+            self.concatenate('coherence.raw', 'coherence.raw', dt=np.dtype('float32'))
             for date in self.stack.keys():
 
                 # Add res file information
@@ -1542,7 +1545,8 @@ class SingleMaster(object):
         self.read_res()
 
         if concatenate == True:
-            self.concatenate('cint_filt.raw', 'cint_filt.raw', dt=np.dtype('complex64'))
+
+            self.concatenate('cint.0.2filtered', 'cint_filt.raw', dt=np.dtype('complex64'))
             for date in self.stack.keys():
 
                 # Add res file information
@@ -1572,13 +1576,13 @@ class SingleMaster(object):
                 pixels = self.full_swath[date]['master'].processes['readfiles']['Number_of_pixels_original']
 
                 mag = ' -w ' + pixels + ' -e 0.3 -s 1.0 -q mag -o sunraster -b -c gray -M 20/5 -f cr4 -l1 ' \
-                                                 '-p1 -P' + pixels + ' cint_filt.raw > interferogram_filt_mag.ras'
+                                                 '-p1 -P' + pixels + ' cint.0.2filtered > interferogram_filt_mag.ras'
                 os.system(self.cpxfiddle + mag)
                 mix = ' -w ' + pixels + ' -e 0.3 -s 1.2 -q mixed -o sunraster -b -c jet -M 20/5 -f cr4 -l1 ' \
-                                                 '-p1 -P' + pixels + ' cint_filt.raw > interferogram_filt_mix.ras'
+                                                 '-p1 -P' + pixels + ' cint.0.2filtered > interferogram_filt_mix.ras'
                 os.system(self.cpxfiddle + mix)
                 pha = ' -w ' + pixels + ' -q phase -o sunraster -b -c jet -M 20/5 -f cr4 -l1 ' \
-                                                 '-p1 -P' + pixels + ' cint_filt.raw > interferogram_filt_pha.ras'
+                                                 '-p1 -P' + pixels + ' cint.0.2filtered > interferogram_filt_pha.ras'
                 os.system(self.cpxfiddle + pha)
 
         self.update_res()
@@ -1587,8 +1591,6 @@ class SingleMaster(object):
         # This function is used to call the unwrapping program snaphu via doris.
 
         for date in self.stack.keys():
-
-
             path = self.image_path(date)
             os.chdir(path)
 
@@ -1667,24 +1669,24 @@ class SingleMaster(object):
 
         self.update_res()
 
-    def multilook(self, ra=20, az= 5,step='filtphase'):
+    def multilook(self, ra=40, az=10,step='filtphase'):
         # This function does the multilooking using cpxfiddle and updates the resolution of the step variable. You
         # have to careful that if you want to perform this step to follow on with a smaller data file, for e.g. unwrapping
         # this should be the last mentioned step.
 
         if step == 'filtphase':
-            filename = 'cint_filt.raw'
+            filename = 'cint.0.2filtered'
             filename2 = 'cint_filt_ml.raw'
             type = 'cr4'
         elif step == 'coherence':
             filename = 'coherence.raw'
             filename2 = 'coherence_ml.raw'
             type = 'r4'
-        elif step == 'subtrefdem':
+        elif step == 'subtr_refdem':
             filename = 'cint_srd.raw'
             filename2 = 'cint_srd_ml.raw'
             type = 'cr4'
-        elif step == 'subtrefpha':
+        elif step == 'subtr_refpha':
             filename = 'cint_srp.raw'
             filename2 = 'cint_srp_ml.raw'
             type = 'cr4'
@@ -1939,7 +1941,7 @@ class SingleMaster(object):
     def calc_coordinates(self, createdem=False):
     # Calculate the coordinates of grid cells
 
-        dates = [self.stack.keys()[0]]
+        dates = self.stack.keys()
 
         for date in dates:
             job_list1 = []
@@ -1979,14 +1981,12 @@ class SingleMaster(object):
                 jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
                 jobs.run(job_list1)
 
-            for burst in self.stack[date].keys():
-                path = self.burst_path(date, burst)
-                os.chdir(path)
+        self.read_res()
 
-                shutil.copy('ifgs.res', 'create_dem.res')
-                resultfile = resdata.ResData(filename='create_dem.res')
-                # Read the .res file
-                resultfile.res_read()
+        for date in dates:
+            for burst in self.stack[date].keys():
+
+                resultfile = copy.deepcopy(self.stack[date][burst]['ifgs'])
 
                 # Add the slant2height information. This is meant to fake the doris script
                 sl2h_dat = collections.OrderedDict()
@@ -2007,9 +2007,12 @@ class SingleMaster(object):
                     'Multilookfactor_range_direction']
                 sl2h_dat['Ellipsoid (name,a,b)'] = 'WGS84 6.37814e+06 6.35675e+06'
 
-                resultfile.insert(sl2h_dat, 'slant2h')
-                resultfile.write()
+                self.stack[date][burst]['ifgs'].processes['slant2h'] = sl2h_dat
+                self.stack[date][burst]['ifgs'].process_control['slant2h'] = '1'
+                self.stack[date][burst]['ifgs'].process_timestamp['slant2h'] = ''
+        self.update_res()
 
+        for date in dates:
             for burst in self.stack[date].keys():
                 path = self.burst_path(date,burst)
                 geocode_inputfile = os.path.join(self.input_files, 'input.geocode')

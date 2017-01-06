@@ -118,7 +118,7 @@
 			<SRD_OUT_H2PH comment="" c="off">h2ph_srp.raw</SRD_OUT_H2PH>
 		</subtrrefpha>
 		<unwrap>remove DEM induced reference phase
-			<PROCESS>SUBTRREFPHA</PROCESS>
+			<PROCESS>unwrap</PROCESS>
 			<UW_METHOD comment="" c="off">SNAPHU</UW_METHOD>
 			<UW_OUT_FILE comment="" c="off">unwrapped.raw</UW_OUT_FILE>
 			<UW_OUT_FORMAT comment="" c="off">REAL4</UW_OUT_FORMAT>

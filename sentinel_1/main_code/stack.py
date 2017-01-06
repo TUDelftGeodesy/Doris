@@ -332,7 +332,6 @@ class StackData(object):
                         dist = np.sqrt(x_dist**2 + y_dist**2)
                         burst_id = np.argmin(dist)
                         no = no + 1
-                        print str(dist) + ' ' + date_str + ' ' + swath + ' ' + str(no)
 
                         if dist[burst_id] < 0.1:
                             # Assign burst to data stack
@@ -342,6 +341,9 @@ class StackData(object):
                             else:
                                 data = burst.res_burst(precise_folder=self.precise_orbits)
                             self.datastack[date_str][swath][self.burst_names[burst_id][11:]] = burst
+                        else:
+                            print('No corresponding burst found! Closest is ' + str(dist[burst_id]) + ' ' +
+                                  date_str + ' ' + swath + ' ' + self.burst_names[burst_id])
 
     def remove_incomplete_images(self):
         # This function removes all the images with less than maximum bursts. This will make a stack more consistent.
