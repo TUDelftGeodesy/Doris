@@ -14,8 +14,10 @@ def create_bash(stack_folder, python_source_path, nodes):
     f.write('\n')
     f.write('#PBS -l nodes=1:ppn=' + nodes + ' \n')
     f.write('\n')
-    f.write('export PYTHONPATH=' + python_source_path + ':' + python_source_path + '/main_code/:' + python_source_path + '/functions/:$PYTHONPATH \n')
-    f.write('export PATH=' + python_source_path + ':' + python_source_path + '/main_code/:' + python_source_path + '/functions/:$PATH \n')
+    f.write('export PYTHONPATH=' + os.path.dirname(python_source_path) + ':' + python_source_path + ':' +
+            python_source_path + '/main_code/:' + python_source_path + '/functions/:$PYTHONPATH \n')
+    f.write('export PATH=' + os.path.dirname(python_source_path) + ':' + python_source_path + ':' +
+            python_source_path + '/main_code/:' + python_source_path + '/functions/:$PATH \n')
     f.write('python ' + doris_run_script + ' -p ' + processing + ' -s ' + 'yyyy-mm-dd' + ' -e ' + 'yyyy-mm-dd' + ' -m ' + 'yyyy-mm-dd \n')
 
     f.close()
