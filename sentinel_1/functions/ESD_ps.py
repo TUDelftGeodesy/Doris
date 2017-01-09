@@ -8,8 +8,8 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-from sentinel_1.functions.get_ramp import get_ramp
-
+from sentinel_1.functions.get_ramp import freadbk
+from sentinel_1.functions.ESD_functions import get_f_DC_difference, get_coordinates
 
 
 def save_overlapping(stack_path, master_date, dates, overlap):
@@ -139,6 +139,7 @@ def network_esd_ps(stack_folder, master_date, overlap, max_t_baseline=500):
 
     diff_matrix = np.zeros(shape=(1, len(dates), len(dates)))
     std_matrix = np.zeros(shape=(1, len(dates), len(dates)))
+    to_angle_matrix = np.zeros(shape=(1, len(dates), len(dates)))
     weight = 0
 
     path = swath_path(stack_folder, dates[0], master_date, burst)
@@ -182,8 +183,10 @@ def network_esd_ps(stack_folder, master_date, overlap, max_t_baseline=500):
 
                 std_matrix[0, n, num] = pixel_std
                 diff_matrix[0, n, num] = pixel_diff
+                # Phase ramp per pixel
+                to_angle_matrix[0, n, num] = (PRF/(2*np.pi*np.nanmean(df_dc_ps))) * (line_start - 1)
 
-    return diff_matrix, std_matrix, weight, dates
+    return diff_matrix, std_matrix, to_angle_matrix, weight, dates
 
 def get_burst(overlap):
     s = overlap.split('_')
@@ -225,131 +228,6 @@ def dat_file(stack_path, key, date, full_path=False, swath=False):
     return string
 
 
-
-
-def get_f_DC_difference(nBurst):
-
-    burst1 = 'burst_' + str(nBurst) + '/'
-    burst2 = 'burst_' + str(nBurst + 1) + '/'
-
-    this_m_resData = burst1 + 'master.res'
-    next_m_resData = burst2 + 'master.res'
-
-    os.chdir(os.getcwd() + '/' + burst1)
-    f_DC_1 = get_ramp(os.path.basename(this_m_resData), resampled=0, type='DC')
-    os.chdir(os.path.dirname(os.getcwd()))
-
-    os.chdir(os.getcwd() + '/' + burst1)
-    f_DC_2 = get_ramp(os.path.basename(next_m_resData), resampled=0, type='DC')
-    os.chdir(os.path.dirname(os.getcwd()))
-
-    line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, this_nr_ofpixels, next_nr_oflines, next_nr_ofpixels, PRF = get_coordinates(nBurst)
-
-    Df_DC = f_DC_1[line_start - 1:line_start + line_length - 1, first_pixel_this - 1:first_pixel_this + pixel_length - 1] - \
-            f_DC_2[0:line_length, first_pixel_next - 1: first_pixel_next + pixel_length - 1]
-
-    return Df_DC
-
-def get_coordinates(nBurst):
-
-    burst1 = 'burst_' + str(nBurst) + '/'
-    burst2 = 'burst_' + str(nBurst+1) + '/'
-    this_m_resData = burst1 + 'master.res'
-    next_m_resData = burst2 + 'master.res'
-
-    # Get variables from first burst
-    this_line_first     = int(get_parameter('First_line (w.r.t. output_image)',this_m_resData,1))
-    this_line_last      = int(get_parameter('Last_line (w.r.t. output_image)',this_m_resData,1))
-    this_nr_oflines     = int(this_line_last) - int(this_line_first) +1
-    this_pixel_first    = int(get_parameter('First_pixel (w.r.t. output_image)',this_m_resData,1))
-    this_pixel_last     = int(get_parameter('Last_pixel (w.r.t. output_image)',this_m_resData,1))
-    this_nr_ofpixels    = int(this_pixel_last) - int(this_pixel_first) +1
-    PRF_1               = float(get_parameter('Pulse_Repetition_Frequency (computed, Hz)',this_m_resData,1))
-
-    # Get variables from second burst
-    next_line_first     = int(get_parameter('First_line (w.r.t. output_image)',next_m_resData,1))
-    next_line_last      = int(get_parameter('Last_line (w.r.t. output_image)',next_m_resData,1))
-    next_nr_oflines     = int(next_line_last) - int(next_line_first) +1
-    next_pixel_first    = int(get_parameter('First_pixel (w.r.t. output_image)',next_m_resData,1))
-    next_pixel_last     = int(get_parameter('Last_pixel (w.r.t. output_image)',next_m_resData,1))
-    next_nr_ofpixels    = int(next_pixel_last) - int(next_pixel_first) +1
-
-    PRF = PRF_1
-
-    # Read only the Burstoverlap
-    if this_pixel_first < next_pixel_first:
-        first_pixel = next_pixel_first
-    elif this_pixel_first >= next_pixel_first:
-        first_pixel = this_pixel_first
-    if this_pixel_last > next_pixel_last:
-        pixel_length = next_pixel_last - first_pixel + 1
-    elif this_pixel_last <= next_pixel_last:
-        pixel_length = this_pixel_last - first_pixel + 1
-
-    first_pixel_this = first_pixel - this_pixel_first + 1
-    first_pixel_next = first_pixel - next_pixel_first + 1
-
-    line_length = this_line_last - next_line_first + 1
-    line_start = this_nr_oflines - line_length + 1
-
-    return line_start, line_length, first_pixel_this, first_pixel_next, pixel_length, this_nr_oflines, this_nr_ofpixels,\
-           next_nr_oflines, next_nr_ofpixels, PRF
-
-def get_parameter(First_param,file_name,format_flag=1,Second_param=None,Third_param=None):
-    Read_contine_flag=0
-    class set_class(object):
-        pass
-    orbit_info = set_class()
-    time_temp = []
-    x_temp = []
-    y_temp = []
-    z_temp = []
-    value=None
-
-    for line in open(file_name):
-        if format_flag==1:
-            if not (line.find(First_param)):
-                index=line.find(':')
-                value=(line[(index+1):].strip(' \n\t'))
-                return value
-
-        if format_flag==2:
-            if  not (line.find(Second_param)):
-                Read_contine_flag=1
-            if (Read_contine_flag==1) and (not (line.find(First_param))):  ##Be careful
-                index=line.find(':')
-                value=(line[(index+1):].strip(' \n\t'))
-            if  (not (line.find(Third_param))):  ##Be careful
-                Read_contine_flag=0
-                return value
-
-        if format_flag==3:
-            if not (line.find(First_param)):
-                index=line.find(':')
-                pixel_time=(line[(index+1):].strip(' \n\t')).split(' ')[1].split(':')
-                return pixel_time
-
-        if format_flag==4:
-            if not (line.find(First_param)):
-                index=line.find(':')
-                value=int(line[(index+1):].strip(' \n\t'))
-                Read_contine_flag=1
-                continue
-            if (Read_contine_flag>=1) :
-                new_line = line.strip('\n').split()
-                time_temp.append(float(new_line[0]))
-                x_temp.append(float(new_line[1]))
-                y_temp.append(float(new_line[2]))
-                z_temp.append(float(new_line[3]))
-                Read_contine_flag=Read_contine_flag+1
-                if (Read_contine_flag==(value+1)):
-                    setattr(orbit_info,'x',x_temp)
-                    setattr(orbit_info,'y',y_temp)
-                    setattr(orbit_info,'z',z_temp)
-                    setattr(orbit_info,'time',time_temp)
-                    return orbit_info
-
-
 # Actually execute the code...
 if __name__ == "__main__":
 
@@ -377,13 +255,14 @@ if __name__ == "__main__":
         find_ps_overlapping(stack_folder, master_date, burst)
 
     # Get the esd results for the overlapping areas
-    diff_matrix, std_matrix, weight, dates = network_esd_ps(stack_folder, master_date, burst)
+    diff_matrix, std_matrix, to_angle_matrix, weight, dates = network_esd_ps(stack_folder, master_date, burst)
 
     # And save them in the corresponding folder:
     folder = os.path.join(stack_folder, 'esd', burst)
 
     np.save(os.path.join(folder, 'diff_matrix'), diff_matrix)
     np.save(os.path.join(folder, 'std_matrix'), std_matrix)
+    np.save(os.path.join(folder, 'to_angle_matrix'), to_angle_matrix)
     np.save(os.path.join(folder, 'weight'), weight)
     np.save(os.path.join(folder, 'dates'), dates)
 

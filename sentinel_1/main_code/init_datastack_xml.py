@@ -3,7 +3,7 @@ import os
 
 
 def init_datastack_xml(datastack_folder):
-    xml_file = os.path.join(os.path.dirname(__file__), 'stack_info_template.xml')
+    xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'stack_info_template.xml')
     tree = ET.parse(xml_file)
     settings = tree.getroot()
 

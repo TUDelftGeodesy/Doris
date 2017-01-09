@@ -56,13 +56,14 @@ class SingleMaster(object):
         self.function_path = doris_parameters.function_path
         self.input_files = input_files
         self.ESD_shift = dict()
-        self.pi_shift = dict()
+        self.ESD_angle_pixel = dict()
         self.swath = dict()
         self.overlapping = []
 
         # Initialize ESD variables
         self.diff_matrix = []
         self.std_matrix = []
+        self.to_angle_matrix = []
         self.weight_matrix = []
         self.weight = []
 
@@ -415,7 +416,7 @@ class SingleMaster(object):
 
         self.update_res()
 
-    def deramp(self,stage=1):
+    def deramp(self, master=True):
         # Deramp slave and masters and slaves of bursts.
 
         job_list1 = []
@@ -427,8 +428,8 @@ class SingleMaster(object):
 
                 master_file = self.dat_file(burst,date='master',full_path=False)
                 slave_file = self.dat_file(burst,date='slave',full_path=False)
-                #TODO david command
-                if os.path.exists(os.path.join(path, master_file + '.orig')):
+
+                if os.path.exists(os.path.join(path, master_file + '.orig')) or master == False:
                     command1 = ''
                 else:
                     command1 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res'
@@ -533,7 +534,6 @@ class SingleMaster(object):
 
     def dac_bursts(self):
         # Do the DEM coregistration and coregpm for the full swath
-
 
         for date in self.stack.keys():
             job_list = []
@@ -661,6 +661,16 @@ class SingleMaster(object):
                 coreg['Deltaline_slaveNN_poly'] = "{0:.8e}".format(-l_eq(2.0, 2.0))
                 coreg['Deltapixel_slaveNN_poly'] = "{0:.8e}".format(-p_eq(2.0, 2.0))
 
+                # Finally add the Normalization lines / pixels
+                lines = (int(self.stack[date][burst]['master'].processes['crop']['Last_line (w.r.t. original_image)']) -
+                         int(self.stack[date][burst]['master'].processes['crop']['First_line (w.r.t. original_image)']))
+                pixels = (int(self.stack[date][burst]['master'].processes['crop']['Last_pixel (w.r.t. original_image)']) -
+                         int(self.stack[date][burst]['master'].processes['crop']['First_pixel (w.r.t. original_image)']))
+
+                # Save pixels lines
+                coreg['Normalization_Lines'] = "{0:.8e}".format(1) + ' ' + "{0:.8e}".format(lines)
+                coreg['Normalization_Pixels'] = "{0:.8e}".format(1) + ' ' + "{0:.8e}".format(pixels)
+
                 # Copy coregistration from full swath to burst
                 try:
                     self.stack[date][burst]['ifgs'].insert(coreg,'comp_coregpm')
@@ -671,6 +681,47 @@ class SingleMaster(object):
 
         # Save .res files.
         self.update_res()
+
+    def fake_coregmp(self):
+        # This function is used if only geometrical coregistatration is used.
+
+        coreg = OrderedDict()
+        self.read_res()
+
+        coreg['Degree_cpm'] = '0'
+        coreg['Normalization_Lines'] = ''
+        coreg['Normalization_Pixels'] = ''
+        coreg['Estimated_coefficientsL'] = ''
+        coreg['row_0'] = ["{0:.8e}".format(0), '0', '0']
+        coreg['Estimated_coefficientsP'] = ''
+        coreg['row_1'] = ["{0:.8e}".format(0), '0', '0']
+
+        coreg['Deltaline_slave00_poly'] = "{0:.8e}".format(0)
+        coreg['Deltapixel_slave00_poly'] = "{0:.8e}".format(0)
+        coreg['Deltaline_slave0N_poly'] = "{0:.8e}".format(0)
+        coreg['Deltapixel_slave0N_poly'] = "{0:.8e}".format(0)
+        coreg['Deltaline_slaveN0_poly'] = "{0:.8e}".format(0)
+        coreg['Deltapixel_slaveN0_poly'] = "{0:.8e}".format(0)
+        coreg['Deltaline_slaveNN_poly'] = "{0:.8e}".format(0)
+        coreg['Deltapixel_slaveNN_poly'] = "{0:.8e}".format(0)
+
+        for date in self.stack.keys():
+            for burst in self.stack[date].keys():
+                # Now convert to burst coreg using the pixel and line offset
+                lines = (int(self.stack[date][burst]['master'].processes['crop']['Last_line (w.r.t. original_image)']) -
+                         int(self.stack[date][burst]['master'].processes['crop']['First_line (w.r.t. original_image)']))
+                pixels = (int(self.stack[date][burst]['master'].processes['crop']['Last_pixel (w.r.t. original_image)']) -
+                         int(self.stack[date][burst]['master'].processes['crop']['First_pixel (w.r.t. original_image)']))
+
+                # Save pixels lines
+                coreg['Normalization_Lines'] = "{0:.8e}".format(1) + ' ' + "{0:.8e}".format(lines)
+                coreg['Normalization_Pixels'] = "{0:.8e}".format(1) + ' ' + "{0:.8e}".format(pixels)
+
+                # Copy coregistration from full swath to burst
+                try:
+                    self.stack[date][burst]['ifgs'].insert(coreg,'comp_coregpm')
+                except:
+                    self.stack[date][burst]['ifgs'].update(coreg,'comp_coregpm')
 
     def dac_full_swath(self):
         # This function reads the dem shift result files from the full swath and saves them to both data and result
@@ -976,21 +1027,24 @@ class SingleMaster(object):
 
         # Now load the different matrices again.
         # Find all the overlaps and corresponding results:
-        esd_folder = os.path.join(stack_folder, 'esd')
+        esd_folder = os.path.join(self.stack_folder, 'esd')
         folders = os.listdir(esd_folder)
 
         self.diff_matrix = np.zeros(shape=(len(folders), len(self.stack.keys()) + 1, len(self.stack.keys()) + 1))
         self.std_matrix = np.zeros(shape=(len(folders), len(self.stack.keys()) + 1, len(self.stack.keys()) + 1))
+        self.to_angle_matrix = np.zeros(shape=(len(folders), len(self.stack.keys()) + 1, len(self.stack.keys()) + 1))
         self.weight = np.zeros(len(folders))
 
         for folder, n in zip(folders, range(len(folders))):
             f = os.path.join(esd_folder, folder)
             diff_m = np.load(os.path.join(f, 'diff_matrix.npy'))
             std_m = np.load(os.path.join(f, 'std_matrix.npy'))
+            to_angle_m = np.load(os.path.join(f, 'to_angle_matrix.npy'))
             w = np.load(os.path.join(f, 'weight.npy'))
 
             self.diff_matrix[n,:,:] = diff_m
             self.std_matrix[n,:,:] = std_m
+            self.to_angle_matrix[n,:,:] = to_angle_m
             self.weight[n] = w
 
     def network_esd(self, max_t_baseline=500):
@@ -1012,6 +1066,9 @@ class SingleMaster(object):
         w_matrix = np.sum((self.std_matrix != 0) * self.weight[:, None, None], 0)
         diff_matrix = np.sum(self.diff_matrix * self.weight[:, None, None], 0)
         diff_matrix[w_matrix > 0] = diff_matrix[w_matrix > 0] / w_matrix[w_matrix > 0]
+
+        angle_pixel = np.sum(self.to_angle_matrix * self.weight[:, None, None], 0)
+        angle_pixel[w_matrix > 0] = angle_pixel[w_matrix > 0] / w_matrix[w_matrix > 0]
 
         # In case we want to use the standard deviations...
         self.std_matrix = (np.sum(self.std_matrix**2 * self.weight[:, None, None], 0) +
@@ -1047,8 +1104,9 @@ class SingleMaster(object):
         sigma = np.std(esd_residue)
 
         dates = sorted(self.stack.keys())
-        for date, shift in zip(dates, esd_diff):
+        for date, shift, angle in zip(dates, esd_diff, angle_pixel):
             self.ESD_shift[date] = shift
+            self.ESD_angle_pixel[date] = angle
 
     def network_esd_coh(self, max_t_baseline):
         # Based on ps point esd is calculated using a network approach
@@ -1132,7 +1190,7 @@ class SingleMaster(object):
 
             weight = [0] * len(bursts)
             shift = [0] * len(bursts)
-            az_coor = [0] * len(bursts)
+            angle_v = [0] * len(bursts)
 
             for burst, id in zip(bursts, range(len(bursts))):
 
@@ -1146,30 +1204,24 @@ class SingleMaster(object):
 
                     str_burst = str(nBurst)
                     Df_DC = get_f_DC_difference(nBurst)
-                    offset, W = get_offset(nBurst, Df_DC)
+                    offset, W, angle = get_offset(nBurst, Df_DC)
 
                     print 'burst ' + str_burst + ' from ' + date + ' with weight ' + str(W) + ' and offset ' + str(offset)
 
                     shift[id] = offset
                     weight[id] = W
+                    angle_v[id] = angle
                 else:
                     z = 0
 
-            # Apply linear fit using azimuth coordinates
-            #A_BOL = np.ones((len(shift),2))
-            #A_BOL[:,1] = az_coor[:]
-
-            #xw = A_BOL * np.sqrt(weight)[:, None]
-            #yw = shift * np.sqrt(weight)
-            #xh = linalg.lstsq(xw, yw)[0]
-            no_lines = int(self.full_swath[date]['ifgs'].processes['dem_assist']['Number of lines'])
-            # self.ESD_shift[date] = xh[0] + xh[1] * np.array(range(1, no_lines + 1))
-
             # Assume constant offset
-
             x = np.sum(np.array(shift) * np.array(weight)) / np.sum(weight)
+            angle = np.sum(np.array(angle_v) * np.array(weight)) / np.sum(weight)
+
             print 'total shift ' + date + ' is ' + str(x)
             self.ESD_shift[date] = x
+            # This is not exact, but will suffice...
+            self.ESD_angle_pixel[date] = angle
 
     def ESD_correct(self):
 
@@ -1251,6 +1303,33 @@ class SingleMaster(object):
                 self.stack[date][burst]['ifgs'].processes['dem_assist']['Deltaline_slaveNN_dem'] = str(-data_dac[-1,-1])
 
         self.update_res()
+
+    def ESD_correct_ramp(self, filename='cint.raw'):
+        # This function correct for ESD using the expected ramp in the resampled slave image
+
+        self.read_res()
+        jobList = []
+
+        for date in self.stack.keys():
+            for burst in self.stack[date].keys():
+
+                path = self.burst_path(date, burst)
+
+                offset = self.ESD_shift[date]
+                angle = self.ESD_angle_pixel[date]
+                angle_pixel = str(offset / angle)
+                script = os.path.join(self.function_path, 'deramp_ESD.py')
+                command = 'python ' + script + ' ' + path + ' ' + filename + ' ' + angle_pixel
+
+                jobList.append([path, command])
+
+                if not (self.parallel):
+                    os.chdir(path)
+                    os.system(command)
+
+        if self.parallel:
+            jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
+            jobs.run(jobList)
 
     def combine_slave(self):
         # This function concatenates the different slave values. Both ramped and deramped.

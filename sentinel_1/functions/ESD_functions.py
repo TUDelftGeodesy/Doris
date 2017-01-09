@@ -225,11 +225,13 @@ def get_offset(nBurst, Df_DC, coh_treshold=0.3):
     weights = 2 * ESD_coh*ESD_coh / (1 - ESD_coh*ESD_coh)
 
     W = np.sum(weights[ESD_coh > coh_treshold])
-    offset = np.angle(np.sum(diffBursts[ESD_coh > coh_treshold] * weights[ESD_coh > coh_treshold]) / W) * \
-             (PRF / (2 * np.pi * np.nanmean(Df_DC_multilook[ESD_coh > coh_treshold] * weights[ESD_coh > coh_treshold] /
+    angle = (PRF / (2 * np.pi * np.nanmean(Df_DC_multilook[ESD_coh > coh_treshold] * weights[ESD_coh > coh_treshold] /
                                             np.mean(weights[ESD_coh > coh_treshold]))))
+    offset = np.angle(np.sum(diffBursts[ESD_coh > coh_treshold] * weights[ESD_coh > coh_treshold]) / W) * angle
 
-    return offset, W
+    angle_pixel = angle * (line_start - 1)
+
+    return offset, W, angle_pixel
 
 ########################################################################################################################
 # Function to calculate pixel offset for each burst, according to Nida's proposed method. Threshold can be assigned by

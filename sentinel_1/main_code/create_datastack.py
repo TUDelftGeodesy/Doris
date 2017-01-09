@@ -70,7 +70,7 @@ def prepare_datastack():
     # Now initialize the first .xml file with basic information
     nodes = init_datastack_xml(folder)
     # And create the .bash script
-    python_folder = os.path.dirname(os.path.dirname(__file__))
+    python_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     create_bash(folder, python_folder, nodes)
 
     dorisparameters = DorisParameters(folder)
@@ -91,11 +91,11 @@ def prepare_datastack():
     dem_out = os.path.join(folder, 'dem', 'dem.raw')
     dem_out, dem_var, dem_inputfile = create_binary(os.path.join(folder, 'shape', 'AOI.shp'), dem_out, resample=None,
                                                     doris_input=True, rounding=0.1, border=1.5,
-                                                    data_folder=dem_folder, quality='SRTM3')
+                                                    data_folder=dem_folder, quality='SRTM1')
 
     # Then create the inputfiles
     inputfiles_folder = os.path.join(folder, 'input_files')
-    xml_file = os.path.join(os.path.dirname(__file__), 'inputfile.xml')
+    xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'inputfile.xml')
     CreateInputFiles(dem_var, inputfiles_folder, xml_file, satellite)
 
 
