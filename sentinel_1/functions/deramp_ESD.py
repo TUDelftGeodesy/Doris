@@ -9,13 +9,13 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-from sentinel_1.functions.get_ramp import freadbk
-from sentinel_1.functions.resdata import ResData
+from resdata import ResData
 
-def remove_ramp(burst_path, file, angle_pixel):
+
+def remove_ramp(file, angle_pixel):
     # Remove ramp from burst
 
-    res_file = os.path.join(burst_path, 'master.res')
+    res_file = 'master.res'
     res_dat = ResData(res_file, 'master')
     crop = res_dat.processes['crop']
     lines = int(crop['Last_line (w.r.t. original_image)']) - int(crop['First_line (w.r.t. original_image)']) + 1
@@ -25,24 +25,27 @@ def remove_ramp(burst_path, file, angle_pixel):
     phase_diff = n * angle_pixel
     complex_diff = np.cos(phase_diff).astype('complex64') + 1j * np.sin(phase_diff).astype('complex64')
 
-    dat_file = np.memmap(os.path.join(burst_path, file), dtype='complex64', mode='r+', shape=(lines, pixels))
-    dat_file[:, :] = complex_diff * dat_file.conj()
+    dat_file = np.memmap(file, dtype='complex64', mode='r+', shape=(lines, pixels))
+    p_before = np.nanmean(np.angle(dat_file))
+    print('Average phase before is ' + str(p_before))
+
+    dat_file[:, :] = dat_file * complex_diff.conj()[:, None]
+    p_after = np.nanmean(np.angle(dat_file))
+    print('Average phase after is ' + str(p_after))
     dat_file.flush()
 
-if __name__ == "main":
+if __name__ == "__main__":
     # If calling script directly we run the remove_ramp function.
 
-    if len(sys.argv) == 4:
-        burst_path      = sys.argv[1]
-        file            = sys.argv[2]
-        angle_pixel     = sys.argv[3]  # Use 1 if needed, use 0 if not
+    if len(sys.argv) == 3:
+        file            = sys.argv[1]
+        angle_pixel     = sys.argv[2]  # Use 1 if needed, use 0 if not
     else:
         sys.exit('usage: burst_folder, file, angle_per_pixel')
 
-    print('burst folder is ' + burst_path)
     print('file we will deramp is ' + file)
     print('the angle per pixel is ' + angle_pixel)
 
     angle_pixel = float(angle_pixel)
-    remove_ramp(burst_path, file, angle_pixel)
+    remove_ramp(file, angle_pixel)
 

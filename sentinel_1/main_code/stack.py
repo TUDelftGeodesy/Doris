@@ -225,7 +225,7 @@ class StackData(object):
         # First select which date will be the master
         if date:
             date = np.datetime64(date).astype('datetime64[D]')
-            date = deepcopy(image_dates[min(abs(self.image_dates-date))])
+            # date = deepcopy(image_dates[min(abs(self.image_dates-date))])
         else:  # if no date is specified
             date = Counter(image_dates).most_common(1)[0][0]
 
@@ -352,8 +352,10 @@ class StackData(object):
             burst_no = 0
             for key_swath in self.datastack[key].keys():
                 burst_no += len(self.datastack[key][key_swath])
-            if burst_no < self.burst_no:
+            if burst_no != self.burst_no:
                 self.datastack.pop(key)
+                print('Number of burst for ' + key + ' is ' + str(burst_no) + ' instead of ' + str(self.burst_no) +
+                      ' and is removed from the datastack.')
 
     def define_burst_coordinates(self,slaves=False):
         # This function defines the exact coordinates in pixels of every burst based on the lower left corner of the first
@@ -488,19 +490,25 @@ class StackData(object):
         # This function searches for the lat/lon and availability of all bursts in the dataset. Every time the dataset
         # is extended this function should be updated.
 
-        date_no = len(self.dates)
-        burst_no = len(self.burst_names)
+        dates = self.datastack.keys()
+        swaths = self.datastack[dates[0]].keys()
+        bursts = []
+        for s in swaths:
+            bursts = bursts + self.datastack[dates[0]][s].keys()
 
-        self.burst_availability = np.zeros((date_no,burst_no),dtype=bool)
-        self.burst_lon = np.zeros((date_no,burst_no))
-        self.burst_lat = np.zeros((date_no,burst_no))
+        date_no = len(dates)
+        burst_no = len(bursts)
+
+        self.burst_availability = np.zeros((date_no,burst_no), dtype=bool)
+        self.burst_lon = np.zeros((date_no, burst_no))
+        self.burst_lat = np.zeros((date_no, burst_no))
 
         d = -1
         for date in self.dates:
             date = date.astype(datetime).strftime('%Y-%m-%d')
             d += 1
             b = -1
-            for name in self.burst_names:
+            for name in bursts:
                 swath = name[:10]
                 burst = name[11:]
                 b += 1

@@ -69,37 +69,38 @@ class DorisSentinel1(object):
 #        sys.path.append(script_folder)
 
         from stack import StackData
-        import single_master_stack
 
         profile.log_time_stamp('start')
         # Create a datastack using the stack function
-        stack = StackData(track_dir=track_dir,shape_dat=shape_dat,start_date=start_date,end_date=end_date,polarisation='vv',path=stack_path,db_type=2,precise_dir=precise_orbits)
-        profile.log_time_stamp('StackData')
+        #stack = StackData(track_dir=track_dir,shape_dat=shape_dat,start_date=start_date,end_date=end_date,polarisation='vv',path=stack_path,db_type=2,precise_dir=precise_orbits)
+        #profile.log_time_stamp('StackData')
         # All images which correspond with the start and end date are selected
-        stack.select_image()
+        #stack.select_image()
         # Then these images are unzipped
-        stack.unpack_image()
+        #stack.unpack_image()
         # Based on the shape file bursts are selected for one date
-        stack.select_burst()
+
+        print('master date is ' + master_date)
+        #stack.select_burst(date=master_date)
         # And also for the other dates the needed bursts are selected
-        stack.extend_burst()
+        #stack.extend_burst()
         # Remove the images which are not fully present
-        stack.remove_incomplete_images()
+        #stack.remove_incomplete_images()
         # Now the exact coordinates of the different burst in the concatenated image is calculated
-        stack.define_burst_coordinates(slaves=True)
+        #stack.define_burst_coordinates(slaves=True)
         # Write the datastack to the stack_path folder
-        stack.write_stack(write_path=stack_path,no_data=False)
+        #stack.write_stack(write_path=stack_path,no_data=False)
         # A few auxiliary functions which are not strictly necessary.
         # Calculate the coverage of the different sub-swaths
-        stack.swath_coverage()
+        #stack.swath_coverage()
         # Calculate the centre point of the different burst and create a list with all available burst. (To see whether all data
         # files are available for these dates.)
-        stack.lat_lon_availability()
+        # stack.lat_lon_availability()
         # Write the shapes from the bursts and swaths to a shapefile to check in a GIS program like Qgis.
-        stack.write_shapes()
-        profile.log_time_stamp('stack preparation finished')
+        #stack.write_shapes()
+        #profile.log_time_stamp('stack preparation finished')
         # Finally delete unzipped images
-        stack.del_unpacked_image()
+        # stack.del_unpacked_image()
 
         import single_master_stack
 
@@ -126,6 +127,9 @@ class DorisSentinel1(object):
         # Deramp the data of both slave and master
         processing.deramp(master=True) # Still needed for coherence...
         profile.log_time_stamp('deramp')
+        # Fake the use of fine window coregistration, which is officially not needed
+        processing.fake_fine_coreg()
+        profile.log_time_stamp('fake_fine_coreg_bursts')
         # Perform DEM coregistration for individual bursts
         processing.dac_bursts()
         profile.log_time_stamp('dac_bursts')
@@ -149,15 +153,14 @@ class DorisSentinel1(object):
         processing.compref_dem()
         profile.log_time_stamp('compref_dem')
         # Compute coherence
-        processing.del_process('coherence', type='ifgs')
         processing.coherence()
         profile.log_time_stamp('coherence')
         # Perform enhanced spectral diversity for full swath
-        processing.esd_ps()
+        processing.esd()
         processing.network_esd()
         profile.log_time_stamp('ESD')
         # Correct using ramp ifgs based on ESD
-        processing.ESD_correct_ramp()
+        processing.ESD_correct_ramp(filename='slave_rsmp.raw')
         profile.log_time_stamp('ESD_correct')
         # profile.log_time_stamp('interferogram')
         # Combine all slave bursts to full swath
@@ -185,7 +188,7 @@ class DorisSentinel1(object):
         processing.multilook(step='filtphase')
         profile.log_time_stamp('multilooking')
         # Unwrap image
-        processing.del_process('filtphase', type='ifgs', images=True)
+        # processing.del_process('unwrap', type='ifgs', images=True)
         processing.unwrap()
         profile.log_time_stamp('unwrapping')
 
