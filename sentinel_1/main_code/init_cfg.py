@@ -2,11 +2,11 @@ import xml.etree.ElementTree as ET
 import os
 
 def init_cfg():
-    xml_file = os.path.join(os.path.dirname(__file__), 'grs_config.xml')
+    xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'grs_config.xml')
     tree = ET.parse(xml_file)
     settings = tree.getroot()
 
-    settings.find('.source_path').text = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    settings.find('.source_path').text = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
     input = False
     while input == False:
