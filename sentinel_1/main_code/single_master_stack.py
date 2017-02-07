@@ -2,15 +2,15 @@ import os
 import numpy as np
 from datetime import datetime
 from collections import OrderedDict
-from sentinel_1.functions.baselines import baselines
+from baselines import baselines
 import copy
 from copy import deepcopy
 import shutil
-from sentinel_1.main_code.resdata import ResData
-from sentinel_1.functions.ESD_functions import get_f_DC_difference, get_offset, get_coordinates, freadbk
+from resdata import ResData
+from ESD_functions import get_f_DC_difference, get_offset, get_coordinates, freadbk
 from scipy import linalg
-import sentinel_1.main_code.resdata as resdata
-from sentinel_1.main_code.dorisparameters import DorisParameters
+import resdata as resdata
+from dorisparameters import DorisParameters
 import collections
 import scipy
 
@@ -26,6 +26,8 @@ class SingleMaster(object):
         # master function. If you want a random master value, choose master_date='random'
         # Dates should be given as 'yyyy-mm-dd'. If stack_read is True information is read from the stack_folder. Otherwise
         # the datastack from an StackData object should be given as input.
+
+        Jobs.id = 0
 
         doris_parameters = DorisParameters(os.path.dirname(os.path.dirname(processing_folder))) # (assuming it is stored in the stackfolder
         self.doris_parameters = doris_parameters
@@ -322,7 +324,7 @@ class SingleMaster(object):
                 if 'ifgs' not in self.stack[date][burst].keys(): # If there is an ifgs file, coarse orbits are done...
                     path = self.burst_path(date, burst)
                     command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarseorb')
-                    job_list2.append([path, command2])
+                    job_list2.append({"path": path, "command": command2})
                     if not self.parallel:
                         os.chdir(path)
                         os.system(command2)
@@ -332,11 +334,11 @@ class SingleMaster(object):
 
             # Run coarse orbits for full swath
             if 'ifgs' not in self.full_swath[date].keys():  # If there is an ifgs file, coarse orbits are done...
-                folder = self.image_path(date)
+                path = self.image_path(date)
                 command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarseorb')
-                job_list1.append([folder, command1])
+                job_list1.append({"path": path, "command": command1})
                 if not self.parallel:
-                    os.chdir(folder)
+                    os.chdir(path)
                     os.system(command1)
             if self.parallel:
                 jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
@@ -359,15 +361,15 @@ class SingleMaster(object):
                     if ps is True:
                         master_file = self.dat_file(burst,date='master',full_path=False)
                         command1 = 'python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc'
-                        job_list1.append([path, command1])
+                        job_list1.append({"path": path, "command": command1})
                         command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr')
-                        job_list2.append([path, command2])
+                        job_list2.append({"path": path, "command": command2})
                         if not self.parallel:
                             os.system('python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc')
                             os.system(command2)
                     if ps is False:
                         command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr')
-                        job_list1.append([path, command])
+                        job_list1.append({"path": path, "command": command})
                         if not self.parallel:
                             os.system(command)
 
@@ -453,13 +455,13 @@ class SingleMaster(object):
                     command1 = ''
                 else:
                     command1 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' master.res'
-                    job_list1.append([path, command1])
+                    job_list1.append({"path": path, "command": command1})
 
                 if os.path.exists(os.path.join(path, slave_file + '.orig')):
                     command2 = ''
                 else:
                     command2 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
-                    job_list2.append([path, command2])
+                    job_list2.append({"path": path, "command": command2})
 
                 if not self.parallel:
                     os.chdir(path)
@@ -489,15 +491,15 @@ class SingleMaster(object):
                         os.chdir(path)
                     if ps == True:
                         command1 = 'python -m' + 'get_winpos'  + ' ' + master_file + ' master.res 101 winpos_fine.asc'
-                        job_list1.append([path, command1])
+                        job_list1.append({"path": path, "command": command1})
                         command2 = self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg_icc_pointscat')
-                        job_list2.append([path, command2])
+                        job_list2.append({"path": path, "command": command2})
                         if (not(self.parallel)):
                             os.system(command1)
                             os.system(command2)
                     elif ps == False:
                         command = self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg')
-                        job_list1.append([path,command])
+                        job_list1.append({"path": path, "command": command})
                         if not (self.parallel):
                             os.system(command)
         if self.parallel:
@@ -569,7 +571,7 @@ class SingleMaster(object):
                 if self.stack[date][burst]['ifgs'].process_control['dem_assist'] != '1':
                     path = self.burst_path(date, burst)
                     command = self.doris_path + ' ' + os.path.join(self.input_files,'input.dembased')
-                    job_list.append([path, command])
+                    job_list.append({"path": path, "command": command})
                     if not self.parallel:
                         os.chdir(path)
                         os.system(command)
@@ -880,7 +882,7 @@ class SingleMaster(object):
                     path = self.burst_path(date, burst)
                     command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.resample')
 
-                    jobList1.append([path, command1])
+                    jobList1.append({"path": path, "command": command1})
 
                     if not self.parallel:
                         os.chdir(path)
@@ -919,14 +921,14 @@ class SingleMaster(object):
                 if not os.path.exists(os.path.join(path, 'slave_rsmp.raw.orig')):
                     # If we are before the ESD step and reramp is not jet done.
                     command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
-                    jobList1.append([path, command1])
+                    jobList1.append({"path": path, "command": command1})
 
                 if os.path.exists(os.path.join(path, master_file + '.orig')):
                     # If this image was deramped before.
                     command2 = 'mv ' + os.path.basename(master_file) + ' master_deramped.raw'
                     command3 = 'mv ' + os.path.basename(master_file) + '.orig ' + os.path.basename(master_file)
-                    jobList2.append([path, command2])
-                    jobList3.append([path, command3])
+                    jobList2.append({"path": path, "command": command2})
+                    jobList3.append({"path": path, "command": command3})
 
                 if not self.parallel:
                     os.chdir(path)
@@ -957,7 +959,7 @@ class SingleMaster(object):
                     os.chdir(path)
 
                     command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.interferogram')
-                    jobList1.append([path, command1])
+                    jobList1.append({"path": path, "command": command1})
 
                     if (not(self.parallel)):
                         os.chdir(path)
@@ -1049,15 +1051,15 @@ class SingleMaster(object):
                 nBurst = int(burst[17:])
                 next_burst = burst[:17] + str(nBurst + 1)
                 if next_burst in bursts:
-                    stack_folder = self.folder
+                    path = self.folder
                     overlap = burst + '_' + next_burst
-                    command = 'python ' + os.path.join(self.function_path, 'ESD_ps.py') + ' ' + stack_folder + ' ' \
+                    command = 'python ' + os.path.join(self.function_path, 'ESD_ps.py') + ' ' + path + ' ' \
                               + overlap + ' ' + esd_type + ' ' + str(max_baseline) + ' 1'
-                    jobList.append([self.folder, command])
+                    jobList.append({"path": path, "command": command})
 
-                if not (self.parallel):
-                    os.chdir(path)
-                    os.system(command)
+                    if not (self.parallel):
+                        os.chdir(path)
+                        os.system(command)
         if self.parallel:
             jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
             jobs.run(jobList)
@@ -1161,7 +1163,7 @@ class SingleMaster(object):
                 script = os.path.join(self.function_path, 'deramp_ESD.py')
                 command = 'python ' + script + ' ' + filename + ' ' + angle_pixel
 
-                jobList.append([path, command])
+                jobList.append({"path": path, "command": command})
 
                 if not (self.parallel):
                     os.chdir(path)
@@ -1263,7 +1265,7 @@ class SingleMaster(object):
                 if self.stack[date][burst]['ifgs'].process_control['comp_refphase'] != '1':
                     path = self.burst_path(date, burst)
                     command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.comprefpha')
-                    job_list1.append([path, command1])
+                    job_list1.append({"path": path, "command": command1})
                     if (not(self.parallel)):
                         os.chdir(path)
                         os.system(command1)
@@ -1284,7 +1286,7 @@ class SingleMaster(object):
                 if self.stack[date][burst]['ifgs'].process_control['subtr_refphase'] != '1':
                     path = self.burst_path(date, burst)
                     command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.subtrrefpha')
-                    job_list2.append([path, command2])
+                    job_list2.append({"path": path, "command": command2})
                     if (not(self.parallel)):
                         os.chdir(path)
                         os.system(command2)
@@ -1352,7 +1354,7 @@ class SingleMaster(object):
                 if self.stack[date][burst]['ifgs'].process_control['subtr_refdem'] != '1':
                     path = self.burst_path(date, burst)
                     command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.subtrrefdem')
-                    job_list2.append([path, command2])
+                    job_list2.append({"path": path, "command": command2})
                     if (not(self.parallel)):
                         os.chdir(path)
                         os.system(command2)
@@ -1425,7 +1427,7 @@ class SingleMaster(object):
                 if self.stack[date][burst]['ifgs'].process_control['comp_refdem'] != '1':
                     path = self.burst_path(date, burst)
                     command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.comprefdem')
-                    job_list1.append([path, command1])
+                    job_list1.append({"path": path, "command": command1})
                     if (not(self.parallel)):
                         os.chdir(path)
                         os.system(command1)
@@ -1445,7 +1447,7 @@ class SingleMaster(object):
                 if self.stack[date][burst]['ifgs'].process_control['coherence'] != '1':
                     path = self.burst_path(date, burst)
                     command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coherence')
-                    job_list.append([path, command])
+                    job_list.append({"path": path, "command": command})
                     if (not(self.parallel)):
                         os.chdir(path)
                         os.system(command)
@@ -1506,7 +1508,7 @@ class SingleMaster(object):
                 if self.stack[date][burst]['ifgs'].process_control['filtphase'] != '1':
                     path = self.burst_path(date, burst)
                     command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.phasefilt')
-                    job_list.append([path, command])
+                    job_list.append({"path": path, "command": command})
                     if (not(self.parallel)):
                         os.chdir(path)
                         os.system(command)
@@ -1598,7 +1600,7 @@ class SingleMaster(object):
             final_path = os.path.join(path, master_file)
             if not os.path.exists(final_path) or overwrite == True:
                 command1 = 'python ' + os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' concatenate ' + burst_file + ' ' + dt.name
-                job_list1.append([path, command1])
+                job_list1.append({"path": path, "command": command1})
 
             if not self.parallel:
                 os.chdir(path)
@@ -1697,7 +1699,7 @@ class SingleMaster(object):
             path = self.image_path(date)
 
             command1 = os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path + ' decatenate ' + burst_file + ' ' + dt.str
-            job_list1.append([path, command1])
+            job_list1.append({"path": path, "command": command1})
             if not(self.parallel):
                 os.chdir(path)
                 os.system(command1)
@@ -1885,12 +1887,12 @@ class SingleMaster(object):
                 if not dem_inputfile == False:
                     if not doris_dir:
                         command = 'doris ' + dem_inputfile
-                        job_list1.append([path, command])
+                        job_list1.append({"path": path, "command": command})
                         if (not (self.parallel)):
                             os.system(command)
                     else:
                         command = doris_dir + ' ' + dem_inputfile
-                        job_list1.append([path, command])
+                        job_list1.append({"path": path, "command": command})
                         if (not (self.parallel)):
                             os.system(command)
             if (self.parallel):
@@ -1935,12 +1937,12 @@ class SingleMaster(object):
                 # Generate lat / lon files
                 if not doris_dir:
                     command = 'doris ' + geocode_inputfile
-                    job_list2.append([path, command])
+                    job_list2.append({"path": path, "command": command})
                     if (not (self.parallel)):
                         os.system(command)
                 else:
                     command = doris_dir + ' ' + geocode_inputfile
-                    job_list2.append([path, command])
+                    job_list2.append({"path": path, "command": command})
                     if (not (self.parallel)):
                         os.system(command)
 

@@ -1,9 +1,9 @@
 # This files defines a class for metadata objects of sentinel images. Large part of the work depends on python readers
 # from the tops toolbox.
 
-from sentinel_1.functions.xml_query import xml_query
-from sentinel_1.functions.burst_metadata import burst_header, burst_readfiles, burst_datapoints, burst_crop, burst_precise
-from sentinel_1.main_code.resdata import ResData
+from xml_query import xml_query
+from burst_metadata import burst_header, burst_readfiles, burst_datapoints, burst_crop, burst_precise
+from resdata import ResData
 import warnings
 import os
 import copy

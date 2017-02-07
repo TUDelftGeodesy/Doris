@@ -19,11 +19,11 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-from sentinel_1.main_code.create_dem import create_binary
-from sentinel_1.main_code.create_inputfiles import CreateInputFiles
-from sentinel_1.main_code.init_datastack_xml import init_datastack_xml
-from sentinel_1.main_code.dorisparameters import DorisParameters
-from sentinel_1.main_code.init_datastack_bash import create_bash
+from create_dem import create_binary
+from create_inputfiles import CreateInputFiles
+from init_datastack_xml import init_datastack_xml
+from dorisparameters import DorisParameters
+from init_datastack_bash import create_bash
 
 
 def prepare_datastack():

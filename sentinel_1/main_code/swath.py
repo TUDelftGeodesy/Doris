@@ -1,10 +1,10 @@
 # This files defines a class for metadata objects of sentinel images. Large part of the work depends on python readers
 # from the tops toolbox.
 
-from sentinel_1.functions.xml_query import xml_query
+from xml_query import xml_query
 import warnings
 import os
-from sentinel_1.main_code.burst import BurstMeta
+from burst import BurstMeta
 
 class SwathMeta(object):
     # Class which stores and gathers information of a swath in a sentinel dataset

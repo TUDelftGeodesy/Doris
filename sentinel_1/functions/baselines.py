@@ -4,7 +4,7 @@ import os
 import numpy as np
 import warnings
 from shutil import copyfile
-from sentinel_1.main_code.resdata import ResData
+from resdata import ResData
 import datetime
 import subprocess
 

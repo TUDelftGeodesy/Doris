@@ -1,12 +1,12 @@
 # Based on the orbit of the swath the orbits of the individual burst is calculated.
-from sentinel_1.functions.orbit_coordinates import lph2xyz, xyz2ell, intrp_orbit
+from orbit_coordinates import lph2xyz, xyz2ell, intrp_orbit
 import os
 import numpy as np
 import collections
 from datetime import datetime
 import time
 from shapely.geometry import Polygon
-from sentinel_1.functions.precise_read import interpolate_orbit, orbit_read
+from precise_read import interpolate_orbit, orbit_read
 
 
 def burst_header(resID):

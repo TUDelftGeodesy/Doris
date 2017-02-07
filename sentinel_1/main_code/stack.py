@@ -8,10 +8,10 @@ from datetime import datetime, timedelta
 from shapely.geometry import Polygon, shape, mapping, box
 from shapely.ops import cascaded_union
 import fiona
-import sentinel_1.main_code.image as image
+import image as image
 from copy import deepcopy
 from collections import Counter, OrderedDict
-from sentinel_1.functions.sentinel_dump_data_function import dump_data
+from sentinel_dump_data_function import dump_data
 
 # TODO Make a function that describes an iteration over the burst in the datastack
 # TODO Split this function in initialization (single products) and processing part (ifgs)
@@ -146,7 +146,7 @@ class StackData(object):
         if images:
             self.image_dump = sorted(images)
         else:
-            warnings.warn('No images found! Please choose another data folder.')
+            warnings.warn('No images found! Please choose another data folder. Track_dir = ' + str(track_dir))
 
     def create_shape(self,shape_dat,buffer=0.02):
         # This function creates a shape to make a selection of usable bursts later on. Buffer around shape is in

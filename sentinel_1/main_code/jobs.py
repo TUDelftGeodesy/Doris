@@ -24,80 +24,94 @@ class Jobs(object):
         self.pid = str(os.getpid())
         self.doris_parameters = dorisParameters
         self.verbose = self.doris_parameters.verbose
-        self.flag_dir = self.doris_parameters.doris_parallel_flag_dir
+        self.flag_dir_root = self.doris_parameters.doris_parallel_flag_dir
         self.between_sleep_time = self.doris_parameters.between_sleep_time
         self.end_sleep_time = self.doris_parameters.end_sleep_time
-        self._cleanup()
+        self.jobs_todo = []
+        self.jobs_active = []
+        self.jobs_finished = []
+        self.flag_dir = ''
+
+    def _new_id(self):
+        # static class variable
+        Jobs.id = Jobs.id + 1
+        return Jobs.id
+
+    def _set_id(self, job_list):
+        for job_dict in job_list:
+            job_dict['id'] = self._new_id()
+
+    def _create_flag_dir(self):
+        self.flag_dir = self.flag_dir_root + "." + time.asctime(time.localtime(time.time())).replace(" ", "_")
         os.mkdir(self.flag_dir)
 
-    def _cleanup(self):
+
+    def _cleanup_flag_dir(self):
         #
-        # cleans stuff from last run
-        # moves directory with start/finish flags to timestamped directory
+        # cleans stuff from current run, if not verbose
         #
-        if(self.verbose):
-            os.system("mv "
-                      + self.flag_dir
-                      + " "
-                      + self.flag_dir
-                      + "."
-                      + time.asctime(time.localtime(time.time())).replace(" ", "_"))
-        else:
-            os.system("rm -rf "
-                      + self.flag_dir)
+        if(not (self.verbose)):
+            os.system("rm -rf " + self.flag_dir)
 
     def _get_job_id(self, job):
         #
         # returns machine level unique job Id
-        #
-        return job[0].replace("/","") + "." + job[1].replace("/","").replace(" ","") + self.pid
+        return job['path'].replace("/","_") + "." + job['command'].replace("/","_").replace(" ","-") + self.pid
 
-    def _start_jobs(self, jobs, active_jobs, job_count):
+
+    def _start_jobs(self):
         #
         # starts a number of jobs
         # returns list of unstarted and list of started jobs
         #
-        jobs_to_start_count = min(job_count, len(jobs))
+        jobs_to_start_count = min((self.max_jobs - len(self.jobs_active)), len(self.jobs_todo))
         for index in range(0, jobs_to_start_count):
-            job = jobs.pop(0)
-            os.chdir(job[0])
+            job = self.jobs_todo.pop(0)
+            os.chdir(job['path'])
             os.system(self.doris_parameters.job_handler_script + " "
                       + self.flag_dir + " "
+                      + str(job['id']) + " "
                       + self._get_job_id(job) + " "
                       + str(self.verbose) + " "
-                      + job[1] + " &")
-            active_jobs.append(job)
-        return [jobs, active_jobs]
+                      + job['command'] + " &")
+            self.jobs_active.append(job)
+        return
 
-    def _active_jobs(self, jobs):
+    def _check_active_jobs(self):
         #
         # returns from the list of jobs, the jobs that are started, but not finished
         #
         jobs_active = []
-        for job in jobs:  # find active jobs
+        for job in self.jobs_active:  # find active jobs
             this_job_started = False
             this_job_ready = False
             for file in os.listdir(self.flag_dir):
-                if self._get_job_id(job) + ".finished" == file:
+                if str(job['id']) + ".finished" == file:
                     this_job_ready = True
-                if self._get_job_id(job) + ".started" == file:
-                    this_job_started = True
-            this_job_active = this_job_started & (not (this_job_ready))
-            if (this_job_active):
+#                if str(job['id']) + ".started" == file:
+#                    this_job_started = True
+#            this_job_active = this_job_started & (not (this_job_ready))
+#            if (this_job_active):
+            if (not (this_job_ready)):
                 jobs_active.append(job)
-        return jobs_active
+        self.jobs_active = jobs_active
+        return
 
     def run(self, job_list):
         """executes joblist in parallel
         jobList: list of jobs, containing execution path and command to be executed
         """
-        [job_list, active_job_list] = self._start_jobs(job_list, [], self.max_jobs)
-        while len(active_job_list):
+        self._create_flag_dir()
+        self.jobs_todo = job_list
+        self._set_id(self.jobs_todo)
+        self._start_jobs()
+        while len(self.jobs_active):
             if(self.verbose):
                 print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs busy"
             time.sleep(self.between_sleep_time)
-            active_job_list = self._active_jobs(active_job_list)
-            [job_list, active_job_list] = self._start_jobs(job_list, active_job_list, self.max_jobs - len(active_job_list))
+            self._check_active_jobs()
+            self._start_jobs()
         if (self.verbose):
             print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs finished"
         time.sleep(self.end_sleep_time)
+        self._cleanup_flag_dir()

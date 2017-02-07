@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import *
-from sentinel_1.functions.get_ramp import get_ramp, get_parameter
+from get_ramp import get_ramp, get_parameter
 import os, sys
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from sentinel_1.main_code.grs_config import GrsConfig
+from grs_config import GrsConfig
 import xml.etree.ElementTree as ET
 
 
