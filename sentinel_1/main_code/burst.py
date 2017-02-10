@@ -1,12 +1,12 @@
 # This files defines a class for metadata objects of sentinel images. Large part of the work depends on python readers
 # from the tops toolbox.
 
-from sentinel_1.functions.xml_query import xml_query
-from sentinel_1.functions.burst_metadata import burst_header, burst_readfiles, burst_datapoints, burst_crop, burst_precise
+from sentinel_1.functions.burst_metadata import burst_header, burst_readfiles, burst_crop
 from sentinel_1.main_code.resdata import ResData
 import warnings
 import os
 import copy
+
 
 class BurstMeta(ResData):
     # Class which holds and gathers information of a specific burst for sentinel 1 data.
@@ -21,6 +21,7 @@ class BurstMeta(ResData):
         self.burst_date = []
         self.burst_center = []
         self.burst_coverage = []
+        self.burst_corners = []
         self.swath_meta = []
 
         # The following contain the path of xml and data file for swath and burst.
@@ -28,6 +29,10 @@ class BurstMeta(ResData):
         self.swath_data = ''
         self.burst_res = ''
         self.burst_data = ''
+
+        # orbits
+        self.datapoints = []
+        self.orbit_type = []
 
         #############################################################
 
@@ -54,10 +59,6 @@ class BurstMeta(ResData):
             xml = [os.path.join(path,'annotation',x) for x in xml if x[12:14] in pol and x[6] == swath_no]
             data = [os.path.join(path,'measurement',x) for x in data if x[12:14] in pol and x[6] == swath_no]
 
-        # Check if the data is there and if the filenames coincide.
-        # print xml + str(len(xml))
-        # print data + str(len(data))
-
         if type(xml) is str:
             xml = [xml]
         if type(data) is str:
@@ -76,81 +77,18 @@ class BurstMeta(ResData):
         self.burst_num = burst_num
         self.swath_num = int(os.path.basename(xml[0])[6])
 
-    def meta_burst(self,swath_meta=[],corners=True):
-        # This function reads and stores metadata of the burst based on the xml file.
+    def meta_burst(self, swath_meta=[], corners=True):
+        # This function reads and stores metadata of the burst based on the swath xml file. If
 
-        if not swath_meta:
-            if not self.swath_meta:
-                self.swath_meta = xml_query(self.swath_xml)
-        else:
-            self.swath_meta = swath_meta
-
-        readfiles, coverage = burst_readfiles(copy.deepcopy(self.swath_meta),self.burst_num,self.swath_data,corners=corners)
+        readfiles = burst_readfiles(copy.deepcopy(self.swath_meta), self.burst_num, self.burst_center, self.burst_corners, self.swath_data)
+        crop = burst_crop(self.swath_meta, self.burst_num, self.swath_data, self.new_burst_num)
 
         # Read metadata from xml and inserts in resdata of burst
-        self.insert(readfiles,process='readfiles')
-        self.burst_coverage = coverage
-        self.burst_center = [readfiles['Scene_centre_longitude'],readfiles['Scene_centre_latitude']]
+        # Insert the different steps (readfiles, orbits and crop)
+        self.header = burst_header('master.res')
+        self.insert(self.datapoints, process=self.orbit_type)
+        self.insert(readfiles, process='readfiles')
+        self.insert(crop, process='crop')
 
-    def res_burst(self,swath_meta=[],precise_folder='', data=[]):
-        # Here the details for the res file are loaded.
 
-        if not swath_meta:
-            if not self.swath_meta:
-                self.swath_meta = xml_query(self.swath_xml)
-        else:
-            self.swath_meta = swath_meta
 
-        header = burst_header('master.res')
-        crop = burst_crop(self.swath_meta,self.burst_num,self.swath_data,self.new_burst_num)
-
-        # Read metadata from xml and inserts in resdata of burst
-        self.header = header
-
-        if data:
-            self.insert(data, process='precise_orbits')
-        elif not precise_folder:
-            datapoints = burst_datapoints(self.swath_meta,self.burst_num)
-            self.insert(datapoints,process='leader_datapoints')
-        else:
-            if os.path.exists(precise_folder):
-                datapoints = burst_precise(self.swath_meta,self.burst_num,precise_folder,type='POE')
-                if datapoints: # If it is empty, fall back to leader datapoints.
-                    self.insert(datapoints,process='precise_orbits')
-                    data = datapoints
-                else:
-                    datapoints = burst_datapoints(self.swath_meta,self.burst_num)
-                    self.insert(datapoints,process='leader_datapoints')
-                    data = []
-            else:
-                datapoints = burst_datapoints(self.swath_meta,self.burst_num)
-                self.insert(datapoints,process='leader_datapoints')
-                data = []
-
-        # Insert crop after precise orbits..
-        self.insert(crop,process='crop')
-
-        return data
-
-    def precise_orbits(self,swath_meta=[],precise_folder=''):
-        # If the precise orbits where not added in an earlier step it can be done here.
-
-        if not swath_meta:
-            swath_meta = xml_query(self.swath_xml)
-
-        if os.path.exists(precise_folder):
-            datapoints = burst_precise(swath_meta,self.burst_num,precise_folder,type='POE')
-            self.insert(datapoints,process='precise_orbits')
-            self.del_process(process='leader_datapoints')
-        else:
-            print 'Precise orbit folder does not exist'
-
-    def create_datafile(self,path='',filename=''):
-        # This function creates a datafile based on metadata from the metadata file.
-        if not self.metadata:
-            warnings.warn('There is not metadata variable created yet! Use self.meta_burst to create one.')
-        else:
-            if not filename:
-                filename = os.path.basename(self.swath_data)[0:-5] + '_burst_' + str(self.burst_num)
-                burst_dir = os.path.join(path,filename)
-                # create file (Maybe better to do this in a seperate folder)

@@ -8,7 +8,6 @@ from scipy.interpolate import interp1d
 import scipy.interpolate as inter
 
 
-
 def orbit_read(input_EOF_FileName):
 
     try:

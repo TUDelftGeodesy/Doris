@@ -1,13 +1,10 @@
 # This files defines a class for metadata objects of sentinel images. Large part of the work depends on python readers
 # from the tops toolbox.
 import os
-from sentinel_1.main_code.swath import SwathMeta
 import warnings
-import xml.etree.cElementTree as etree
-from shapely.geometry import Polygon
-import copy
 import zipfile
-import shutil
+
+from sentinel_1.main_code.swath import SwathMeta
 
 
 class ImageMeta(object):
@@ -18,7 +15,6 @@ class ImageMeta(object):
 
         # This will contain a list of swath objects
         self.swaths = []
-        self.path = path[:-4]
         self.pol = pol
         self.swath_no = swath_no
 
@@ -39,17 +35,22 @@ class ImageMeta(object):
         # slots with less bursts.
         self.burst_no = 0
 
+        # Check if the data is unzipped or not. If unzipped run the further initialization.
+        if path.endswith('.zip'):
+            self.zip_path = path
+        else:
+            self.unzip_path = path
+
         ######################################################
 
-    def init_unzipped(self):
-
+    def init_unzipped(self, unzip_path=''):
         # This function creates an image object and searches for available data and xml files. It gives an error when
         # either the path does not exist, no data or xml files can be found or the data and xml files do not match.
         # It is possible to choose one of the available polarisations or swaths using the pol and swath variables.
-        xml_dir = os.path.join(self.path, 'annotation')
+        xml_dir = os.path.join(self.unzip_path, 'annotation')
         xml = [f for f in os.listdir(xml_dir) if os.path.isfile(os.path.join(xml_dir, f))]
 
-        data_dir = os.path.join(self.path, 'measurement')
+        data_dir = os.path.join(self.unzip_path, 'measurement')
         data = [f for f in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, f))]
 
         # Select polarisation
@@ -60,8 +61,8 @@ class ImageMeta(object):
             warnings.warn('Polarisation not recognized, using default (all)')
 
         # Select swaths
-        xml = sorted([os.path.join(self.path,'annotation',x) for x in xml if x[6] in self.swath_no])
-        data = sorted([os.path.join(self.path,'measurement',x) for x in data if x[6] in self.swath_no])
+        xml = sorted([os.path.join(self.unzip_path,'annotation',x) for x in xml if x[6] in self.swath_no])
+        data = sorted([os.path.join(self.unzip_path,'measurement',x) for x in data if x[6] in self.swath_no])
 
         # Check if the data is there and if the filenames coincide.
         if len(xml) == 0:
@@ -75,8 +76,12 @@ class ImageMeta(object):
         self.swaths_xml = xml
         self.swaths_data = data
 
-    def unzip(self):
-        # This function unzips the corresponding image
+        # orbit information for this image
+        self.orbit = ''
+
+    def unzip(self, unzip_path=''):
+        # This function unzips the corresponding image, based on some requirements.
+        # Note that this is a backup function, while most unpacking is done by load_shape_unzip.py
         if not os.path.exists(self.path):
             try:
                 zip = zipfile.ZipFile(self.path + '.zip')
@@ -94,57 +99,25 @@ class ImageMeta(object):
         a=1
         #shutil.rmtree(self.path, ignore_errors=True)
 
-    def meta_swath(self):
+    def meta_swath(self, precise_folder=''):
         # This function reads and stores metadata of different swaths in the swath objects.
+        orbits = []
+
         if not self.swaths:
             for i in range(len(self.swaths_xml)):
                 xml = self.swaths_xml[i]
                 data = self.swaths_data[i]
 
-                swath = SwathMeta(xml=xml,data=data)
+                # Initialize swath and load data from xml file
+                swath = SwathMeta(xml=xml, data=data)
                 swath.meta_swath()
+
+                # Calculate the orbits for this swath and reuse it for other swaths if it is already calculated
+                if not orbits:
+                    orbits = swath.orbits_swath(precise_folder=precise_folder)
+                else:
+                    swath.orbits = orbits
+
+                # Define the resdata for the individual burst. And append the swath to the image object.
+                swath.meta_burst()
                 self.swaths.append(swath)
-
-    def read_kml(self):
-        # This function reads the kml file of this image, which can be used to select relevant images for a datastack
-
-        # First check is .kml file exist
-            # self.image_kml = os.path.join(os.path.dirname(os.path.dirname(self.swaths_xml[0])), 'preview' , 'map-overlay.kml')
-        self.image_kml = self.path[:-5] + '.kml'
-        if not os.path.exists(self.image_kml):
-            warnings.warn('.kml file does not exist.')
-            return False
-
-        try:
-            in_kml = etree.parse(self.image_kml)
-            in_kml = in_kml.getroot()
-            coor = in_kml[0][1][1][2][0].text
-            coor = [i.split(',') for i in coor.split(' ')]
-            self.coverage = Polygon([[float(i[0]),float(i[1])] for i in coor])
-            return True
-        except:
-            warnings.warn('.kml file is corrupt')
-            return False
-
-    def meta_burst(self,corners=True,precise_dir=''):
-        # This function reads and stores metadata of different bursts in the bursts objects.
-        if not self.swaths:
-            self.meta_swath()
-
-        print(precise_dir)
-
-        for i in range(len(self.swaths)):
-            if not self.swaths[0].bursts:
-                for i in range(len(self.swaths)):
-                    self.swaths[i].meta_burst(corners=corners)
-            elif corners == True and not self.swaths[0].bursts[0].burst_coverage:
-                for i in range(len(self.swaths)):
-                    self.swaths[i].meta_burst(corners=corners)
-
-    def write_res(self):
-        # This function writes all metadata and performed processing steps to a .res file
-        print 'In progress!'
-
-    def write_xml(self):
-        # This function writes all metadata and performed processing steps to a .xml file
-        print 'In progress!'

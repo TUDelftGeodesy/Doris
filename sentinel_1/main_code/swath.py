@@ -5,6 +5,8 @@ from sentinel_1.functions.xml_query import xml_query
 import warnings
 import os
 from sentinel_1.main_code.burst import BurstMeta
+from sentinel_1.functions.swath_metadata import burst_coverage, swath_coverage, swath_precise
+
 
 class SwathMeta(object):
     # Class which stores and gathers information of a swath in a sentinel dataset
@@ -21,9 +23,13 @@ class SwathMeta(object):
         self.swath_no = ''
         self.swath_pol = ''
 
-        # These variables contain the metadata and the convex hull of the burst
+        # These variables contain the metadata and the convex hull of the bursts
         self.metadata = []
         self.coverage = []
+        self.burst_centers = []
+        self.burst_corners = []
+        self.burst_shapes = []
+        self.orbits = []
 
         # This function creates an swath object and searches for available data and xml files. It gives an error when
         # either the path does not exist, no data or xml files can be found or the data and xml files do not match.'
@@ -71,26 +77,38 @@ class SwathMeta(object):
     def meta_swath(self):
         # This function reads and stores metadata of different swaths in the swath objects.
         self.metadata = xml_query(self.swath_xml)
+        corners, self.coverage = swath_coverage(self.swath_xml)
+        self.burst_centers, self.burst_corners, self.burst_shapes = burst_coverage(self.metadata)
 
-    def meta_burst(self,corners=True,precise_folder=''):
+    def orbits_swath(self, precise_folder=''):
+        # This functions loads the precise orbits for this swath
+        if not precise_folder:
+            print('xml information on orbit is used because no precise folder is specified')
+            orbits = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='XML')
+        else:
+            orbits = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='XML')
+            self.orbits = orbits
+
+        return orbits
+
+
+    def meta_burst(self):
         # This function reads and stores metadata of different bursts in the bursts objects.
 
         if not self.metadata:
             self.meta_swath()
+        if not self.orbits:
+            self.orbits_swath()
 
         bursts_num = len(self.metadata['aux']['azimuthTimeStart'])
+
         if self.bursts:
             self.bursts = []
 
         for no in range(bursts_num):
             self.bursts.append(BurstMeta(path='',swath_no=self.swath_no, pol=self.swath_pol, burst_num=no + 1,
                                          xml=self.swath_xml, data=self.swath_data))
-            self.bursts[no].meta_burst(swath_meta=self.metadata,corners=corners)
-
-    def write_res(self):
-        # This function writes all metadata and performed processing steps to a .res file
-        print 'In progress!'
-
-    def write_xml(self):
-        # This function writes all metadata and performed processing steps to a .xml file
-        print 'In progress!'
+            self.bursts[no].burst_center = self.burst_centers[no]
+            self.bursts[no].burst_coverage = self.burst_shapes[no]
+            self.bursts[no].burst_corners = self.burst_corners[no]
+            self.bursts[no].meta_burst(swath_meta=self.metadata)

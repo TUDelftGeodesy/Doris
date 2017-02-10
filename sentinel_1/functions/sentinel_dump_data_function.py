@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 import os,sys,time
+
+if __name__ == "__main__":
+    # If calling script directly we have to load the package first to our python path
+    folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    print(folder)
+    sys.path.extend([folder])
+
 import sentinel_1.main_code.resdata as resdata
 
 
-def dump_data(input_file,res_file,output_file='',coordinates=[]):
+def dump_data(input_file,res_file, output_file='', coordinates=[]):
     # This function dumps a .raw file from the original .tif sentinel data. The input_file is the .tif file and the
     # res_file is the .res file that corresponds with the output file. Coordinates is an optional variable which can be
     # called if the lines and pixels are not yet defined in the .res file.
@@ -48,7 +55,6 @@ def dump_data(input_file,res_file,output_file='',coordinates=[]):
 
     if outputWinFirstPix is not None:
         cmd = cmd + (' -srcwin %s %s %s %s' % (outputWinFirstPix,outputWinFirstLine,outputWinLastPix-outputWinFirstPix+1,outputWinLastLine-outputWinFirstLine+1))
-        #print cmd
 
     failure = os.system(cmd)
     if failure:
@@ -59,5 +65,13 @@ def dump_data(input_file,res_file,output_file='',coordinates=[]):
         os.remove(os.path.splitext(output_file)[0]+'.hdr')
         os.remove(os.path.splitext(output_file)[0]+'.hdr.aux.xml')
 
+
+# Actually execute the code to unzip one data file.
+if __name__ == "__main__":
+
+    input_file = sys.argv[1]
+    res_file = sys.argv[2]
+
+    dump_data(input_file, res_file, output_file='', coordinates=[])
 
 

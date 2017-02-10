@@ -50,7 +50,13 @@ class Jobs(object):
         #
         # returns machine level unique job Id
         #
-        return job[0].replace("/","") + "." + job[1].replace("/","").replace(" ","") + self.pid
+        id = job[0].replace("/", "") + "." + job[1].replace("/", "").replace(" ", "") + self.pid
+        if len(id.split('/')[-1]) > 255:  # If the string becomes to long, we reduce the long paths to max. 40 characters.
+            dat = [a[- min(40, len(a)):] + ' ' for a in job[1].split(' ')]
+            dat = ' '.join(dat)
+            id = job[0].replace("/", "") + "." + dat.replace("/", "").replace(" ", "") + self.pid
+
+        return id
 
     def _start_jobs(self, jobs, active_jobs, job_count):
         #
