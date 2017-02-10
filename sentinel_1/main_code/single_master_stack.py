@@ -6,14 +6,9 @@ from baselines import baselines
 import copy
 from copy import deepcopy
 import shutil
-from resdata import ResData
-from ESD_functions import get_f_DC_difference, get_offset, get_coordinates, freadbk
-from scipy import linalg
-import resdata as resdata
-from dorisparameters import DorisParameters
+from sentinel_1.main_code.resdata import ResData
+from sentinel_1.main_code.dorisparameters import DorisParameters
 import collections
-import scipy
-
 from jobs import Jobs
 
 
@@ -171,10 +166,6 @@ class SingleMaster(object):
             if 'ifgs' in self.full_swath[date].keys():
                 if self.full_swath[date]['ifgs'].process_control[step] == '1':
                     self.coreg_dates.remove(date)
-
-    def report(self):
-        # This function reports on which steps are already performed based on metadata
-        print 'In progress!'
 
     def master(self,master_date):
         # Load master date

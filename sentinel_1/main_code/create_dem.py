@@ -442,7 +442,7 @@ def add_egm96(dem_tiff, egm_tiff, data_folder):
 
         # Get georeference
         latlim = [-90.125, 90.125]
-        lonlim = [-0.125, 359.875]
+        lonlim = [0.125, 359.875]
         dlat = 0.25
         dlon = 0.25
         egm_data = create_georeference(latlim, lonlim, dlat, dlon, 'float32', egm_source_tiff)

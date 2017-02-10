@@ -73,10 +73,12 @@ class DorisSentinel1(object):
         profile.log_time_stamp('start')
         # Create a datastack using the stack function
         stack = StackData(track_dir=track_dir,shape_dat=shape_dat,start_date=start_date,end_date=end_date,polarisation='vv',path=stack_path,db_type=2,precise_dir=precise_orbits)
-        profile.log_time_stamp('StackData')
-        # All images which correspond with the start and end date are selected
+        #profile.log_time_stamp('StackData')
+        # Select the images which are new in this datastack.
         stack.select_image()
         # Then these images are unzipped
+        stack.check_new_images(master=master_date)
+        # All images which correspond with the start and end date are selected
         stack.unpack_image()
         # Based on the shape file bursts are selected for one date
 
@@ -100,7 +102,7 @@ class DorisSentinel1(object):
         stack.write_shapes()
         profile.log_time_stamp('stack preparation finished')
         # Finally delete unzipped images
-        # stack.del_unpacked_image()
+        stack.del_unpacked_image()
 
         import single_master_stack
 

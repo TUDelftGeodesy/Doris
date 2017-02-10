@@ -4,9 +4,8 @@ import os
 import numpy as np
 import collections
 from datetime import datetime
-import time
+from resdata import ResData
 from shapely.geometry import Polygon
-from precise_read import interpolate_orbit, orbit_read
 
 
 def burst_header(resID):
@@ -28,84 +27,7 @@ def burst_header(resID):
     return meta
 
 
-def pixel_location(orbit_info,line,pixel,burst_num):
-    # This function uses orbit + lat/lon/height information of a known location, to calculate the lat/lon/height of
-    # another location. Info of the first is stored in the orbit_info. Pixel location is given by variables line and pixel.
-
-    norm_orbit, norm_orbit_line = intrp_orbit(line,orbit_info,burst_num)
-    coord_xyz = lph2xyz(line, pixel, orbit_info, norm_orbit_line,
-                        orbit_info['centroid_lon'], orbit_info['centroid_lat'], orbit_info['height'])
-    phi_lam_height = xyz2ell(coord_xyz)
-
-    return phi_lam_height
-
-
-def burst_location(aux,burst_num,corners=False):
-
-    # Create orbit dict to interpolate burst lat/lon/height locations
-    orbit_info = dict()
-    orbit_info['orbitTime'] = aux['orbitTime']
-    orbit_info['orbitX'] = aux['orbitX']
-    orbit_info['orbitY'] = aux['orbitY']
-    orbit_info['orbitZ'] = aux['orbitZ']
-    orbit_info['azimuthPRF'] = aux['azimuthPRF']
-    orbit_info['azimuthTimeStart'] = aux['azimuthTimeStart']
-    orbit_info['rangeTimePix'] = aux['rangeTimePix']
-    orbit_info['rangeRSR'] = aux['rangeRSR']
-
-    # Calculate centre of burst based on swath orbit information.
-    # Image centroid parameters
-    line_location_index_down    = burst_num * np.array(aux['imageLines'][0], 'int') # Last line
-    line_location_index_up      = (burst_num - 1) * np.array(aux['imageLines'][0], 'int') # First line may be not accurate
-    cen_line                    = (line_location_index_down + line_location_index_up) / 2 - line_location_index_up
-    cen_pixel                   = np.array(aux['imagePixels'][0], 'int') / 2
-
-    # Find the lon/lat information for this burst and calculate image centroid lat/lon/height.
-    line_nums   = np.array(aux['sceneCenLine_number'],'int')
-    pixel_nums  = np.array(aux['sceneCenPixel_number'],'int')
-    distances   = (line_nums - cen_line)**2 + (cen_pixel - pixel_nums)**2
-    id          = distances.argmin()
-    orbit_info['centroid_lat'] = float(aux['sceneCenLat'][id])
-    orbit_info['centroid_lon'] = float(aux['sceneCenLon'][id])
-    orbit_info['height'] = float(aux['height'][id])
-
-    # Finally calculate the new coordinates
-    phi_lam_height = pixel_location(orbit_info,cen_line,cen_pixel,burst_num-1)
-    lon = phi_lam_height[1]
-    lat = phi_lam_height[0]
-    coverage = list()
-
-    # If we also want to calculate the coordinates of the corners in our script.
-    if corners:
-        # First update lon/lat/height because corners are calculated with reference to the centre of the burst.
-        orbit_info['centroid_lat'] =  phi_lam_height[0]
-        orbit_info['centroid_lon'] =  phi_lam_height[1]
-        orbit_info['height'] = phi_lam_height[2]
-
-        # Now calculate the coordinates of the corners.
-        line        = ['', '']
-        line[0]     = int(aux['lastValidSample'][burst_num-1].split(' ')[0:int(aux['imageLines'][0])/2].count('-1'))
-        line[1]     = int(aux['imageLines'][0]) - aux['lastValidSample'][burst_num-1].split(' ')[:int(aux['imageLines'][0])/2:-1].count('-1')
-        firstValidSample_num        =" ".join(aux['firstValidSample']).split(' ')
-        firstValidSample_num_new    =list(set(firstValidSample_num))
-        firstValidSample_num_new.sort()
-        firstValidSample_num_new.remove('-1')
-        pixel       = ['', '']
-        pixel[0]    = int(firstValidSample_num_new[0])+1
-        pixel[1]    = int(max("".join(aux['lastValidSample']).split(' ')))+1
-
-        lin_pix = [[line[0],pixel[0]],[line[1],pixel[0]],[line[1],pixel[1]],[line[0],pixel[1]]]
-
-        for xy in lin_pix:
-            lat_lon = pixel_location(orbit_info, xy[0], xy[1], burst_num-1)
-            coverage.append([lat_lon[1],lat_lon[0]])
-
-        coverage = Polygon(coverage)
-
-    return lat, lon, coverage
-
-
-def burst_readfiles(meta,burst_num,swath_data,corners = False):
+def burst_readfiles(meta, burst_num, burst_centers, burst_borders, swath_data):
     # First copy swath metadata for burst and create a georef dict which stores information about the geo reference of
     # the burst.
     meta['Burst_number_index'] = str(burst_num)
@@ -114,9 +36,16 @@ def burst_readfiles(meta,burst_num,swath_data,corners = False):
     meta.pop('aux')
 
     # First find coordinates of center and optionally the corners
-    lat, lon, coverage = burst_location(aux,burst_num=burst_num,corners=corners)
-    meta['Scene_centre_longitude'] = lon
-    meta['Scene_centre_latitude'] = lat
+    meta['Scene_centre_longitude'] = str(burst_centers[burst_num-1][1])
+    meta['Scene_centre_latitude'] = str(burst_centers[burst_num-1][1])
+    meta['Scene_ul_corner_latitude'] = str(burst_borders[burst_num - 1][0][0])
+    meta['Scene_ur_corner_latitude'] = str(burst_borders[burst_num - 1][1][0])
+    meta['Scene_lr_corner_latitude'] = str(burst_borders[burst_num - 1][2][0])
+    meta['Scene_ll_corner_latitude'] = str(burst_borders[burst_num - 1][3][0])
+    meta['Scene_ul_corner_longitude'] = str(burst_borders[burst_num - 1][0][1])
+    meta['Scene_ur_corner_longitude'] = str(burst_borders[burst_num - 1][1][1])
+    meta['Scene_lr_corner_longitude'] = str(burst_borders[burst_num - 1][2][1])
+    meta['Scene_ll_corner_longitude'] = str(burst_borders[burst_num - 1][3][1])
 
     # Find doppler centroid frequency and azimuth reference time
     doppler_times = [np.datetime64(aux['doppler_azimuth_Time'][i] + '-00') for i in range(len(aux['doppler_azimuth_Time']))]
@@ -168,71 +97,7 @@ def burst_readfiles(meta,burst_num,swath_data,corners = False):
     meta['Number_of_lines_original'] = aux['imageLines'][0]
     meta['Number_of_pixels_original'] = aux['imagePixels'][0]
 
-    return meta, coverage
-
-
-def burst_datapoints(meta,burst_num):
-    # First check which datapoints should be included.
-    burst_start_time = np.datetime64(meta['aux']['azimuthTimeStart'][burst_num-1] + '-00')
-
-    swath_start = burst_start_time - np.timedelta64(100,'s')
-    swath_stop = burst_start_time + np.timedelta64(100,'s')
-
-    datapoints = collections.OrderedDict()
-
-    datapoints['row_1'] = ['t(s)','X(m)','Y(m)','Z(m)']
-    t = meta['aux']['orbitTime']
-    x = meta['aux']['orbitX']
-    y = meta['aux']['orbitY']
-    z = meta['aux']['orbitZ']
-    datapoints['NUMBER_OF_DATAPOINTS'] = str(len(t))
-
-    i = 0
-    for n in range(len(t)):
-        t_point = np.datetime64(t[n])
-
-        if t_point > swath_start and t_point < swath_stop:
-            t_s = datetime.strptime(t[n],'%Y-%m-%dT%H:%M:%S.%f')
-            t_s = float(t_s.hour * 3600 + t_s.minute * 60 + t_s.second) + float(t_s.microsecond) / 1000000
-            t_s = "%.6f" % t_s
-            datapoints['row_' + str(i + 2)] = [t_s, x[n], y[n], z[n]]
-            i += 1
-
-    datapoints['NUMBER_OF_DATAPOINTS'] = str(i)
-
-    return datapoints
-
-
-def burst_precise(meta,burst_num,precise_folder,type='POE'):
-    # This function utilizes the orbit_read script to read precise orbit files and export them to the resfile format.
-    # Additionally it removes the burst_datapoints part, as it is not needed anymore.
-
-    # First check whether the precise orbit file exists and load data if that is the case.
-
-    t_s = datetime.strptime(meta['aux']['azimuthTimeStart'][burst_num-1], '%Y-%m-%dT%H:%M:%S.%f')
-    date_orbit = int(t_s.hour * 3600 + t_s.minute * 60 + t_s.second)
-
-    input_time = np.arange(date_orbit-100,date_orbit+100)
-    date = time.mktime(time.strptime(meta['aux']['azimuthTimeStart'][burst_num-1], '%Y-%m-%dT%H:%M:%S.%f'))
-
-    X,Y,Z=interpolate_orbit(precise_folder, input_time, date, type, 'spline', satellite =meta['Product type specifier'])
-
-    if len(X) == 0 and type == 'POE':
-        X, Y, Z = interpolate_orbit(precise_folder, input_time, date, 'RES', 'spline', satellite =meta['Product type specifier'])
-        print 'There is no precise orbit file available, we try the restituted files'
-
-    if len(X) == 0:
-        print 'There is no precise or restituted orbit file available'
-        return
-
-    datapoints = collections.OrderedDict()
-    datapoints['row_1'] = ['t(s)','X(m)','Y(m)','Z(m)']
-    datapoints['NUMBER_OF_DATAPOINTS'] = str(len(input_time))
-
-    for n in range(len(input_time)):
-        datapoints['row_' + str(n + 2)] = [str(input_time[n]), str(X[n]), str(Y[n]), str(Z[n])]
-
-    return datapoints
+    return meta
 
 
 def burst_crop(meta,burst_num,swath_data,new_burst_num):
@@ -265,3 +130,20 @@ def burst_crop(meta,burst_num,swath_data,new_burst_num):
 
     return crop
 
+
+def center_shape_from_res(resfile):
+    # This function reads the shape and center of a burst from a .res file.
+
+    res = ResData(resfile)
+    res.res_read()
+    meta = res.processes['readfiles']
+
+    center = (float(meta['Scene_centre_latitude']), float(meta['Scene_centre_longitude']))
+    ul = (float(meta['Scene_ul_corner_latitude']), float(meta['Scene_ul_corner_longitude']))
+    ur = (float(meta['Scene_ur_corner_latitude']), float(meta['Scene_ur_corner_longitude']))
+    lr = (float(meta['Scene_lr_corner_latitude']), float(meta['Scene_lr_corner_longitude']))
+    ll = (float(meta['Scene_ll_corner_latitude']), float(meta['Scene_ll_corner_longitude']))
+
+    coverage = Polygon([ul, ur, lr, ll])
+
+    return center, coverage

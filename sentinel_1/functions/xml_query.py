@@ -91,6 +91,7 @@ def xml_query(input_xml):
         ('sceneCenLat'                          , './/geolocationGrid/geolocationGridPointList/geolocationGridPoint/latitude'),
         ('sceneCenLon'                          , './/geolocationGrid/geolocationGridPointList/geolocationGridPoint/longitude'),
         ('height'                               , './/geolocationGrid/geolocationGridPointList/geolocationGridPoint/height'),
+        ('azimuthTime'                          , './/geolocationGrid/geolocationGridPointList/geolocationGridPoint/azimuthTime'),
         ('sceneRecords'                         , './/imageDataInfo/imageRaster/numberOfRows'),
         ('orbitABS'                             , './/adsHeader/absoluteOrbitNumber'),
         ('orbitTime'                            , './/generalAnnotation/orbitList/orbit/time'),
