@@ -36,12 +36,17 @@ class ImageMeta(object):
         self.burst_no = 0
 
         # Check if the data is unzipped or not. If unzipped run the further initialization.
+        self.zip_path = ''
+        self.unzip_path = ''
         if path.endswith('.zip'):
             self.zip_path = path
         else:
             self.unzip_path = path
 
-        ######################################################
+        # orbit information for this image
+        self.orbit = ''
+
+    ######################################################
 
     def init_unzipped(self, unzip_path=''):
         # This function creates an image object and searches for available data and xml files. It gives an error when
@@ -64,20 +69,15 @@ class ImageMeta(object):
         xml = sorted([os.path.join(self.unzip_path,'annotation',x) for x in xml if x[6] in self.swath_no])
         data = sorted([os.path.join(self.unzip_path,'measurement',x) for x in data if x[6] in self.swath_no])
 
-        # Check if the data is there and if the filenames coincide.
-        if len(xml) == 0:
-            warnings.warn('There are no xml files')
-        else:
-            for x in range(0,len(xml)):
-                if os.path.basename(xml[x])[0:-3] != os.path.basename(data[x])[0:-4]:
-                    warnings.warn('xml files and data files are not the same')
-
         # Initialize function values
-        self.swaths_xml = xml
+        dat = [os.path.basename(d) for d in data]
+        self.swaths_xml = [x for x in xml if os.path.basename(x)[:-4] + '.tiff' in dat]
         self.swaths_data = data
 
-        # orbit information for this image
-        self.orbit = ''
+        # Check if the data is there and if the filenames coincide.
+        if len(self.swaths_xml) == 0:
+            warnings.warn('There are no xml files')
+
 
     def unzip(self, unzip_path=''):
         # This function unzips the corresponding image, based on some requirements.
@@ -94,14 +94,12 @@ class ImageMeta(object):
         else:
             return True
 
-    def del_unzip(self):
-        # This function deletes the unzipped files.
-        a=1
-        #shutil.rmtree(self.path, ignore_errors=True)
-
     def meta_swath(self, precise_folder=''):
         # This function reads and stores metadata of different swaths in the swath objects.
         orbits = []
+
+        if not self.swaths_xml:
+            self.init_unzipped()
 
         if not self.swaths:
             for i in range(len(self.swaths_xml)):

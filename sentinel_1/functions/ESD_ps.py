@@ -18,7 +18,8 @@ def save_overlapping(stack_folder, master_date, dates, overlap):
 
     esd_folder = os.path.join(stack_folder, 'esd')
     if not os.path.exists(esd_folder):
-        os.mkdir(esd_folder)
+        print('ESD folder does not exist')
+        return
     overlap_path = os.path.join(stack_folder, 'esd', overlap)
     if not os.path.exists(overlap_path):
         os.mkdir(overlap_path)

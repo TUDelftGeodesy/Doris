@@ -27,7 +27,7 @@ def burst_header(resID):
     return meta
 
 
-def burst_readfiles(meta, burst_num, burst_centers, burst_borders, swath_data):
+def burst_readfiles(meta, burst_num, burst_center, burst_border, swath_data):
     # First copy swath metadata for burst and create a georef dict which stores information about the geo reference of
     # the burst.
     meta['Burst_number_index'] = str(burst_num)
@@ -36,16 +36,16 @@ def burst_readfiles(meta, burst_num, burst_centers, burst_borders, swath_data):
     meta.pop('aux')
 
     # First find coordinates of center and optionally the corners
-    meta['Scene_centre_longitude'] = str(burst_centers[burst_num-1][1])
-    meta['Scene_centre_latitude'] = str(burst_centers[burst_num-1][1])
-    meta['Scene_ul_corner_latitude'] = str(burst_borders[burst_num - 1][0][0])
-    meta['Scene_ur_corner_latitude'] = str(burst_borders[burst_num - 1][1][0])
-    meta['Scene_lr_corner_latitude'] = str(burst_borders[burst_num - 1][2][0])
-    meta['Scene_ll_corner_latitude'] = str(burst_borders[burst_num - 1][3][0])
-    meta['Scene_ul_corner_longitude'] = str(burst_borders[burst_num - 1][0][1])
-    meta['Scene_ur_corner_longitude'] = str(burst_borders[burst_num - 1][1][1])
-    meta['Scene_lr_corner_longitude'] = str(burst_borders[burst_num - 1][2][1])
-    meta['Scene_ll_corner_longitude'] = str(burst_borders[burst_num - 1][3][1])
+    meta['Scene_centre_longitude'] = str(burst_center[0])
+    meta['Scene_centre_latitude'] = str(burst_center[1])
+    meta['Scene_ul_corner_latitude'] = str(burst_border[0][1])
+    meta['Scene_ur_corner_latitude'] = str(burst_border[1][1])
+    meta['Scene_lr_corner_latitude'] = str(burst_border[2][1])
+    meta['Scene_ll_corner_latitude'] = str(burst_border[3][1])
+    meta['Scene_ul_corner_longitude'] = str(burst_border[0][0])
+    meta['Scene_ur_corner_longitude'] = str(burst_border[1][0])
+    meta['Scene_lr_corner_longitude'] = str(burst_border[2][0])
+    meta['Scene_ll_corner_longitude'] = str(burst_border[3][0])
 
     # Find doppler centroid frequency and azimuth reference time
     doppler_times = [np.datetime64(aux['doppler_azimuth_Time'][i] + '-00') for i in range(len(aux['doppler_azimuth_Time']))]
@@ -138,11 +138,11 @@ def center_shape_from_res(resfile):
     res.res_read()
     meta = res.processes['readfiles']
 
-    center = (float(meta['Scene_centre_latitude']), float(meta['Scene_centre_longitude']))
-    ul = (float(meta['Scene_ul_corner_latitude']), float(meta['Scene_ul_corner_longitude']))
-    ur = (float(meta['Scene_ur_corner_latitude']), float(meta['Scene_ur_corner_longitude']))
-    lr = (float(meta['Scene_lr_corner_latitude']), float(meta['Scene_lr_corner_longitude']))
-    ll = (float(meta['Scene_ll_corner_latitude']), float(meta['Scene_ll_corner_longitude']))
+    center = (float(meta['Scene_centre_longitude']), float(meta['Scene_centre_latitude']))
+    ul = (float(meta['Scene_ul_corner_longitude']), float(meta['Scene_ul_corner_latitude']))
+    ur = (float(meta['Scene_ur_corner_longitude']), float(meta['Scene_ur_corner_latitude']))
+    lr = (float(meta['Scene_lr_corner_longitude']), float(meta['Scene_lr_corner_latitude']))
+    ll = (float(meta['Scene_ll_corner_longitude']), float(meta['Scene_ll_corner_latitude']))
 
     coverage = Polygon([ul, ur, lr, ll])
 

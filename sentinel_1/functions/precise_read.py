@@ -3,7 +3,7 @@
 
 import time
 import numpy as np
-import os, re
+import os, re, sys
 from scipy.interpolate import interp1d
 import scipy.interpolate as inter
 
@@ -46,62 +46,48 @@ def orbit_read(input_EOF_FileName):
            vars()[key] = []
 
         for nodes in inTree.findall(queryList[key]):
-
-            if key == 'dataDcPolynomial':
-
-                vars()[key].append(nodes.text)
-                container[keyTemp] = vars()[keyTemp]
-            else:
-                vars()[key].append(nodes.text)
+            vars()[key].append(nodes.text)
 
         container[key] = vars()[key]
     return container
 
 #--------------------------------------------------------
-def interpolate_orbit(input_orbit_dir,input_time,date,input_orbit_type,input_interpolation_method, satellite='S1A'):
+def interpolate_orbit(input_orbit_dir, date, input_orbit_type, input_interpolation_method, satellite='S1A'):
 
-    L=os.listdir(input_orbit_dir)
-    orbit_path_abs=os.path.abspath(input_orbit_dir)
-    p=re.compile(r"\d+")
+    orbit_time = time.mktime(time.strptime(date ,'%Y-%m-%dT%H:%M:%S.%f'))
+    date_start = time.mktime(time.strptime(date[:10] ,'%Y-%m-%d'))
 
-    Orbit_info=[]
-    orbit_start=0
-    orbit_end=0
-    for temp_L in L:
-        if temp_L.startswith(satellite):
-            if input_orbit_type=='POE' and satellite=='S1A':
-                Index_result=re.findall("^S1A_OPER_AUX_POEORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
-            elif input_orbit_type=='RES' and satellite=='S1A':
-                Index_result=re.findall("^S1A_OPER_AUX_RESORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
-            elif input_orbit_type=='POE' and satellite=='S1B':
-                Index_result=re.findall("^S1B_OPER_AUX_POEORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
-            elif input_orbit_type=='RES' and satellite=='S1B':
-                Index_result=re.findall("^S1B_OPER_AUX_RESORB_OPOD_\d{8}T\d{6}_V\d{8}T\d{6}_\d{8}T\d{6}.EOF",temp_L)
-            if len(Index_result)!=0:
-                orbit_end_time=p.findall(str(Index_result))[-1]
-                orbit_end_day =p.findall(str(Index_result))[-2]
-                orbit_end = time.mktime(time.strptime(orbit_end_day+orbit_end_time,'%Y%m%d%H%M%S'))
+    L = os.listdir(input_orbit_dir)
+    Orbit_info = []
 
-                orbit_start_time=p.findall(str(Index_result))[-3]
-                orbit_start_day =p.findall(str(Index_result))[-4]
-                orbit_start=time.mktime(time.strptime(orbit_start_day+orbit_start_time,'%Y%m%d%H%M%S'))
+    if input_orbit_type == 'POE' and satellite == 'S1A':
+        orbit_type = 'S1A_OPER_AUX_POEORB_OPOD_'
+    elif input_orbit_type == 'RES' and satellite == 'S1A':
+        orbit_type = 'S1B_OPER_AUX_RESORB_OPOD_'
+    elif input_orbit_type == 'POE' and satellite == 'S1B':
+        orbit_type = 'S1A_OPER_AUX_POEORB_OPOD_'
+    elif input_orbit_type == 'RES' and satellite == 'S1B':
+        orbit_type = 'S1B_OPER_AUX_RESORB_OPOD_'
 
-            Tuple_orbit=(0,0,0,0)
-            if (date > orbit_start) and (date < orbit_end):
+    for d in L:
+        if d.startswith(orbit_type):
+            start_time = time.mktime(time.strptime(d[42:57], '%Y%m%dT%H%M%S'))
+            end_time = time.mktime(time.strptime(d[58:73], '%Y%m%dT%H%M%S'))
+            if (start_time < orbit_time) and (end_time > orbit_time):
 
-                meta = orbit_read(os.path.join(input_orbit_dir, temp_L))
+                meta = orbit_read(os.path.join(input_orbit_dir, d))
+                print(d)
 
-                temp_L=orbit_path_abs+'/'+temp_L
                 for i in range(len(meta['orbitTime'])):
 
-                    orbitTime = time.mktime(time.strptime(meta['orbitTime'][i][4:],'%Y-%m-%dT%H:%M:%S.%f'))
-                    if (date > orbitTime-290) and (date < orbitTime+290):
-                        print(temp_L)
+                    point_time = time.mktime(time.strptime(meta['orbitTime'][i][4:-7], '%Y-%m-%dT%H:%M:%S'))
+                    if (point_time > orbit_time-290) and (point_time < orbit_time+290):
 
                         Tuple_orbit=(float(hms2sec(meta['orbitTime'][i][4:].split('T')[1])),\
                                      float(meta['orbitX'][i]), float(meta['orbitY'][i]),\
-                                     float(meta['orbitZ'][i]) )
+                                     float(meta['orbitZ'][i]))
                         Orbit_info.append(Tuple_orbit)
+
     set_list=[]
     Orbit_info=sorted(Orbit_info)
 
@@ -125,7 +111,7 @@ def interpolate_orbit(input_orbit_dir,input_time,date,input_orbit_type,input_int
         orbit_Z.append(element[3])
 
     if len(orbit_X) == 0:
-        return orbit_X,orbit_Y,orbit_Z
+        return [], orbit_X, orbit_Y, orbit_Z
 
     del Orbit_info
     orbit_Time=np.array(orbit_Time)
@@ -141,11 +127,12 @@ def interpolate_orbit(input_orbit_dir,input_time,date,input_orbit_type,input_int
         spl_y = inter.InterpolatedUnivariateSpline (orbit_Time,orbit_Y)
         spl_z = inter.InterpolatedUnivariateSpline (orbit_Time,orbit_Z)
 
+    input_time = np.arange((orbit_time - date_start) - 100, (orbit_time - date_start) + 100).astype(dtype='int32')
     out_orbit_X=spl_x(input_time)
     out_orbit_Y=spl_y(input_time)
     out_orbit_Z=spl_z(input_time)
 
-    return out_orbit_X,out_orbit_Y,out_orbit_Z
+    return input_time, out_orbit_X, out_orbit_Y, out_orbit_Z
 
 #----------------------------------------------------------------
 def hms2sec(hmsString,convertFlag='float'):

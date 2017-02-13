@@ -39,7 +39,7 @@ def dump_data(input_file,res_file, output_file='', coordinates=[]):
     if not output_file:
         if res_vars.process_control['crop'] == '1':
             if 'Data_output_file' in res_vars.processes['crop'].keys():
-                output_file = os.path.join(os.path.basename(res_file), res_vars.processes['crop']['Data_output_file'])
+                output_file = os.path.join(os.path.dirname(res_file), res_vars.processes['crop']['Data_output_file'])
         if not output_file:
             output_file = res_file.split(".")[0] + '.raw'
 

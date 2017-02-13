@@ -6,6 +6,8 @@
 
 import sys
 import os
+from jobs import Jobs
+
 
 class DorisSentinel1(object):
 
@@ -15,6 +17,8 @@ class DorisSentinel1(object):
         print 'start sentinel 1 processing'
 
         print(sys.path)
+
+        Jobs.id = -1000
 
         from sentinel_1.main_code.create_datastack import prepare_datastack
         from sentinel_1.main_code.dorisparameters import DorisParameters

@@ -95,9 +95,6 @@ class DorisSentinel1(object):
         # A few auxiliary functions which are not strictly necessary.
         # Calculate the coverage of the different sub-swaths
         stack.swath_coverage()
-        # Calculate the centre point of the different burst and create a list with all available burst. (To see whether all data
-        # files are available for these dates.)
-        # stack.lat_lon_availability()
         # Write the shapes from the bursts and swaths to a shapefile to check in a GIS program like Qgis.
         stack.write_shapes()
         profile.log_time_stamp('stack preparation finished')
@@ -112,7 +109,6 @@ class DorisSentinel1(object):
                                                       input_files=input_files, processing_folder=stack_path,
                                                       doris_path=doris_path, cpxfiddle_folder=cpxfiddle_folder)
 
-        # These lines can be used if you want to skip the initialize step because a some calculation steps are already performed....
         # These lines can be used if you want to skip the initialize step because a some calculation steps are already performed....
         #del processing.stack[master_date]
         #del processing.full_swath[master_date]
@@ -166,11 +162,11 @@ class DorisSentinel1(object):
         profile.log_time_stamp('ESD_correct')
         # profile.log_time_stamp('interferogram')
         # Combine all slave bursts to full swath
-        processing.combine_slave()
-        profile.log_time_stamp('combine_slave')
+        #processing.combine_slave()
+        #profile.log_time_stamp('combine_slave')
         # Combine all master bursts to full swath
-        processing.combine_master()
-        profile.log_time_stamp('combine_master')
+        #processing.combine_master()
+        #profile.log_time_stamp('combine_master')
 
         # Remove earth reference phase from interferograms and combine for full swath
         processing.ref_phase()

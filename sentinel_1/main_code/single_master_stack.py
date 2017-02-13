@@ -2,7 +2,6 @@ import os
 import numpy as np
 from datetime import datetime
 from collections import OrderedDict
-from baselines import baselines
 import copy
 from copy import deepcopy
 import shutil

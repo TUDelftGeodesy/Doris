@@ -32,7 +32,7 @@ class BurstMeta(ResData):
 
         # orbits
         self.datapoints = []
-        self.orbit_type = []
+        self.orbit_type = ''
 
         #############################################################
 
@@ -80,14 +80,15 @@ class BurstMeta(ResData):
     def meta_burst(self, swath_meta=[], corners=True):
         # This function reads and stores metadata of the burst based on the swath xml file. If
 
+        self.swath_meta = swath_meta
         readfiles = burst_readfiles(copy.deepcopy(self.swath_meta), self.burst_num, self.burst_center, self.burst_corners, self.swath_data)
         crop = burst_crop(self.swath_meta, self.burst_num, self.swath_data, self.new_burst_num)
 
         # Read metadata from xml and inserts in resdata of burst
         # Insert the different steps (readfiles, orbits and crop)
         self.header = burst_header('master.res')
-        self.insert(self.datapoints, process=self.orbit_type)
         self.insert(readfiles, process='readfiles')
+        self.insert(self.datapoints, process=self.orbit_type)
         self.insert(crop, process='crop')
 
 

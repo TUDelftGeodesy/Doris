@@ -1,6 +1,6 @@
 from datetime import datetime
 import collections
-from sentinel_1.functions.precise_read import interpolate_orbit
+from precise_read import interpolate_orbit
 from shapely.geometry import Polygon
 import numpy as np
 from scipy.interpolate import RectBivariateSpline
@@ -45,33 +45,35 @@ def swath_precise(meta, precise_folder, dat_type='POE'):
 
     # First check whether the precise orbit file exists and load data if that is the case.
 
-    t_s = datetime.strptime(meta['aux']['azimuthTimeStart'][0], '%Y-%m-%dT%H:%M:%S.%f')
-    date_orbit = int(t_s.hour * 3600 + t_s.minute * 60 + t_s.second)
+    date = meta['aux']['azimuthTimeStart'][0]
+    X = []
 
-    input_time = np.arange(date_orbit-100,date_orbit+100)
-    date = time.mktime(time.strptime(meta['aux']['azimuthTimeStart'][0], '%Y-%m-%dT%H:%M:%S.%f'))
+    if dat_type not in ['POE', 'RES', 'XML']:
+        print('Choose either POE, RES or XML as data type')
+        return
 
     if dat_type == 'POE' or dat_type == 'RES':
-        X, Y, Z = interpolate_orbit(precise_folder, input_time, date, dat_type, 'spline', satellite =meta['Product type specifier'])
+        input_time, X, Y, Z = interpolate_orbit(precise_folder, date, dat_type, 'spline', satellite =meta['Product type specifier'])
 
         if len(X) == 0 and dat_type == 'POE':
             dat_type = 'RES'
-            X, Y, Z = interpolate_orbit(precise_folder, input_time, date, 'RES', 'spline', satellite =meta['Product type specifier'])
+            input_time, X, Y, Z = interpolate_orbit(precise_folder, date, 'RES', 'spline', satellite =meta['Product type specifier'])
             print('There is no precise orbit file available, we try the restituted files')
 
     if len(X) == 0 or dat_type == 'XML':
         print('There is no precise or restituted orbit file available we use the datapoints from the .xml file')
         datapoints = swath_datapoints(meta)
-        return datapoints
+        datatype = 'leader_datapoints'
+        return datapoints, datatype
 
     datapoints = collections.OrderedDict()
     datapoints['row_1'] = ['t(s)','X(m)','Y(m)','Z(m)']
-    datapoints['NUMBER_OF_DATAPOINTS'] = str(len(input_time))
+    datapoints['NUMBER_OF_DATAPOINTS'] = str(200)
 
     for n in range(len(input_time)):
         datapoints['row_' + str(n + 2)] = [str(input_time[n]), str(X[n]), str(Y[n]), str(Z[n])]
 
-    return datapoints
+    return datapoints, 'precise_orbits'
 
 
 def swath_pixel_line_coordinate(meta):
@@ -127,10 +129,10 @@ def burst_coverage(meta, corners=True, shape=True):
         center = [(lat_interp(l+np.floor(l_b/2), np.floor(p_b/2))[0][0], lon_interp(l+np.floor(l_b/2), np.floor(p_b/2))[0][0])]
         burst_center.append(center)
         if corners == True or shape == True:
-            ul = (lat_interp(l, 0)[0][0], lon_interp(l , 0)[0][0])
-            ur = (lat_interp(l, p_b-1)[0][0], lon_interp(l , p_b-1)[0][0])
-            lr = (lat_interp(l+l_b-1, p_b-1)[0][0], lon_interp(l+l_b-1, p_b-1)[0][0])
-            ll = (lat_interp(l+l_b-1, 0)[0][0], lon_interp(l+l_b-1, 0)[0][0])
+            ul = (lon_interp(l , 0)[0][0], lat_interp(l, 0)[0][0])
+            ur = (lon_interp(l , p_b-1)[0][0], lat_interp(l, p_b-1)[0][0])
+            lr = (lon_interp(l+l_b-1, p_b-1)[0][0], lat_interp(l+l_b-1, p_b-1)[0][0])
+            ll = (lon_interp(l+l_b-1, 0)[0][0], lat_interp(l+l_b-1, 0)[0][0])
             burst_corners.append([ul, ur, lr, ll])
 
             if shape == True:
@@ -154,7 +156,7 @@ def swath_coverage(meta):
     lons = lons.reshape((count_p[0], count_l[0]))
 
     # ul, ur, lr, ll
-    swath_corners = [(lats[0,0],lons[0,0]),(lats[0,-1],lons[0,-1]),(lats[-1,-1],lons[-1,-1]),(lats[-1,0],lons[-1,0])]
+    swath_corners = [(lons[0,0],lats[0,0]), (lons[0,-1],lats[0,-1]), (lons[-1,-1],lats[-1,-1]), (lons[-1,0],lats[-1,0])]
     swath_shapes = Polygon(swath_corners)
 
     return swath_corners, swath_shapes

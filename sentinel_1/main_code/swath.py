@@ -30,6 +30,7 @@ class SwathMeta(object):
         self.burst_corners = []
         self.burst_shapes = []
         self.orbits = []
+        self.orbit_type = ''
 
         # This function creates an swath object and searches for available data and xml files. It gives an error when
         # either the path does not exist, no data or xml files can be found or the data and xml files do not match.'
@@ -77,28 +78,31 @@ class SwathMeta(object):
     def meta_swath(self):
         # This function reads and stores metadata of different swaths in the swath objects.
         self.metadata = xml_query(self.swath_xml)
-        corners, self.coverage = swath_coverage(self.swath_xml)
+        corners, self.coverage = swath_coverage(self.metadata)
         self.burst_centers, self.burst_corners, self.burst_shapes = burst_coverage(self.metadata)
+
 
     def orbits_swath(self, precise_folder=''):
         # This functions loads the precise orbits for this swath
         if not precise_folder:
             print('xml information on orbit is used because no precise folder is specified')
-            orbits = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='XML')
+            orbits, type = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='XML')
         else:
-            orbits = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='XML')
-            self.orbits = orbits
+            orbits, type = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='POE')
+
+        self.orbits = orbits
+        self.orbit_type = type
 
         return orbits
 
 
-    def meta_burst(self):
+    def meta_burst(self, precise_folder=''):
         # This function reads and stores metadata of different bursts in the bursts objects.
 
         if not self.metadata:
             self.meta_swath()
         if not self.orbits:
-            self.orbits_swath()
+            self.orbits_swath(precise_folder=precise_folder)
 
         bursts_num = len(self.metadata['aux']['azimuthTimeStart'])
 
@@ -108,7 +112,8 @@ class SwathMeta(object):
         for no in range(bursts_num):
             self.bursts.append(BurstMeta(path='',swath_no=self.swath_no, pol=self.swath_pol, burst_num=no + 1,
                                          xml=self.swath_xml, data=self.swath_data))
-            self.bursts[no].burst_center = self.burst_centers[no]
+            self.bursts[no].burst_center = self.burst_centers[no][0]
             self.bursts[no].burst_coverage = self.burst_shapes[no]
             self.bursts[no].burst_corners = self.burst_corners[no]
-            self.bursts[no].meta_burst(swath_meta=self.metadata)
+            self.bursts[no].datapoints = self.orbits
+            self.bursts[no].orbit_type = self.orbit_type
