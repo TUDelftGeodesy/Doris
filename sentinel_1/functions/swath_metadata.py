@@ -9,10 +9,6 @@ import time
 
 def swath_datapoints(meta):
     # First check which datapoints should be included.
-    swath_start_time = np.datetime64(meta['aux']['azimuthTimeStart'][0])
-
-    swath_start = swath_start_time - np.timedelta64(100, 's')
-    swath_stop = swath_start_time + np.timedelta64(100, 's')
 
     datapoints = collections.OrderedDict()
 
@@ -25,14 +21,11 @@ def swath_datapoints(meta):
 
     i = 0
     for n in range(len(t)):
-        t_point = np.datetime64(t[n])
-
-        if t_point > swath_start and t_point < swath_stop:
-            t_s = datetime.strptime(t[n],'%Y-%m-%dT%H:%M:%S.%f')
-            t_s = float(t_s.hour * 3600 + t_s.minute * 60 + t_s.second) + float(t_s.microsecond) / 1000000
-            t_s = "%.6f" % t_s
-            datapoints['row_' + str(i + 2)] = [t_s, x[n], y[n], z[n]]
-            i += 1
+        t_s = datetime.strptime(t[n],'%Y-%m-%dT%H:%M:%S.%f')
+        t_s = float(t_s.hour * 3600 + t_s.minute * 60 + t_s.second) + float(t_s.microsecond) / 1000000
+        t_s = "{:.6f}".format(t_s)
+        datapoints['row_' + str(i + 2)] = [t_s, "{:.7f}".format(float(x[n])), "{:.7f}".format(float(y[n])), "{:.7f}".format(float(z[n]))]
+        i += 1
 
     datapoints['NUMBER_OF_DATAPOINTS'] = str(i)
 
