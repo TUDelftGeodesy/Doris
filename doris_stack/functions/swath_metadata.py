@@ -119,7 +119,7 @@ def burst_coverage(meta, corners=True, shape=True):
 
     # Now loop over all the bursts and calc the center pixel / corners / polygon
     for l in start_lines:
-        center = [(lat_interp(l+np.floor(l_b/2), np.floor(p_b/2))[0][0], lon_interp(l+np.floor(l_b/2), np.floor(p_b/2))[0][0])]
+        center = [(lon_interp(l+np.floor(l_b/2), np.floor(p_b/2))[0][0], lat_interp(l+np.floor(l_b/2), np.floor(p_b/2))[0][0])]
         burst_center.append(center)
         if corners == True or shape == True:
             ul = (lon_interp(l , 0)[0][0], lat_interp(l, 0)[0][0])
