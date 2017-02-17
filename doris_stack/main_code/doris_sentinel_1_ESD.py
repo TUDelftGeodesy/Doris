@@ -15,9 +15,9 @@ class DorisSentinel1(object):
 
         print(sys.path)
 
-        from sentinel_1.main_code.create_datastack import prepare_datastack
-        from sentinel_1.main_code.dorisparameters import DorisParameters
-        from sentinel_1.main_code.grs_profile import GRS_Profile
+        from create_datastack import prepare_datastack
+        from dorisparameters import DorisParameters
+        from grs_profile import GRS_Profile
 
         #Set your input variables here. You should use absolute paths.
 

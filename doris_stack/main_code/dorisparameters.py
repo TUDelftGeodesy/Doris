@@ -24,11 +24,11 @@ class DorisParameters():
         self.verbose = True
 
         tree = ET.parse(os.path.join(stack_path, 'stack_info.xml'))
-        settings = tree.getroot()
+        self.settings = tree.getroot()
 
-        project_path = settings.find('.project_path').text
+        project_path = self._settings_get('.datastack_folder')
         self.project_path = project_path
-        data_path = settings.find('.data_path').text
+        data_path = self._settings_get('.satellite_data_folder')
         self.data_path = data_path
         #
         # used in single_master.py
@@ -36,21 +36,43 @@ class DorisParameters():
         #
         # used in test_dat_ESD
         #
+        # TODO DLE FIX shape path
         self.shape_dat = project_path + '/shape/AOI.shp'
         self.track_dir = data_path
         self.stack_path = project_path + '/stack/'
-        self.precise_orbits = settings.find('.orbit_path').text
+        self.precise_orbits = self._settings_get('.orbits_folder')
         # Start data of datastack. If end date not given it searches till current.
         self.input_files = project_path + '/input_files/'
 
-        self.parallel = bool(settings.find('.parallel').text)
-        self.nr_of_jobs = int(settings.find('.nr_of_jobs').text)
-        self.initialize_flag = bool(settings.find('.initialize_flag').text)
+        self.parallel = self._settings_compare('.parallel', 'Yes')
+        self.nr_of_jobs = int(self._settings_get('.cores'))
+        self.initialize_flag = self._settings_compare('.initialize_flag', 'Yes')
 
         self.profile_log = project_path + '/profile_log'
         self.doris_parallel_flag_dir = project_path + '/.Doris_parallel'
         self.between_sleep_time = 1
         self.end_sleep_time = 1
+
+        self.do_coarse_orbits = self._settings_compare('.do_coarse_orbits', 'Yes')
+        self.do_deramp = self._settings_compare('.do_deramp', 'Yes')
+        self.do_fake_fine_coreg_bursts = self._settings_compare('.do_fake_fine_coreg_bursts', 'Yes')
+        self.do_dac_bursts = self._settings_compare('.do_dac_bursts', 'Yes')
+        self.do_fake_coreg_bursts = self._settings_compare('.do_fake_coreg_bursts', 'Yes')
+        self.do_resample = self._settings_compare('.do_resample', 'Yes')
+        self.do_reramp = self._settings_compare('.do_reramp', 'Yes')
+        self.do_interferogram = self._settings_compare('.do_interferogram', 'Yes')
+        self.do_compref_phase = self._settings_compare('.do_compref_phase', 'Yes')
+        self.do_compref_dem = self._settings_compare('.do_compref_dem', 'Yes')
+        self.do_coherence = self._settings_compare('.do_coherence', 'Yes')
+        self.do_esd = self._settings_compare('.do_esd', 'Yes')
+        self.do_network_esd = self._settings_compare('.do_network_esd', 'Yes')
+        self.do_ESD_correct = self._settings_compare('.do_ESD_correct', 'Yes')
+        self.do_ref_phase = self._settings_compare('.do_ref_phase', 'Yes')
+        self.do_ref_dem = self._settings_compare('.do_ref_dem', 'Yes')
+        self.do_phasefilt = self._settings_compare('.do_phasefilt', 'Yes')
+        self.do_calc_coordinates = self._settings_compare('.do_calc_coordinates', 'Yes')
+        self.do_multilooking = self._settings_compare('.do_multilooking', 'Yes')
+        self.do_unwrap = self._settings_compare('.do_unwrap', 'Yes')
         #
         # used in Jobs
         #
@@ -82,4 +104,11 @@ class DorisParameters():
         if not(os.path.exists(path)):
             print 'Error Doris_Parameters: path ' + path + ' does not exist'
             
-            
+    def _settings_get(self, string):
+        return self.settings.find(string).text
+
+
+    def _settings_compare(self, string, comp_string):
+        if (self.settings.find(string).text==comp_string):
+            return True
+        return False

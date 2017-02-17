@@ -1,5 +1,5 @@
 <paths>
-    <source_path>/home/gert/software/doris/Doris_s1</source_path>
-    <doris_path>/usr/local/bin/doris</doris_path>
-    <cpxfiddle_path>/usr/local/bin/cpxfiddle</cpxfiddle_path>
+    <source_path>/data/src/Doris_s1_git</source_path>
+    <doris_path>/data/src/Doris_s1_git/bin/doris</doris_path>
+    <cpxfiddle_path>/data/src/Doris_s1_git/sar_tools/cpxfiddle</cpxfiddle_path>
 </paths>

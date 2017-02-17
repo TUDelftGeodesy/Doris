@@ -5,8 +5,8 @@ from collections import OrderedDict
 import copy
 from copy import deepcopy
 import shutil
-from sentinel_1.main_code.resdata import ResData
-from sentinel_1.main_code.dorisparameters import DorisParameters
+from resdata import ResData
+from dorisparameters import DorisParameters
 import collections
 from jobs import Jobs
 

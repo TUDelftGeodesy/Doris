@@ -12,11 +12,11 @@ import numpy as np
 from shapely.geometry import shape, mapping, box
 from shapely.ops import cascaded_union
 
-import sentinel_1.main_code.image as image
-from sentinel_1.functions.load_shape_unzip import extract_kml_preview, shape_im_kml
-from sentinel_1.functions.load_shape_unzip import load_shape
-from sentinel_1.main_code.dorisparameters import DorisParameters
-from sentinel_1.functions.burst_metadata import center_shape_from_res
+import image as image
+from load_shape_unzip import extract_kml_preview, shape_im_kml
+from load_shape_unzip import load_shape
+from dorisparameters import DorisParameters
+from burst_metadata import center_shape_from_res
 from jobs import Jobs
 
 

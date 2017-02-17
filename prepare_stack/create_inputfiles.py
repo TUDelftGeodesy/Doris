@@ -25,37 +25,37 @@ class CreateInputFiles:
     #   the amount of memory used by the program.
 
 
-    def __init__(self, dem_info ,inputfile_folder ,settings_table, sensor):
+    def __init__(self, dem_info ,settings_table, sensor):
         tree = ET.parse(settings_table)
         settings = tree.getroot()
 
-        xml_data = settings.find('.' + sensor)
-        header_data = xml_data.find('.header_settings')
+        self.xml_data = settings.find('.' + sensor)
+        self.header_data = self.xml_data.find('.header_settings')
         dem_info = open(dem_info, 'r')
-        dem_var = pickle.load(dem_info)
+        self.dem_var = pickle.load(dem_info)
 
-        inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'comprefdem', 'comprefpha', 'coregpm',
+        self.inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'comprefdem', 'comprefpha', 'coregpm',
                           'dembased', 'finecoreg', 'geocode', 'interferogram', 'resample', 'subtrrefdem', 'subtrrefpha',
                           'unwrap', 'phasefilt']
 
-        for filename in inputfilenames:
+    def create(self, inputfile_folder):
+        for filename in self.inputfilenames:
             # Create file
             inputfilename = os.path.join(inputfile_folder, 'input.' + filename)
             txtfile = open(inputfilename, 'w')
 
             # Load xml data for processing step
-            process = xml_data.find('./' + filename + '/PROCESS')
-            process_data = xml_data.find('.' + filename)
+            process = self.xml_data.find('./' + filename + '/PROCESS')
+            process_data = self.xml_data.find('.' + filename)
 
             # Write to file
-            txtfile = CreateInputFiles.header(txtfile, header_data, process)
-            txtfile = CreateInputFiles.create_inputfiles(txtfile, process_data, dem_var)
+            txtfile = self._header(txtfile, self.header_data, process)
+            txtfile = self._create_inputfiles(txtfile, process_data, self.dem_var)
 
             # Close file
             txtfile.close()
 
-    @staticmethod
-    def create_inputfiles(txtfile, process_data, dem_var):
+    def _create_inputfiles(self, txtfile, process_data, dem_var):
         # This functions calls the different inputfile creation scripts.
 
         for node in process_data:
@@ -78,8 +78,7 @@ class CreateInputFiles:
 
         return txtfile
 
-    @staticmethod
-    def header(txtfile, header_data, process):
+    def _header(self, txtfile, header_data, process):
         # Function to write header
 
         txtfile.write("c Inputfile created by Doris 5.0" + '\n')

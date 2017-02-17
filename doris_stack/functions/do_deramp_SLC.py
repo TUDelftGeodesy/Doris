@@ -9,7 +9,7 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-from sentinel_1.functions.get_ramp import get_ramp, freadbk, get_parameter
+from get_ramp import get_ramp, freadbk, get_parameter
 
 
 def usage():
