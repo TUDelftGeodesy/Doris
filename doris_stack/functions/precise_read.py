@@ -63,9 +63,9 @@ def interpolate_orbit(input_orbit_dir, date, input_orbit_type, input_interpolati
     if input_orbit_type == 'POE' and satellite == 'S1A':
         orbit_type = 'S1A_OPER_AUX_POEORB_OPOD_'
     elif input_orbit_type == 'RES' and satellite == 'S1A':
-        orbit_type = 'S1B_OPER_AUX_RESORB_OPOD_'
+        orbit_type = 'S1A_OPER_AUX_RESORB_OPOD_'
     elif input_orbit_type == 'POE' and satellite == 'S1B':
-        orbit_type = 'S1A_OPER_AUX_POEORB_OPOD_'
+        orbit_type = 'S1B_OPER_AUX_POEORB_OPOD_'
     elif input_orbit_type == 'RES' and satellite == 'S1B':
         orbit_type = 'S1B_OPER_AUX_RESORB_OPOD_'
 

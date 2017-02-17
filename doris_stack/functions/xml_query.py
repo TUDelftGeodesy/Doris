@@ -24,7 +24,7 @@ def xml_query(input_xml):
         ('Volume_identifier'                            , 'dummy'),
         ('Volume_set_identifier'                        , 'dummy'),
         ('Number of records in ref. file'               , 'dummy'),
-        ('SAR_PROCESSOR'                                , 'Sentinel-1A'),
+        ('SAR_PROCESSOR'                                , 'update_1'),
         ('SWATH'                                        , './/adsHeader/swath'),
         ('PASS'                                         , './/generalAnnotation/productInformation/pass'),
         ('IMAGE_MODE'                                   , './/adsHeader/mode'),
@@ -144,6 +144,7 @@ def xml_query(input_xml):
         queryList_aux[key] = vars()[key]
 
     # Finally do the first update
+    queryList['SAR_PROCESSOR'] = 'Sentinel-' + queryList['Sensor platform mission identifer'][-2:]
     queryList['total_Burst'] = str(len(queryList_aux['azimuthTimeStart']))
     queryList['Scene identification'] = 'Orbit: '+ queryList_aux['orbitABS'][0]
     queryList['Scene location'] = 'lat: ' + queryList_aux['sceneCenLat'][0] + ' lon:' + queryList_aux['sceneCenLon'][0]

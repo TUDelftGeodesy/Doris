@@ -46,11 +46,11 @@ def swath_precise(meta, precise_folder, dat_type='POE'):
         return
 
     if dat_type == 'POE' or dat_type == 'RES':
-        input_time, X, Y, Z = interpolate_orbit(precise_folder, date, dat_type, 'spline', satellite =meta['Product type specifier'])
+        input_time, X, Y, Z = interpolate_orbit(precise_folder, date, dat_type, 'spline', satellite=meta['Product type specifier'])
 
         if len(X) == 0 and dat_type == 'POE':
             dat_type = 'RES'
-            input_time, X, Y, Z = interpolate_orbit(precise_folder, date, 'RES', 'spline', satellite =meta['Product type specifier'])
+            input_time, X, Y, Z = interpolate_orbit(precise_folder, date, 'RES', 'spline', satellite=meta['Product type specifier'])
             print('There is no precise orbit file available, we try the restituted files')
 
     if len(X) == 0 or dat_type == 'XML':
