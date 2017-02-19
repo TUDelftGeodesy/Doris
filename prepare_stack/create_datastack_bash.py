@@ -21,7 +21,7 @@ class CreateBash(object):
         f.write('\n')
         f.write('#PBS -l nodes=1:ppn=' + nodes + ' \n')
         f.write('\n')
-        f.write('source_path=/data/src/Doris_s1_git/\n')
+        f.write('source_path=' + root_folder + '\n')
         f.write('export PYTHONPATH=$source_path/doris_stack/main_code/:$source_path/doris_stack/functions/:$PYTHONPATH \n')
         f.write('export PATH=$source_path/bin:$source_path/sar_tools:$PATH \n')
         f.write('python ' + doris_run_script + ' -p ' + processing + ' -s ' + 'yyyy-mm-dd' + ' -e ' + 'yyyy-mm-dd' + ' -m ' + 'yyyy-mm-dd \n')

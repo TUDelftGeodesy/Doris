@@ -6,7 +6,7 @@ def init_cfg():
     tree = ET.parse(xml_file)
     settings = tree.getroot()
 
-    settings.find('.source_path').text = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    settings.find('.source_path').text = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     input = False
     while input == False:
