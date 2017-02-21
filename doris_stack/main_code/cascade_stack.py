@@ -2,20 +2,20 @@ import os
 import numpy as np
 from datetime import datetime
 from collections import OrderedDict
-from sentinel_1.functions.baselines import baselines
+from baselines import baselines
 import copy
 from copy import deepcopy
 import shutil
-from sentinel_1.main_code.resdata import ResData
-from sentinel_1.functions.ESD_functions import get_f_DC_difference, get_offset
+from resdata import ResData
+from ESD_functions import get_f_DC_difference, get_offset
 from scipy import linalg
-import sentinel_1.main_code.resdata as resdata
-from sentinel_1.main_code.dorisparameters import DorisParameters
+import resdata as resdata
+from dorisparameters import DorisParameters
 import collections
 
 from jobs import Jobs
 
-from sentinel_1.main_code.single_master_stack import SingleMaster
+from single_master_stack import SingleMaster
 
 class Cascade(SingleMaster):
 

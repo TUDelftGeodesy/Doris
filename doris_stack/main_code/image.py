@@ -4,7 +4,7 @@ import os
 import warnings
 import zipfile
 
-from sentinel_1.main_code.swath import SwathMeta
+from swath import SwathMeta
 
 
 class ImageMeta(object):

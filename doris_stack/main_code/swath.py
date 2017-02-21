@@ -4,8 +4,8 @@
 from xml_query import xml_query
 import warnings
 import os
-from sentinel_1.main_code.burst import BurstMeta
-from sentinel_1.functions.swath_metadata import burst_coverage, swath_coverage, swath_precise
+from burst import BurstMeta
+from swath_metadata import burst_coverage, swath_coverage, swath_precise
 
 
 class SwathMeta(object):
