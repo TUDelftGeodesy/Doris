@@ -106,7 +106,7 @@ def get_f_DC_difference(nBurst):
     f_DC_1 = get_ramp(os.path.basename(this_m_resData), resampled=0, type='DC')
     os.chdir(os.path.dirname(os.getcwd()))
 
-    os.chdir(os.getcwd() + '/' + burst1)
+    os.chdir(os.getcwd() + '/' + burst2)
     f_DC_2 = get_ramp(os.path.basename(next_m_resData), resampled=0, type='DC')
     os.chdir(os.path.dirname(os.getcwd()))
 
