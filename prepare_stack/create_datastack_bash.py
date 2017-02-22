@@ -2,6 +2,7 @@
 # please note that you still have to define your start and end dates!
 
 import os
+import xml.etree.ElementTree as ET
 
 class CreateBash(object):
 
@@ -10,20 +11,31 @@ class CreateBash(object):
         return
 
     def create(self, stack_folder, root_folder, nodes):
-        file_path=os.path.join(stack_folder, 'run.sh')
+
+        xml_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                'install/doris_config.xml')
+        tree = ET.parse(xml_file)
+        settings = tree.getroot()
+
+        source_path = settings.find('.source_path').text
+        doris_path = settings.find('.doris_path').text
+        cpxfiddle_path = settings.find('.cpxfiddle_path').text
+        snaphu_path = settings.find('.snaphu_path').text
+
+        file_path=os.path.join(stack_folder, 'doris_stack.sh')
 
         f = open(file_path, 'w')
 
-        doris_run_script = os.path.join(root_folder, 'doris_stack', 'main_code', 'doris_main.py')
+        doris_run_script = os.path.join(source_path, 'doris_stack', 'main_code', 'doris_main.py')
         processing = stack_folder
 
         f.write('#!/bin/bash \n')
         f.write('\n')
         f.write('#PBS -l nodes=1:ppn=' + nodes + ' \n')
         f.write('\n')
-        f.write('source_path=' + root_folder + '\n')
+        f.write('source_path=' + source_path + '\n')
         f.write('export PYTHONPATH=$source_path/doris_stack/main_code/:$source_path/doris_stack/functions/:$PYTHONPATH \n')
-        f.write('export PATH=$source_path/bin:$source_path/sar_tools:$PATH \n')
+        f.write('export PATH=' + doris_path + ':' + cpxfiddle_path + ':' + snaphu_path + ':' + '$PATH \n')
         f.write('python ' + doris_run_script + ' -p ' + processing + ' -s ' + 'yyyy-mm-dd' + ' -e ' + 'yyyy-mm-dd' + ' -m ' + 'yyyy-mm-dd \n')
 
         f.close()

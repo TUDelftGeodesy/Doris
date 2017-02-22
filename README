@@ -3,10 +3,10 @@ README Doris 5.0.0 beta version
 This is a beta version, intended to be tested internally at TU Delft, as well as by a limited number of known beta-testers. From beta-testers we request feedback which will help us to develop the Doris 5 stable version. For your information, we are currently working on the further development of the software regarding processing flow (input control, distributed processing, logging, error handling). Therefore, your feedback on the algorithmic part of the implementation will be most useful.
 
 The new Doris version consists of 2 parts:
--	The Doris core, which is similar to the original Doris code and is written in C. This code is mainly used to create individual interferograms based on different steps. 
--	Additional python scripts (currently put in the sentinel1 directory), which are mainly used for administrative purposes to be able to read in data from different sensors and modes. Currently this is mainly focused on TOPS mode for Sentinel 1 data. The functionality of these scripts should be further extended.
+-	The doris_core directory cantaining the Doris core code, which is similar to the original Doris code and is written in C. This code is mainly used to create individual interferograms based on different steps. 
+-	The doris_stack directory containing scripts written in python. These scripts automate the processing of a single master stack of sentinel 1 images. The scripts manage the processing of the bursts of a sentinel 1 image, contain algorithms specific to processing sentinel 1 images and support parallelisation of the processing of the bursts. The functionality of these scripts can be further extendedi to support more sensors and modes.
 
-In this manual we assume that you have installed the Doris core, which can be found in the src directory. To use the sentinel1 python scripts you will need to install the following packages:
+In this manual we assume that you have installed the Doris core. To use the doris_stack python scripts you will need to install the following packages:
 -	numpy, scipy (for calculations)
 -	matplotlib (visualization)
 -	gdal, gdal-dev, shapely, fiona, pyproj (GIS)
@@ -15,7 +15,7 @@ In this manual we assume that you have installed the Doris core, which can be fo
 
 To install these packages we advise to use anaconda. This package comes with de Spyder IDE, which can be used to do some editing of the code. When you want a better insight in the overall project structure we recommend you install PyCharm as an additional IDE.
 
-The sentinel1 scripts are divided over three subfolders with several python scripts. These include a test folder with a test script, a main_code folder with the main scripts and a functions folder with some several auxiliary functions. Within this code the Doris core is called via the command line. Currently there is no in depth description available of the different algorithms used in the code, but the main steps are explained in the test code, which can be found in the test folder. In a later release we will provide a step by step guide for the code.
+The doris_stack scripts are divided over two subfolders with several python scripts. These include a main_code folder with the main scripts and a functions folder with some several auxiliary functions. Within this code the Doris core is called via the command line. Currently there is no in depth description available of the different algorithms used in the code, but the main steps are explained in the file dors_sentinel_1_ESD_new.py code, which can be found in the main_code folder.
 
 For the first test case you may use data for the Netherlands (see test_code.py in test directory). To run the test script you should first download the following datasets:
 

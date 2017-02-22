@@ -10,7 +10,7 @@ class GrsConfig(object):
 
     def __init__(self):
 
-        xml_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'install/grs_config.xml')
+        xml_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'install/doris_config.xml')
         tree = ET.parse(xml_file)
         settings = tree.getroot()
 

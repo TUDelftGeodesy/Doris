@@ -1025,7 +1025,7 @@ class SingleMaster(object):
 
     def esd(self, esd_type='ps', max_baseline=200):
 
-        esd_folder = os.path.join(self.function_path, 'esd')
+        esd_folder = os.path.join(self.stack_folder, 'esd')
         if not os.path.exists(esd_folder):
             os.mkdir(esd_folder)
 

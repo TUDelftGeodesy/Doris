@@ -1,18 +1,21 @@
 Installation
 
-After installation of the python package you have to make a link to the doris core / cpxfiddle executable. You can do
-so by running the following script:
+After installation of the python package you have to make a link to the doris_core, cpxfiddle and snaphu executable. You can do
+so by executing the following steps:
 
-python ../main_code/init_cfg.py
+# move to the install directory
+cd install
+# run the python script
+python init_cfg.py
 
-If you don't have the two executables, you will have to compile these two executables. Guidelines to do so can be found
-under:
+If you don't have the three executables, you will have to compile these. Guidelines to do so can be found
+at:
 http://doris.tudelft.nl/
 
 ----------------------------------------------------------------------------------------------
 Datastacks
 
-After making this link you can create your first python datastack. To do so you have to prepare the following:
+After installing the software you can create your first doris datastack. To do so you have to prepare the following:
 - Download the needed Sentinel-1 SAR images and place the .zip files in one directory (you can have sub-directories)
 - Create a folder to store the orbit files and download the needed orbit files from:
     https://qc.sentinel1.eo.esa.int/
@@ -26,7 +29,10 @@ After making this link you can create your first python datastack. To do so you 
 
 Now you can run the code to create a new datastack:
 
-python ../main_code/create_datastack.py
+# move to the prepare_stack directory
+cd prepare_stack
+# run the python script
+python prepare_datastack.py
 
 This code will ask you to define the different folders you created before. Then it generates a structure which is ready
 to process your datastack. It will ask whether you want to run your code in parallel. Generally, this is recommended as
@@ -34,15 +40,16 @@ it speeds up your processing speed. Note that either the number of cores and you
 use about 4GB of RAM).
 
 You can enter the folder to find, the newly created DEM, your .shp file, configuration files (inputfiles) and the stack.
-Further there is stack_info.xml. This is a .xml file where all configuration settings for your datastack are stored.
-So, if you want to change this configuration afterwards, you can make some changes there.
+Further there is doris_stack.xml. This is a doris_input.xml file where all configuration settings for your datastack are stored. 
+This file is created in the folder where you will process your datastack. So, if you want to change this configuration 
+afterwards, you can make some changes there.
 
-Finally, there is the run.sh file to run the actual processing.
+Finally, there is the doris_stack.sh file to run the actual processing.
 
 ------------------------------------------------------------------------------------------------
 Processing
 
-To start the processing of your datastack you will have to make a small adjustment run.sh file in your datastack folder.
+To start the processing of your datastack you will have to set some variables in doris_input.sh file in your datastack folder.
 On the end of the last line in this file you will find:
 
 -s yyyy-mm-dd -e yyyy-mm-dd -m yyyy-mm-dd
