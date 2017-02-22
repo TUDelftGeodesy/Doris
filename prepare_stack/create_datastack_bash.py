@@ -18,9 +18,9 @@ class CreateBash(object):
         settings = tree.getroot()
 
         source_path = settings.find('.source_path').text
-        doris_path = settings.find('.doris_path').text
-        cpxfiddle_path = settings.find('.cpxfiddle_path').text
-        snaphu_path = settings.find('.snaphu_path').text
+        doris_folder = os.path.dirname(settings.find('.doris_path').text)
+        cpxfiddle_folder = os.path.dirname(settings.find('.cpxfiddle_path').text)
+        snaphu_folder = os.path.dirname(settings.find('.snaphu_path').text)
 
         file_path=os.path.join(stack_folder, 'doris_stack.sh')
 
@@ -35,7 +35,7 @@ class CreateBash(object):
         f.write('\n')
         f.write('source_path=' + source_path + '\n')
         f.write('export PYTHONPATH=$source_path/doris_stack/main_code/:$source_path/doris_stack/functions/:$PYTHONPATH \n')
-        f.write('export PATH=' + doris_path + ':' + cpxfiddle_path + ':' + snaphu_path + ':' + '$PATH \n')
+        f.write('export PATH=' + doris_folder + ':' + cpxfiddle_folder + ':' + snaphu_folder + ':' + '$PATH \n')
         f.write('python ' + doris_run_script + ' -p ' + processing + ' -s ' + 'yyyy-mm-dd' + ' -e ' + 'yyyy-mm-dd' + ' -m ' + 'yyyy-mm-dd \n')
 
         f.close()
