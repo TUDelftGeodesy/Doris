@@ -1025,7 +1025,7 @@ class SingleMaster(object):
 
     def esd(self, esd_type='ps', max_baseline=200):
 
-        esd_folder = os.path.join(self.function_path, 'esd')
+        esd_folder = os.path.join(self.folder, 'esd')
         if not os.path.exists(esd_folder):
             os.mkdir(esd_folder)
 
@@ -1425,7 +1425,7 @@ class SingleMaster(object):
                 jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
                 jobs.run(job_list1)
 
-    def coherence(self,concatenate=True, overwrite=False):
+    def coherence(self,concatenate=True, overwrite=False, coh_type='single_master'):
         # This function performs the final steps in making an interferogram for all full images.
         if len(self.coreg_dates) == 0:
             return
@@ -1436,7 +1436,10 @@ class SingleMaster(object):
             for burst in self.stack[date].keys():
                 if self.stack[date][burst]['ifgs'].process_control['coherence'] != '1':
                     path = self.burst_path(date, burst)
-                    command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coherence')
+                    if coh_type == 'single_master':
+                        command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coherence')
+                    elif coh_type == 'network':
+                        command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coherence_network')
                     job_list.append({"path": path, "command": command})
                     if (not(self.parallel)):
                         os.chdir(path)
