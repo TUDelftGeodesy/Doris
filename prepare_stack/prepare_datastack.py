@@ -43,7 +43,7 @@ class PrepareDatastack(object):
         # Then create the dem file
         dem_out = os.path.join(doris_input_xml.get_value('dem_folder'), 'dem.raw')
         dem_var = dem_out + '.var'
-        if (doris_input_xml.get_value('generate_dem')=='Yes'):
+        if (doris_input_xml.get_value('generate_dem').lower()=='yes'):
             self.create_dem.create(doris_input_xml.get_value('shape_file_path'), dem_out, dem_var, resample=None,
                                                             doris_input=True, rounding=0.1, border=1.5,
                                                             data_folder=doris_input_xml.get_value('dem_folder'), quality='SRTM1')

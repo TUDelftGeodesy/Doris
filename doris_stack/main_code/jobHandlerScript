@@ -6,6 +6,8 @@ if [[ "${4}" == "True" ]]; then
       echo "DORIS PARALLEL:"
       echo "PYTHONPATH:"
       echo $PYTHONPATH
+      echo "PATH:"
+      echo $PATH
       echo ${3}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" started"
       date +%T
       pwd
