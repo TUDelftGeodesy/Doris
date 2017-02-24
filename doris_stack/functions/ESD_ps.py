@@ -9,7 +9,7 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-from sentinel_1.functions.ESD_functions import get_f_DC_difference, get_coordinates, freadbk
+from ESD_functions import get_f_DC_difference, get_coordinates, freadbk
 
 
 def save_overlapping(stack_folder, master_date, dates, overlap):

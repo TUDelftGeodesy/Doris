@@ -11,10 +11,12 @@ def cascade_network(dates):
     dates = sorted(dates)
 
     ifgs_pairs = []
+    ifgs_keys = []
     for t1, t2 in zip(dates[:-1], dates[1:]):
-        ifgs_pairs.append((datetime.strptime(t1,'%Y-%m-%d'), datetime.strptime(t2,'%Y-%m-%d')))
+        ifgs_pairs.append((t1, t2))
+        ifgs_keys.append((datetime.strftime(t1,'%Y%m%d') + '_' + datetime.strftime(t2,'%Y%m%d')))
 
-    return ifgs_pairs
+    return ifgs_pairs, ifgs_keys
 
 
 def threshold_network(dates, perp_b, base_t, date_t):
@@ -27,12 +29,14 @@ def threshold_network(dates, perp_b, base_t, date_t):
     perp_b = [perp_b[idn] for idn in ids]
 
     ifgs_pairs = []
+    ifgs_keys = []
     for i, t1, d1 in zip(range(len(dates)), dates, perp_b):
         for t2, d2 in zip(dates[i+1:], perp_b[i+1:]):
             if abs((t2-t1).days) <= date_t and abs(d2-d1) <= base_t:
-                ifgs_pairs.append((datetime.strptime(t1,'%Y-%m-%d'), datetime.strptime(t2,'%Y-%m-%d')))
+                ifgs_pairs.append((t1, t2))
+                ifgs_keys.append(datetime.strftime(t1,'%Y%m%d') + '_' + datetime.strftime(t2,'%Y%m%d'))
 
-    return ifgs_pairs
+    return ifgs_pairs, ifgs_keys
 
 
 def exp_coh_network(dates, perp_b, coh_t, par_t, par_p):

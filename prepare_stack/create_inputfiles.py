@@ -36,7 +36,7 @@ class CreateInputFiles:
 
         self.inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'comprefdem', 'comprefpha', 'coregpm',
                           'dembased', 'finecoreg', 'geocode', 'interferogram', 'resample', 'subtrrefdem', 'subtrrefpha',
-                          'unwrap', 'phasefilt']
+                          'unwrap', 'phasefilt', 'coherence_network']
 
     def create(self, inputfile_folder):
         for filename in self.inputfilenames:
