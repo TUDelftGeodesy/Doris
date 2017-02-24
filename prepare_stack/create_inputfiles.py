@@ -37,16 +37,19 @@ class CreateInputFiles:
         self.inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'coherence_network', 'comprefdem', 'comprefpha', 'coregpm',
                           'dembased', 'finecoreg', 'geocode', 'interferogram', 'resample', 'subtrrefdem', 'subtrrefpha',
                           'unwrap', 'phasefilt']
+        self.processes = ['coarsecorr', 'coarseorb', 'coherence', 'coherence', 'comprefdem', 'comprefpha', 'coregpm',
+                          'dembased', 'finecoreg', 'geocode', 'interferogram', 'resample', 'subtrrefdem', 'subtrrefpha',
+                          'unwrap', 'phasefilt']
 
     def create(self, inputfile_folder):
-        for filename in self.inputfilenames:
+        for process_name, filename in zip(self.processes, self.inputfilenames):
             # Create file
             inputfilename = os.path.join(inputfile_folder, 'input.' + filename)
             txtfile = open(inputfilename, 'w')
 
             # Load xml data for processing step
-            process = self.xml_data.find('./' + filename + '/PROCESS')
-            process_data = self.xml_data.find('.' + filename)
+            process = self.xml_data.find('./' + process_name + '/PROCESS')
+            process_data = self.xml_data.find('.' + process_name)
 
             # Write to file
             txtfile = self._header(txtfile, self.header_data, process)
