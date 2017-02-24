@@ -34,9 +34,9 @@ class CreateInputFiles:
         dem_info = open(dem_info, 'r')
         self.dem_var = pickle.load(dem_info)
 
-        self.inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'comprefdem', 'comprefpha', 'coregpm',
+        self.inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'coherence_network', 'comprefdem', 'comprefpha', 'coregpm',
                           'dembased', 'finecoreg', 'geocode', 'interferogram', 'resample', 'subtrrefdem', 'subtrrefpha',
-                          'unwrap', 'phasefilt', 'coherence_network']
+                          'unwrap', 'phasefilt']
 
     def create(self, inputfile_folder):
         for filename in self.inputfilenames:
