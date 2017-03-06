@@ -1,0 +1,38 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="20">
+            <item index="0" class="java.lang.String" itemvalue="struct" />
+            <item index="1" class="java.lang.String" itemvalue="zipfile" />
+            <item index="2" class="java.lang.String" itemvalue="os" />
+            <item index="3" class="java.lang.String" itemvalue="warnings" />
+            <item index="4" class="java.lang.String" itemvalue="HTMLParser" />
+            <item index="5" class="java.lang.String" itemvalue="subprocess" />
+            <item index="6" class="java.lang.String" itemvalue="httplib" />
+            <item index="7" class="java.lang.String" itemvalue="sys" />
+            <item index="8" class="java.lang.String" itemvalue="argparse" />
+            <item index="9" class="java.lang.String" itemvalue="osr" />
+            <item index="10" class="java.lang.String" itemvalue="pickle" />
+            <item index="11" class="java.lang.String" itemvalue="datetime" />
+            <item index="12" class="java.lang.String" itemvalue="collections" />
+            <item index="13" class="java.lang.String" itemvalue="xml" />
+            <item index="14" class="java.lang.String" itemvalue="urllib" />
+            <item index="15" class="java.lang.String" itemvalue="gdalconst" />
+            <item index="16" class="java.lang.String" itemvalue="shutil" />
+            <item index="17" class="java.lang.String" itemvalue="copy" />
+            <item index="18" class="java.lang.String" itemvalue="time" />
+            <item index="19" class="java.lang.String" itemvalue="math" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
+      <option name="processCode" value="true" />
+      <option name="processLiterals" value="true" />
+      <option name="processComments" value="true" />
+    </inspection_tool>
+  </profile>
+</component>

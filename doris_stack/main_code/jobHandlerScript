@@ -1,0 +1,42 @@
+#!/bin/bash
+
+
+echo ${3} >> ${1}/${2}".started"
+if [[ "${4}" == "True" ]]; then
+      echo "DORIS PARALLEL:"
+      echo "PYTHONPATH:"
+      echo $PYTHONPATH
+      echo "PATH:"
+      echo $PATH
+      echo ${3}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" started"
+      date +%T
+      pwd
+      echo >> "./job.started"
+fi
+return_value=1
+index=0
+while [[ $return_value -ne 0 && index -le 5 ]]; do
+    echo "INDEX = "$index
+    if [[ $index -gt 0 ]]; then
+        echo "DORIS PARALLEL Execution FAILED, retry nr "$index
+        echo "DORIS PARALLEL "${3}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" RESTARTED"
+    fi
+    ${5} ${6} ${7} ${8} ${9} ${10} ${11} ${12} ${13} ${14} ${15} 2>&1 | tee job_$index_${2}.log # start job
+    return_value=$?
+    if [ "${3}" == "True" ]; then
+        echo "DORIS PARALLEL return value is:"
+        echo $return_value
+    fi
+    ((index++))
+done
+echo ${3} >> ${1}/${2}".finished"
+if [ "${4}" == "True" ]; then
+      echo "DORIS PARALLEL:"
+      echo ${3}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}" finished"
+      date +%T
+      pwd
+      echo >> "./job.finished"
+fi
+
+
+
