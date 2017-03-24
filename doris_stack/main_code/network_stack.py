@@ -17,7 +17,7 @@ import os, sys
 from single_master_stack import SingleMaster
 from datetime import datetime
 from resdata import ResData
-from dorisparameters import DorisParameters
+from doris_parameters import DorisParameters
 from define_network import cascade_network, threshold_network
 import copy
 from jobs import Jobs

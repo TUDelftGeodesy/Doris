@@ -6,7 +6,7 @@
 import xml.etree.ElementTree as ET
 import sys, os
 
-class GrsConfig(object):
+class DorisConfig(object):
 
     def __init__(self):
 

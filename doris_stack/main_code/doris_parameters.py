@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from grs_config import GrsConfig
+from doris_config import DorisConfig
 import xml.etree.ElementTree as ET
 
 
@@ -13,7 +13,7 @@ class DorisParameters():
 
     def __init__(self, stack_path):
 
-        grs_config = GrsConfig()
+        grs_config = DorisConfig()
 
         self.doris_path = grs_config.doris_path
         self.cpxfiddle_path = grs_config.cpxfiddle_path

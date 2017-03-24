@@ -15,7 +15,7 @@ from shapely.ops import cascaded_union
 import image as image
 from load_shape_unzip import extract_kml_preview, shape_im_kml
 from load_shape_unzip import load_shape
-from dorisparameters import DorisParameters
+from doris_parameters import DorisParameters
 from burst_metadata import center_shape_from_res
 from jobs import Jobs
 

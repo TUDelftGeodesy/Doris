@@ -1,7 +1,7 @@
 import sys
 import time
 
-class GRS_Profile():
+class Doris_Profile():
 
     def __init__(self, logfile, verbose):
         self.verbose = verbose

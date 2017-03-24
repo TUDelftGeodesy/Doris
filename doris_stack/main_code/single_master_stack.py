@@ -6,7 +6,7 @@ import copy
 from copy import deepcopy
 import shutil
 from resdata import ResData
-from dorisparameters import DorisParameters
+from doris_parameters import DorisParameters
 import collections
 from jobs import Jobs
 
