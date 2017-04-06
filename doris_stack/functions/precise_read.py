@@ -2,6 +2,7 @@
 # Scripts where created by  Wu Wenhao, Wuhan university and adapted by Gert Mulder, TU Delft
 
 import time
+import calendar
 import numpy as np
 import os, re, sys
 from scipy.interpolate import interp1d
@@ -54,8 +55,8 @@ def orbit_read(input_EOF_FileName):
 #--------------------------------------------------------
 def interpolate_orbit(input_orbit_dir, date, input_orbit_type, input_interpolation_method, satellite='S1A'):
 
-    orbit_time = time.mktime(time.strptime(date ,'%Y-%m-%dT%H:%M:%S.%f'))
-    date_start = time.mktime(time.strptime(date[:10] ,'%Y-%m-%d'))
+    orbit_time = calendar.timegm(time.strptime(date ,'%Y-%m-%dT%H:%M:%S.%f'))
+    date_start = calendar.timegm(time.strptime(date[:10] ,'%Y-%m-%d'))
 
     L = os.listdir(input_orbit_dir)
     Orbit_info = []
@@ -71,8 +72,8 @@ def interpolate_orbit(input_orbit_dir, date, input_orbit_type, input_interpolati
 
     for d in L:
         if d.startswith(orbit_type):
-            start_time = time.mktime(time.strptime(d[42:57], '%Y%m%dT%H%M%S'))
-            end_time = time.mktime(time.strptime(d[58:73], '%Y%m%dT%H%M%S'))
+            start_time = calendar.timegm(time.strptime(d[42:57], '%Y%m%dT%H%M%S'))
+            end_time = calendar.timegm(time.strptime(d[58:73], '%Y%m%dT%H%M%S'))
             if (start_time < orbit_time) and (end_time > orbit_time):
 
                 meta = orbit_read(os.path.join(input_orbit_dir, d))
@@ -80,7 +81,7 @@ def interpolate_orbit(input_orbit_dir, date, input_orbit_type, input_interpolati
 
                 for i in range(len(meta['orbitTime'])):
 
-                    point_time = time.mktime(time.strptime(meta['orbitTime'][i][4:-7], '%Y-%m-%dT%H:%M:%S'))
+                    point_time = calendar.timegm(time.strptime(meta['orbitTime'][i][4:-7], '%Y-%m-%dT%H:%M:%S'))
                     if (point_time > orbit_time-290) and (point_time < orbit_time+290):
 
                         Tuple_orbit=(float(hms2sec(meta['orbitTime'][i][4:].split('T')[1])),\
