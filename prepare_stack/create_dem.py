@@ -283,8 +283,8 @@ class CreateDem(object):
 
                     if not os.path.exists(extracted_file) or not os.path.exists(q_extracted):
                         # Download and unzip
-                        user = 'gertmulder'
-                        password = 'Radar2016'
+                        user = 'USERNAME'
+                        password = 'PASSWORD'
 
                         download_dem = filelist[quality][str(lat)][str(lon)]
                         download_q = download_dem[:-7] + 'num.zip'
@@ -343,8 +343,8 @@ class CreateDem(object):
                 # Download and unzip file if possible and add to list
                 if not os.path.exists(extracted_file):
                     # Download and unzip
-                    user = 'gertmulder'
-                    password = 'Radar2016'
+                    user = 'USERNAME'
+                    password = 'PASSWORD'
 
                     command = 'wget ' + filelist['SRTM30'][str(lat50)][str(lon40)] + ' --user ' + user + ' --password ' + password + \
                               ' -O ' + filename
@@ -562,8 +562,8 @@ class CreateDem(object):
         filelist['SRTM3'] = dict()
         filelist['SRTM30'] = dict()
 
-        user = 'gertmulder'
-        password = 'Radar2016'
+        user = 'USERNAME'
+        password = 'PASSWORD'
 
         for folder, key_value in zip(folders, keys):
 
