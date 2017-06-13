@@ -622,7 +622,6 @@ SWOBJS	=	\$(SWSRCS:.cc=.o)
 SCRIPTS	=	helpdoris \
 		baseline.doris.sh \
 		baseline.doris.csh \
-                construct_dem.sh \
 		coregpm.doris \
 		doris* \
 		heightamb \
