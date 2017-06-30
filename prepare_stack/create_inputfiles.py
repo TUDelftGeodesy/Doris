@@ -9,7 +9,7 @@ import os
 import pickle
 
 # Test data
-# settings_table = '/home/gert/software/doris/Doris_s1/sentinel_1/functions/inputfile.xml'
+# settings_table = '/home/gert/software/doris/Doris_s1/sentinel_1/functions/inputfile_template.xml'
 # inputfile_folder = '/media/gert/Data/dem/test/'
 # sensor = 'sentinel-1'
 # dem_info = inputfile_folder + 'output.dem.var'

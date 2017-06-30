@@ -3,13 +3,19 @@
     <paths>
         <datastack_folder></datastack_folder>
         <sar_data_folder></sar_data_folder>
+        <polarisation></polarisation>
         <shape_file_path></shape_file_path>
+        <track></track>
+        <direction></direction>
         <orbits_folder></orbits_folder>
         <generate_dem></generate_dem>
         <dem_folder></dem_folder>
+        <dem_processing_folder></dem_processing_folder>
         <parallel></parallel>
         <cores></cores>
-        <initialize_flag>Yes</initialize_flag>
+        <start_date></start_date>
+        <end_date></end_date>
+        <master_date></master_date>
     </paths>
     <steps>
         <do_coarse_orbits>Yes</do_coarse_orbits>
@@ -24,9 +30,9 @@
         <do_compref_phase>Yes</do_compref_phase>
         <do_compref_dem>Yes</do_compref_dem>
         <do_coherence>Yes</do_coherence>
-        <do_esd>No</do_esd>
-        <do_network_esd>No</do_network_esd>
-        <do_ESD_correct>No</do_ESD_correct>
+        <do_esd>Yes</do_esd>
+        <do_network_esd>Yes</do_network_esd>
+        <do_ESD_correct>Yes</do_ESD_correct>
         <do_ref_phase>Yes</do_ref_phase>
         <do_ref_dem>Yes</do_ref_dem>
         <do_phasefilt>Yes</do_phasefilt>

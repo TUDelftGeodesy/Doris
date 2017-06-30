@@ -231,7 +231,7 @@ class ResData(object):
 
         # Open file and write header, process control and processes
         self.res_path = new_filename
-        f = open(new_filename,"w")
+        f = open(new_filename, "w")
 
         # Write the header:
         if self.header:

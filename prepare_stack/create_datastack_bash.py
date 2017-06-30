@@ -34,10 +34,44 @@ class CreateBash(object):
         f.write('#PBS -l nodes=1:ppn=' + nodes + ' \n')
         f.write('\n')
         f.write('source_path=' + source_path + '\n')
-        f.write('export PYTHONPATH=$source_path/doris_stack/main_code/:$source_path/doris_stack/functions/:$PYTHONPATH \n')
+        f.write('export PYTHONPATH=$source_path:$PYTHONPATH \n')
         f.write('export PATH=' + doris_folder + ':' + cpxfiddle_folder + ':' + snaphu_folder + ':' + '$PATH \n')
-        f.write('python ' + doris_run_script + ' -p ' + processing + ' -s ' + 'yyyy-mm-dd' + ' -e ' + 'yyyy-mm-dd' + ' -m ' + 'yyyy-mm-dd \n')
+        f.write('python ' + doris_run_script + ' -p ' + processing + ' \n')
 
         f.close()
+
+        # make sure the file is executable
+        os.chmod(file_path, 0744)
+
+        # Also create a download and dem creation bash script.
+        file_path = os.path.join(stack_folder, 'create_dem.sh')
+        f = open(file_path, 'w')
+
+        doris_run_script = os.path.join(source_path, 'prepare_stack', 'create_dem.py')
+        processing = stack_folder
+
+        f.write('#!/bin/bash \n')
+        f.write('\n')
+        f.write('source_path=' + source_path + '\n')
+        f.write('export PYTHONPATH=$source_path:$PYTHONPATH \n')
+        f.write('python ' + doris_run_script + ' ' + processing + ' SRTM3 \n')
+        f.close()
+
+        # make sure the file is executable
+        os.chmod(file_path, 0744)
+
+        file_path = os.path.join(stack_folder, 'download_sentinel.sh')
+        f = open(file_path, 'w')
+        f.write('source_path=' + source_path + '\n')
+        f.write('export PYTHONPATH=$source_path:$PYTHONPATH \n')
+        doris_run_script = os.path.join(source_path, 'prepare_stack', 'download_sentinel_data_orbits.py')
+        processing = stack_folder
+
+        f.write('#!/bin/bash \n')
+        f.write('\n')
+
+        f.write('python ' + doris_run_script + ' ' + processing + ' \n')
+        f.close()
+
         # make sure the file is executable
         os.chmod(file_path, 0744)

@@ -1,10 +1,11 @@
 # Based on the orbit of the swath the orbits of the individual burst is calculated.
+
 from orbit_coordinates import lph2xyz, xyz2ell, intrp_orbit
 import os
 import numpy as np
 import collections
 from datetime import datetime
-from resdata import ResData
+from doris.doris_stack.functions.resdata import ResData
 from shapely.geometry import Polygon
 
 
@@ -96,6 +97,9 @@ def burst_readfiles(meta, burst_num, burst_center, burst_border, swath_data):
     meta['Dataformat'] = 'tiff'
     meta['Number_of_lines_original'] = aux['imageLines'][0]
     meta['Number_of_pixels_original'] = aux['imagePixels'][0]
+    meta['deramp'] = '0'
+    meta['reramp'] = '0'
+    meta['ESD_correct'] = '0'
 
     return meta
 
@@ -111,7 +115,7 @@ def burst_crop(meta,burst_num,swath_data,new_burst_num):
     first_sample = [int(x) for x in meta['aux']['firstValidSample'][burst_num-1].split()]
 
     swath_data = os.path.basename(swath_data)
-    crop['Data_output_file'] = swath_data[15:23] + '_iw_' + swath_data[6] + '_burst_' + str(new_burst_num) + '.raw'
+    crop['Data_output_file'] = 'slave_iw_' + swath_data[6] + '_burst_' + str(new_burst_num) + '.raw'
     crop['Data_output_format'] = 'complex_short'
 
     # Start line of this burst in total swath product

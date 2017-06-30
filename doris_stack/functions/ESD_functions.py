@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import *
-from get_ramp import get_ramp, get_parameter
-import os, sys
+from doris.doris_stack.functions.get_ramp import get_ramp, get_parameter
+import os
 
 
 ########################################################################################################################
@@ -63,11 +63,8 @@ def get_parameter(First_param,file_name,format_flag=1,Second_param=None,Third_pa
 
 ########################################################################################################################
 # Definition to extract data
-# In Matlab:
-# thisBurstData = freadbk(['burst' num2str(nBurst)   '/cint.raw'],nofLines1,formatData1, line1, nofLines1,1,nofPixels1);
-# In Python:
 # thisBurstData = freadbk(path_file,line_start=1, pixel_start=1, nofLines=None, nofPixels=None, dt=np.dtype(np.float32), lines=0, pixels=0):
-def freadbk(path_file, line_start=1, pixel_start=1, nofLines=None, nofPixels=None, dt='float32', lines=0, pixels=0):
+def freadbk(path_file, line_start=1, pixel_start=1, nofLines=None, nofPixels=None, dt='float32', lines=0, pixels=0, memmap=True):
     # First use memmap to get a memory map of the full file, than extract the requested part.
 
     if dt == 'cpxint16':

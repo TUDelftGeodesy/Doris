@@ -1,8 +1,8 @@
 # This files defines a class for metadata objects of sentinel images. Large part of the work depends on python readers
 # from the tops toolbox.
 
-from burst_metadata import burst_header, burst_readfiles, burst_crop
-from resdata import ResData
+from doris.doris_stack.functions.burst_metadata import burst_header, burst_readfiles, burst_crop
+from doris.doris_stack.main_code.resdata import ResData
 import warnings
 import os
 import copy

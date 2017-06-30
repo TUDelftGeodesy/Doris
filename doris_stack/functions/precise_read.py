@@ -1,12 +1,13 @@
 # This file contains several functions to read data from precise orbit files of sentinel-1 data.
-# Scripts where created by  Wu Wenhao, Wuhan university and adapted by Gert Mulder, TU Delft
+# Scripts were created by  Wu Wenhao, Wuhan university and adapted by Gert Mulder, TU Delft
 
 import time
 import calendar
 import numpy as np
-import os, re, sys
+import os, sys
 from scipy.interpolate import interp1d
 import scipy.interpolate as inter
+import calendar
 
 
 def orbit_read(input_EOF_FileName):
@@ -55,8 +56,13 @@ def orbit_read(input_EOF_FileName):
 #--------------------------------------------------------
 def interpolate_orbit(input_orbit_dir, date, input_orbit_type, input_interpolation_method, satellite='S1A'):
 
-    orbit_time = calendar.timegm(time.strptime(date ,'%Y-%m-%dT%H:%M:%S.%f'))
-    date_start = calendar.timegm(time.strptime(date[:10] ,'%Y-%m-%d'))
+    orbit_time = calendar.timegm(time.strptime(date,'%Y-%m-%dT%H:%M:%S.%f'))
+    date_start = calendar.timegm(time.strptime(date[:10],'%Y-%m-%d'))
+
+    if input_orbit_type == 'POE':
+        input_orbit_dir = os.path.join(input_orbit_dir, 'precise')
+    elif input_orbit_type == 'RES':
+        input_orbit_dir = os.path.join(input_orbit_dir, 'restituted')
 
     L = os.listdir(input_orbit_dir)
     Orbit_info = []

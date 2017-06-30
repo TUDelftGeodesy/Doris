@@ -28,7 +28,7 @@ def unzip_folder(zipped_folder, dest_folder, shapefile='', pol='', data=True, sw
             return
 
     # First check wether the shape overlaps...
-    kml_file, png_file = extract_kml_preview(zipped_folder, overwrite=overwrite)
+    kml_file, png_file = extract_kml_preview(zipped_folder, dir=dest_folder, overwrite=overwrite)
 
     if shapefile:
         shp = load_shape(shapefile, buffer=0.02)

@@ -1,0 +1,116 @@
+This "INSTALL" file describes the installation of the "Doris" Delft 
+radar interferometric software package.  Doris has been installed on
+virtually all operating systems world-wide (mainly UNIX like,
+for MS Windows(c) your best option is using Cygwin.)
+
+If the following does not work for you, please first search the FAQ via
+  http://doris.tudelft.nl
+
+
+There are 5 components in this distribution (doris v5.0beta).
+  1. doris_stack subdirectory: 		doris stack code for handling processing of stacks. (sentinel 1)
+  2. prepare_stack subdirectory: 	code for setting up a doris stack.
+  3. doris_core and bin subdirectory:   doris core software (C++ source code, python and shell scripts);
+  4. ENVISAT_TOOLS subdir:       standalone reader for ENVISAT (C source code);
+  5. SARtools subdir:            standalone utilities (C++ source code).
+
+--------------------------------------------
+- INSTALLATION OF Doris 5 -
+--------------------------------------------
+
+--------------------------------------------
+- OPTIONAL: installation of FFTW library ---
+- tested for Cygwin, SUN Solaris, Linux ----
+--------------------------------------------
+1. download fftw-3.2.1 from http://www.fftw.org : wget -c http://www.fftw.org/fftw-3.2.1.tar.gz
+2. gunzip and tar xvf it in subdirectory of doris root installation.
+3. cd fftw-3.2.1
+4. ./configure --prefix=`pwd` --enable-float
+5. make
+6. make install
+
+
+--------------------------------------------
+- COMPILATION OF THE DORIS CORE ------------
+--------------------------------------------
+7. cd ../doris_core
+8. Read the README file
+9. ./configure             (creates "Makefile")  # requires tcsh shell to run, to install type "sudo apt-get install
+                            tcsh" at shell prompt on Ubuntu platform.
+                            ( +answer the questions about libraries, etc.)
+10. make                    (compiles the software)
+11. make install            (installs doris and bin scripts)
+
+
+--------------------------------------------
+- COMPILATION OF DORIS UTILITIES -----------
+--------------------------------------------
+12. cd ../sartools
+13. make
+14. Review/edit the Makefile if this does not work
+    (for example if you do not want to use GNU gcc/g++ as compiler)
+15. make install            (installs in /usr/local/bin unless you edit the Makefile)
+
+
+16. cd ../envisat_tools       # on 64-bit system requires libc-dev-i386 library ex: "sudo apt-get install libc-dev-i386"
+17. make
+18. Review/edit the Makefile if this does not work
+    (for example if you do not want to use gcc as compiler)
+19. make install
+
+
+--------------------------------------------
+- INSTALLATION OF USEFUL EXTERNAL SOFTWARE -
+--------------------------------------------
+The doris software depends for full functionality on:
+21.   getorb:  precise orbits for ERS/ENVISAT      # requires fortran(ff7, g77 or gfortran)   ex: "sudo apt-get install gfortran" and edit Makefile and update FC = gfortran
+               (used by Doris step M_PORBITS and S_PORBITS).
+22.   snaphu:  standalone executable used for unwrapping
+               (used by Doris step UNWRAP).
+
+These programs should also be installed on your system. Refer to the download area of the doris website
+   http://doris.tudelft.nl
+where to obtain these programs.
+
+--------------------------------------------
+- INSTALLATION OF Doris - python part
+--------------------------------------------
+
+To use the Doris Python scripts you will need to install the following Python packages:
+-       numpy, scipy (for calculations)
+-       matplotlib (visualization)
+-       requests (data download)
+-       gdal, gdal-dev, shapely, fiona, pyproj, fastkml, osr (GIS)
+This can be done using:
+
+23. pip install [package_name]
+
+If you installed Doris via pip, this should be done automatically.
+
+Packages can also be installed using anaconda. This package comes with de Spyder IDE, which can be used to do some
+editing of the code. When you want a better insight in the overall project structure we recommend you install PyCharm
+as an additional IDE.
+
+After installation of the python packages you have to make a link to the doris_core, cpxfiddle and snaphu executables.
+You can do so by executing the install script, but you will have to create user accounts first to be able to download
+Sentinel-1 and SRTM DEMs.
+
+25. create an account for the downloading of SRTM DEMs at
+https://urs.earthdata.nasa.gov/users/new
+26. create an account for downloading Sentinel data at
+https://urs.earthdata.nasa.gov/users/new/
+
+# move to the install directory
+26. cd ../install
+27. python init_cfg.py
+and fill in the different paths and user accounts
+
+This should be it ...
+
+To setup your processing of a certain datastack, see the README file in the DORIS root directory for further instructions
+on the use of DORIS.
+
+Enjoy,
+
+TUDELFT RADAR GROUP 2017
+doris_users@tudelft.nl

@@ -1,5 +1,4 @@
 import argparse
-from datetime import datetime
 from prepare_datastack import PrepareDatastack
 
 """Doris prepare datastack

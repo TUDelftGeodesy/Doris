@@ -3,8 +3,9 @@
 import os
 import warnings
 import zipfile
+import copy
 
-from swath import SwathMeta
+from doris.doris_stack.main_code.swath import SwathMeta
 
 
 class ImageMeta(object):
@@ -19,8 +20,8 @@ class ImageMeta(object):
         self.swath_no = swath_no
 
         # The following contain the path of xml and data files
-        self.swaths_xml = ''
-        self.swaths_data = ''
+        self.swaths_xml = []
+        self.swaths_data = []
         self.image_kml = ''
 
         # This variable contains the convex hull of all swaths together
@@ -97,24 +98,26 @@ class ImageMeta(object):
     def meta_swath(self, precise_folder=''):
         # This function reads and stores metadata of different swaths in the swath objects.
         orbits = []
+        orb_type = ''
 
-        if not self.swaths_xml:
+        if not self.swaths_data:
             self.init_unzipped()
 
         if not self.swaths:
-            for i in range(len(self.swaths_xml)):
-                xml = self.swaths_xml[i]
+            for i in range(len(self.swaths_data)):
                 data = self.swaths_data[i]
+                xml = os.path.join(os.path.dirname(os.path.dirname(data)), 'annotation', os.path.basename(data)[:-5] + '.xml')
 
                 # Initialize swath and load data from xml file
                 swath = SwathMeta(xml=xml, data=data)
                 swath.meta_swath()
 
                 # Calculate the orbits for this swath and reuse it for other swaths if it is already calculated
-                if not orbits:
-                    orbits = swath.orbits_swath(precise_folder=precise_folder)
+                if not orbits or not orb_type:
+                    orbits, orb_type = swath.orbits_swath(precise_folder=precise_folder)
                 else:
-                    swath.orbits = orbits
+                    swath.orbits = copy.deepcopy(orbits)
+                    swath.orbit_type = orb_type
 
                 # Define the resdata for the individual burst. And append the swath to the image object.
                 swath.meta_burst()

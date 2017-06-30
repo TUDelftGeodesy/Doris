@@ -1,6 +1,0 @@
-<paths>
-    <source_path>/data/src/Doris_s1_git</source_path>
-    <doris_path>/data/src/Doris_s1_git/bin/doris</doris_path>
-    <cpxfiddle_path>/data/src/Doris_s1_git/sar_tools/cpxfiddle</cpxfiddle_path>
-    <snaphu_path>/home/user/bin/snaphu</snaphu_path>
-</paths>

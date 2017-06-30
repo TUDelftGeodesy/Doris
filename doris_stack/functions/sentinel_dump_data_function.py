@@ -71,7 +71,8 @@ if __name__ == "__main__":
 
     input_file = sys.argv[1]
     res_file = sys.argv[2]
+    output_file = sys.argv[3]
 
-    dump_data(input_file, res_file, output_file='', coordinates=[])
+    dump_data(input_file, res_file, output_file, coordinates=[])
 
 

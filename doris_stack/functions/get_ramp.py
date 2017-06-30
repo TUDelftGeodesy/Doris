@@ -2,6 +2,7 @@ import os
 import numpy as np
 import gdal
 from gdalconst import *
+import sys
 
 def get_ramp(res_file, resampled=0, type='chirp'):
     # Read information
@@ -171,6 +172,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
     # Compute DC along range at reference azimuth time (azimuthTime)
     Df_AzCtr = c0_DC + c1_DC*(TrgGrid-t0_DC) + c2_DC*(TrgGrid-t0_DC)**2
     f_DC_ref_0 = c0_DC + c1_DC*(Trg_start-t0_DC) + c2_DC*(Trg_start-t0_DC)**2
+    del TrgGrid
 
     # From S-1 steering rate and orbit information %
     # Computes sensor velocity from orbits
@@ -184,10 +186,13 @@ def get_ramp(res_file, resampled=0, type='chirp'):
 
     # DC Azimuth rate [Hz/s]
     DR_est = Ks_hz/alpha_nom
+    del Ks_hz, alpha_nom
 
     # Reference time
     az_DC = -(Df_AzCtr / Kfm) + (f_DC_ref_0 / Kfm_0)
+    del Kfm, Kfm_0
     Taz_vec = TazGrid - az_DC
+    del az_DC
 
     #% Generate inverse chirp %
     if type == 'chirp':

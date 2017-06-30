@@ -1,11 +1,11 @@
 # This files defines a class for metadata objects of sentinel images. Large part of the work depends on python readers
 # from the tops toolbox.
 
-from xml_query import xml_query
+from doris.doris_stack.functions.xml_query import xml_query
 import warnings
 import os
-from burst import BurstMeta
-from swath_metadata import burst_coverage, swath_coverage, swath_precise
+from doris.doris_stack.main_code.burst import BurstMeta
+from doris.doris_stack.functions.swath_metadata import burst_coverage, swath_coverage, swath_precise
 
 
 class SwathMeta(object):
@@ -86,14 +86,14 @@ class SwathMeta(object):
         # This functions loads the precise orbits for this swath
         if not precise_folder:
             print('xml information on orbit is used because no precise folder is specified')
-            orbits, type = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='XML')
+            orbits, type_orb = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='XML')
         else:
-            orbits, type = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='POE')
+            orbits, type_orb = swath_precise(self.metadata, precise_folder=precise_folder, dat_type='POE')
 
         self.orbits = orbits
-        self.orbit_type = type
+        self.orbit_type = type_orb
 
-        return orbits
+        return orbits, type_orb
 
 
     def meta_burst(self, precise_folder=''):

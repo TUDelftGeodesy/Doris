@@ -13,11 +13,10 @@ from shapely.geometry import shape, mapping, box
 from shapely.ops import cascaded_union
 
 import image as image
-from load_shape_unzip import extract_kml_preview, shape_im_kml
-from load_shape_unzip import load_shape
-from doris_parameters import DorisParameters
-from burst_metadata import center_shape_from_res
-from jobs import Jobs
+from doris.doris_stack.functions.load_shape_unzip import extract_kml_preview, shape_im_kml, load_shape
+from doris.doris_stack.main_code.dorisparameters import DorisParameters
+from doris.doris_stack.functions.burst_metadata import center_shape_from_res
+from doris.doris_stack.main_code.jobs import Jobs
 
 
 class StackData(object):
@@ -77,7 +76,7 @@ class StackData(object):
         self.image_dump = []
 
         # parallel computing:
-        doris_parameters = DorisParameters(os.path.dirname(os.path.dirname(self.path)))
+        doris_parameters = DorisParameters(os.path.dirname(self.path))
         self.doris_parameters = doris_parameters
         self.nr_of_jobs = doris_parameters.nr_of_jobs
         self.parallel = doris_parameters.parallel
@@ -135,7 +134,7 @@ class StackData(object):
         else:
             warnings.warn('Neither the directory itself nor the parents directory exists. Choose another path.')
 
-    def search_files(self,track_dir):
+    def search_files(self, track_dir):
         # This function searches for files within a certain folder. This folder should contain images from the same
         # track. These images are added to the variable image dump.
         images = list()
@@ -157,6 +156,33 @@ class StackData(object):
                 for dat in sec_dir[2]:
                     if dat.endswith('.zip'):
                         images.append(os.path.join(track_dir, data, dat))
+
+        if images:
+            images = sorted(images)
+        else:
+            print('No images found in track_dir = ' + str(track_dir) + ', switching to archive folder')
+
+            track_name = self.doris_parameters.direction + '_t' + self.doris_parameters.track.zfill(3)
+            track_dir = os.path.join(track_dir, track_name)
+
+            print('Searching in folder ' + track_dir)
+
+            top_dirs = next(os.walk(track_dir))[1]
+
+            if len(top_dirs) == 1:
+                track_dir = os.path.join(track_dir, top_dirs[0])
+            elif len(top_dirs) > 1:
+                for top_dir in top_dirs:
+                    user_input = raw_input("Do you want to use folder " + top_dir + " as resource folder? (yes/no)").lower()
+                    if user_input in ['yes', 'y']:
+                        track_dir = os.path.join(track_dir, top_dir)
+
+            dir_new = next(os.walk(track_dir))
+            for dat in dir_new[1]:
+                dat_files = next(os.walk(os.path.join(track_dir, dat)))[2]
+                for data in dat_files:
+                    if data.endswith('.zip'):
+                        images.append(os.path.join(track_dir, dat, data))
 
         if images:
             images = sorted(images)
@@ -221,7 +247,7 @@ class StackData(object):
 
                 for swath in swath_folders:
                     self.swath_names.append(swath)
-                    swaths[swath] = sorted([b[14:] for b in next(os.walk(os.path.join(self.path, date_folder, swath)))[2]])
+                    swaths[swath] = sorted(next(os.walk(os.path.join(self.path, date_folder, swath)))[1])
 
                 # Now check if the burst also in slave folders exist....
                 for folder, d in zip(date_folders, dates):
@@ -232,7 +258,7 @@ class StackData(object):
                             raise LookupError('Amount of swaths is not the same for ' + folder)
 
                         for swath in swath_folders:
-                            bursts = sorted([b[14:] for b in next(os.walk(os.path.join(self.path, folder, swath)))[2]])
+                            bursts = sorted(next(os.walk(os.path.join(self.path, date_folder, swath)))[1])
                             if not set(bursts) == set(swaths[swath]):
                                 raise LookupError('Amount of bursts is not the same for ' + folder)
 
@@ -240,14 +266,18 @@ class StackData(object):
                                 # If the master is already processed we have to create the list of center and coverage of
                                 # bursts.
                                 # TODO make this robust for the case no seperate input data folders are created.
-                                res_files = sorted([b for b in next(os.walk(os.path.join(self.path, folder, swath)))[2] if b.endswith('res')])
-                                for res_file in res_files:
-                                    res_file = os.path.join(self.path, folder, swath, res_file)
+                                res_files = []
+                                for burst in bursts:
+                                    dat_file = [r for r in next(os.walk(os.path.join(self.path, date_folder, swath, burst)))[2]
+                                                if (r.startswith('slave_iw') and len(r) < 25)]
+                                    res_file = os.path.join(self.path, date_folder, swath, burst, 'slave.res')
+                                    res_files.append(res_file)
+
                                     center, coverage = center_shape_from_res(resfile=res_file)
                                     # Assign coverage, center coordinates and burst name.
                                     self.burst_shapes.append(coverage)
                                     self.burst_centers.append(center)
-                                    burst_num = os.path.basename(res_file)[:-4][20:]
+                                    burst_num = os.path.basename(dat_file[0])[17:-4]
                                     self.burst_names.append(swath + '_burst_' + burst_num)
                                     self.burst_no += 1
 
@@ -261,8 +291,13 @@ class StackData(object):
                     except LookupError as error:
                         print(error)
 
-    def select_image(self,start_date='',end_date=''):
+    def select_image(self,start_date='',end_date='', dest_folder=''):
         # This function selects usable images based on .kml files and dates
+
+        if not dest_folder:
+            dest_folder = os.path.join(self.path, 'kml')
+        if not os.path.exists(dest_folder):
+            os.makedirs(dest_folder)
 
         if not self.shape:
             warnings.warn('There is no shape loaded to select images. Please use the create_shape function to do so.')
@@ -278,7 +313,7 @@ class StackData(object):
             acq_time = np.datetime64(d[0:4] + '-' + d[4:6] + '-' + d[6:11] + ':' + d[11:13] + ':' + d[13:] + '-0000')
             if acq_time >= self.start_date and acq_time <= self.end_date:
                 im = image.ImageMeta(path=i)
-                kml, png = extract_kml_preview(i, png=False)
+                kml, png = extract_kml_preview(i, dir=dest_folder, png=False, overwrite=True)
                 succes = shape_im_kml(self.shape, kml)
 
                 if succes:
@@ -286,6 +321,8 @@ class StackData(object):
                     self.image_dates.append(acq_time)
                     self.image_files.append(os.path.basename(i))
         self.dates = sorted(list(set([d.astype('datetime64[D]') for d in self.image_dates])))
+        for date in self.dates:
+            print(date)
 
     def select_burst(self, date=''):
         # This function selects the usefull bursts at one epoch (user defined or automatically selected) and searches
@@ -305,8 +342,12 @@ class StackData(object):
             date = Counter(image_dates).most_common(1)[0][0]
 
         # Load the metadata for this date for the bursts and swaths
+        for date in image_dates:
+            print(date)
+        print(date)
         image_id = np.where(image_dates == date)[0]
         for i in image_id:
+            print('processing data: ' + self.images[i].unzip_path)
             self.images[i].meta_swath(precise_folder=self.precise_orbits)
 
         # Order the selected images by acquisition time.
@@ -314,25 +355,38 @@ class StackData(object):
         date = date.astype(datetime).strftime('%Y-%m-%d')
         self.master_date = date
         self.datastack[date] = dict()
-        swath_nums = np.unique([os.path.basename(xml)[6] for xml in self.images[i].swaths_xml])
+
+        swath_nums = ['1', '2', '3']
 
         for p in self.polarisation:
             for swath in swath_nums:
                 swath_id = 'iw' + swath + '-slc-' + p
-                swath_name = 'swath_' + swath + '_' + p
+                swath_name = 'swath_' + swath
                 burst_no = 1
                 data = []
 
                 for i in image_id:
                     # Check which swath should be selected.
-                    swath_names = [os.path.basename(xml) for xml in self.images[i].swaths_xml]
+                    if not self.images[i].swaths_data:
+                        continue
 
-                    swath_no = [no for no in range(len(swath_names)) if swath_id in swath_names[no]][0]
-                    if not swath_no and swath_no is not 0:  # If there is no data for this swath
-                        break
+                    swath_names = [os.path.basename(data) for data in self.images[i].swaths_data]
+                    swath_no = [no for no in range(len(swath_names)) if swath_id in swath_names[no]]
+                    if not swath_no:  # If there is no data for this swath
+                        continue
+
+                    swath_no = swath_no[0]
 
                     for burst in self.images[i].swaths[swath_no].bursts:
                         if burst.burst_coverage.intersects(self.shape):
+
+                            # Check if we do not have a copy of former bursts...
+                            if len(self.burst_centers) != 0:
+                                dist_center = [np.sqrt((burst.burst_center[0] - center[0])**2 +
+                                               (burst.burst_center[1] - center[1])**2) for center in self.burst_centers]
+                                if min(dist_center) < 0.02:
+                                    print('Possible duplicate burst deleted')
+                                    continue
 
                             # If there are bursts in this swath, which intersect, add burst to list.
                             if swath_name not in self.datastack[date].keys(): # If there are burst and no burst list exists
@@ -376,6 +430,9 @@ class StackData(object):
                 continue
 
             for i in image_id:
+                if date_str == self.master_date:
+                    continue
+                print('processing data: ' + self.images[i].unzip_path)
                 self.images[i].meta_swath(precise_folder=self.precise_orbits)
 
             for swath in self.swath_names:
@@ -384,23 +441,26 @@ class StackData(object):
 
                 for i in image_id:
                     # Select correct swath in image
-                    swath_files = [os.path.basename(xml) for xml in self.images[i].swaths_xml]
-                    identifier = swath[-4] + '-slc-' + swath[-2:]
-                    swath_no = [no for no in range(len(swath_files)) if identifier in swath_files[no]][0]
+                    swath_id = swath[-1] + '-slc-' + self.polarisation[0]
 
-                    no = 0
+                    swath_names = [os.path.basename(data) for data in self.images[i].swaths_data]
+                    swath_no = [no for no in range(len(swath_names)) if swath_id in swath_names[no]]
+                    if not swath_no:  # If there is no data for this swath
+                        continue
+
+                    swath_no = swath_no[0]
+
                     for burst in self.images[i].swaths[swath_no].bursts:
                         x_dist = np.array([xy[0] - burst.burst_center[0] for xy in self.burst_centers])
                         y_dist = np.array([xy[1] - burst.burst_center[1] for xy in self.burst_centers])
 
                         dist = np.sqrt(x_dist**2 + y_dist**2)
                         burst_id = np.argmin(dist)
-                        no = no + 1
 
                         if dist[burst_id] < 0.1:
                             # Assign burst to data stack
-                            burst.new_burst_num = int(self.burst_names[burst_id][17:])
-                            self.datastack[date_str][swath][self.burst_names[burst_id][11:]] = burst
+                            burst.new_burst_num = int(self.burst_names[burst_id][14:])
+                            self.datastack[date_str][swath][self.burst_names[burst_id][8:]] = burst
 
                             # Create .res file data
                             burst.meta_burst(swath_meta=self.images[i].swaths[swath_no].metadata)
@@ -541,30 +601,34 @@ class StackData(object):
         for date in self.datastack.keys():
 
             date_basic = date.translate(None,'-')
-            date_path = os.path.join(self.path,date_basic)
+            date_path = os.path.join(self.path, date_basic)
             if not os.path.exists(date_path):
                 os.mkdir(date_path)
 
             for swath in self.datastack[date].keys():
 
-                swath_path = os.path.join(date_path,swath)
+                swath_path = os.path.join(date_path, swath)
                 if not os.path.exists(swath_path):
                     os.mkdir(swath_path)
 
                 for burst in self.datastack[date][swath].keys():
+                    burst_path = os.path.join(date_path, swath, burst)
+                    if not os.path.exists(burst_path):
+                        os.mkdir(burst_path)
+
                     # Finally write the bursts with their res files and precise orbits
                     xml = self.datastack[date][swath][burst].swath_xml
                     data = self.datastack[date][swath][burst].swath_data
                     image_no = str(self.datastack[date][swath][burst].burst_num)
                     stack_no = burst[6:]
                     xml_base = os.path.basename(xml)
-                    res_name = os.path.join(swath_path,xml_base[15:23] + '_iw_' + xml_base[6] + '_burst_' + stack_no + '.res')
-                    outdata =  os.path.join(swath_path,xml_base[15:23] + '_iw_' + xml_base[6] + '_burst_' + stack_no + '.raw')
+                    res_name = os.path.join(burst_path, 'slave.res')
+                    outdata = os.path.join(burst_path, 'slave_iw_' + xml_base[6] + '_burst_' + stack_no + '.raw')
 
                     self.datastack[date][swath][burst].write(res_name)
                     if not os.path.exists(res_name) or not os.path.exists(outdata):
 
-                        write_jobs.append('python ' + self.function_path + 'sentinel_dump_data_function.py ' + data + ' ' + res_name)
+                        write_jobs.append('python ' + self.function_path + 'sentinel_dump_data_function.py ' + data + ' ' + res_name + ' ' + outdata)
                         burst_num.append(stack_no + '_' + xml_base[6] + '_' + xml_base[15:23])
 
         # Burst are sorted in such a way that mainly read from different data files sorted by burst then swath then date.

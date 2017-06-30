@@ -27,6 +27,7 @@ class Jobs(object):
         self.flag_dir_root = self.doris_parameters.doris_parallel_flag_dir
         self.between_sleep_time = self.doris_parameters.between_sleep_time
         self.end_sleep_time = self.doris_parameters.end_sleep_time
+        self.python_path = os.path.dirname(self.doris_parameters.source_path)
         self.jobs_todo = []
         self.jobs_active = []
         self.jobs_finished = []
@@ -73,6 +74,7 @@ class Jobs(object):
                       + str(job['id']) + " "
                       + self._get_job_id(job) + " "
                       + str(self.verbose) + " "
+                      + self.python_path + " "
                       + job['command'] + " &")
             self.jobs_active.append(job)
         return

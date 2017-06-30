@@ -1,0 +1,11 @@
+include *.txt
+include install/*.xml
+include install/*.txt
+include prepare_stack/*.xml
+recursive-include docs *.txt
+include sar_tools/*
+include envisat_tools/*
+include doris_core/*
+include bin/*
+include envisat_tools/epr_api-2.2/*
+include envisat_tools/epr_api-2.2/src/*

@@ -1,10 +1,8 @@
 import os
-#import matplotlib.pyplot as plt
-#from pylab import figure, savefig
 import numpy as np
 import warnings
 from shutil import copyfile
-from resdata import ResData
+from doris.doris_stack.main_code.resdata import ResData
 import datetime
 import subprocess
 

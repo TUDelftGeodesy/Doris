@@ -1,38 +1,28 @@
 import argparse
-from datetime import datetime
-from doris_sentinel_1 import DorisSentinel1
+import os
+import xml.etree.ElementTree as ET
+from doris.doris_stack.main_code.doris_sentinel_1 import DorisSentinel1
 
 """Doris processing
-arguments:  --parameterfilepath, -p
-            --startdate -s
-            --enddate, -e
-            --masterdate, -m
+argument:  --parameterfilepath, -p
 """
 
-def valid_date(s):
-    try:
-        return datetime.strptime(s, "%Y-%m-%d")
-    except ValueError:
-        msg = "Not a valid date: '{0}'.".format(s)
-        raise argparse.ArgumentTypeError(msg)
-
 # parse arguments here
-
 parser = argparse.ArgumentParser(description='Doris processing.')
 parser.add_argument('--parameterfilepath', '-p', default='./',
                     help='Path to dorisParameter.py file, this file contains case specific parameters')
-parser.add_argument('--startdate', '-s', type=valid_date,
-                    help='start date of stack to be processed')
-parser.add_argument('--enddate', '-e', type=valid_date,
-                    help='end date of stack to be processed')
-parser.add_argument('--masterdate', '-m', type=valid_date,
-                    help='date of master of stack to be processed')
 
 args = parser.parse_args()
 
+xml_file = os.path.join(os.path.join(args.parameterfilepath, 'doris_input.xml'))
+print('Reading ' + xml_file)
+tree = ET.parse(xml_file)
+settings = tree.getroot()[0]
+
+start_date = settings.find('.start_date').text
+end_date = settings.find('.end_date').text
+master_date = settings.find('.master_date').text
+
 #start doris sentinel1 run
 doris_sentinel_1 = DorisSentinel1()
-doris_sentinel_1.run(args.parameterfilepath, args.startdate.strftime("%Y-%m-%d"), args.enddate.strftime("%Y-%m-%d"),
-                     args.masterdate.strftime("%Y-%m-%d"))
-
-
+doris_sentinel_1.run(args.parameterfilepath, start_date, end_date, master_date)

@@ -37,6 +37,13 @@
 			<COH_MULTILOOK comment="" c="off">1 1</COH_MULTILOOK>
 			<COH_WINSIZE comment="" c="off">2 10</COH_WINSIZE>
 		</coherence>
+		<coherence_network>coherence between master and slave
+			<PROCESS>COHERENCE</PROCESS>
+			<COH_METHOD comment="" c="off">refphase_only</COH_METHOD>
+			<COH_OUT_COH comment="output image" c="off">coherence.raw</COH_OUT_COH>
+			<COH_MULTILOOK comment="" c="off">1 1</COH_MULTILOOK>
+			<COH_WINSIZE comment="" c="off">2 10</COH_WINSIZE>
+		</coherence_network>
 		<comprefdem>compute the reference phase due to DEM
 			<PROCESS>COMPREFDEM</PROCESS>
 			<CRD_INCLUDE_FE comment="phase w.r.t. ellipsoid" c="on">OFF</CRD_INCLUDE_FE>

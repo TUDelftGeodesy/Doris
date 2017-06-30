@@ -1,17 +1,9 @@
 #!/usr/bin/env python
-import os,sys,time
-import math
 import numpy as np
 from numpy import *
-
-import gdal,gdalconst
+import gdal
 from gdalconst import *
-#from osgeo import gdal,gdalconst
-# NOT FETOOLS
-import scipy
 from scipy import ndimage
-
-# tai ren xing
 
 def usage():
     print '\nUsage: python get_winpos.py dataFile resFile Nwin outFile                        '
@@ -36,8 +28,6 @@ except:
 
 
 ################################################################################
-#function
-#function
 def get_parameter(First_param,file_name,format_flag=1,Second_param=None,Third_param=None):
     Read_contine_flag=0
     orbit_info=""

@@ -24,6 +24,8 @@ import zipfile
 import fastkml
 import shutil
 from fiona import collection
+import xml.etree.ElementTree as ET
+import sys
 
 # This are some example values...
 # shape_filename = '/media/gert/Data/shapes/netherlands/netherland.shp'
@@ -39,14 +41,14 @@ from fiona import collection
 # border = 0.1
 # create_binary('', out_file, resample, doris_input, lats, lons, rounding, border, data_folder, quality)
 
-class CreateDem(object):
+
+class CreateDem:
 
     def __init__(self):
         return
 
-
     def create(self, shape_filename='', out_file='' ,var_file='', resample='regular_grid', doris_input=True, lats=[], lons=[],
-                      rounding=1, border=0.1, data_folder='', quality='SRTM1'):
+                      rounding=1, border=0.1, data_folder='', quality='SRTM1', password='', username='', password_file=''):
         # This function stitches the different files together. If no data is available values will be zero. Which is
         # generally true because it is above sealevel.
         # The resampling is either
@@ -74,7 +76,7 @@ class CreateDem(object):
 
         # First download needed .hgt files. Quality is either 1, 3 or 30. If possible the files are downloaded. Otherwise
         # we fall back to lower quality. This is done using the elevation package
-        tiles, q_tiles, tiles_30 = self._download_dem_files(latlim, lonlim, quality, data_folder)
+        tiles, q_tiles, tiles_30 = self._download_dem_files(latlim, lonlim, quality, data_folder, password=password, username=username)
 
         # Then create the final grid. This depends on the needed data type and possible resampling...
         if quality == 'SRTM1':
@@ -163,6 +165,9 @@ class CreateDem(object):
             # Create a binary output file
             command = 'gdal_translate -of MFF ' + dem_tiff + ' ' + dem_tiff[:-5] + '.raw'
             os.system(command)
+
+            if not os.path.exists(os.path.dirname(out_file)):
+                os.makedirs(os.path.dirname(out_file))
             shutil.move(dem_tiff[:-5] + '.r00', out_file)
 
             # And create the scripts that go with them.
@@ -241,12 +246,24 @@ class CreateDem(object):
         return outputdata
 
 
-    def _download_dem_files(self, latlim, lonlim, quality, data_folder):
+    def _download_dem_files(self, latlim, lonlim, quality, data_folder, username='', password='', password_xml=''):
         # This function downloads data either in 1,3 or 30 arc seconds. When you choose either 1 or 3 seconds also 30
         # seconds is downloaded to fill the voids.
         # In this operation the needed files are also extracted...
 
-        filelist = self._srtm_listing(data_folder)
+        # Check the username and password and load from config file if needed.
+        if not username or not password:
+            if os.path.exists(password_xml):
+                tree = ET.parse(password_xml)
+                settings = tree.getroot()
+
+                username = settings.find('.usgs_username').text
+                password = settings.find('.usgs_password').text
+            else:
+                print('You should specify a username and password to download SRTM data. ')
+                return
+
+        filelist = self._srtm_listing(data_folder, username=username, password=password)
         outfiles = []
         q_files = []
         outfiles_30 = []
@@ -283,14 +300,11 @@ class CreateDem(object):
 
                     if not os.path.exists(extracted_file) or not os.path.exists(q_extracted):
                         # Download and unzip
-                        user = 'USERNAME'
-                        password = 'PASSWORD'
-
                         download_dem = filelist[quality][str(lat)][str(lon)]
                         download_q = download_dem[:-7] + 'num.zip'
 
-                        command = 'wget ' + download_dem + ' --user ' + user + ' --password ' + password + ' -O ' + filename
-                        q_command = 'wget ' + download_q + ' --user ' + user + ' --password ' + password + ' -O ' + q_file
+                        command = 'wget ' + download_dem + ' --user ' + username + ' --password ' + password + ' -O ' + filename
+                        q_command = 'wget ' + download_q + ' --user ' + username + ' --password ' + password + ' -O ' + q_file
                         try:
                             os.system(command)
                             zip_data = zipfile.ZipFile(filename)
@@ -542,7 +556,7 @@ class CreateDem(object):
         txtfile.close()
 
 
-    def _srtm_listing(self, data_folder):
+    def _srtm_listing(self, data_folder, username, password):
         # This script makes a list of all the available 1,3 and 30 arc second datafiles.
         # This makes it easier to detect whether files do or don't exist.
 
@@ -562,12 +576,9 @@ class CreateDem(object):
         filelist['SRTM3'] = dict()
         filelist['SRTM30'] = dict()
 
-        user = 'USERNAME'
-        password = 'PASSWORD'
-
         for folder, key_value in zip(folders, keys):
 
-            conn = requests.get(server + '/' + folder, auth=(user, password))
+            conn = requests.get(server + '/' + folder, auth=(username, password))
             if conn.status_code == 200:
                 print "status200 received ok"
             else:
@@ -630,7 +641,7 @@ class CreateDem(object):
                                     int(np.round((lonlim[1] - lonlim[0]) / dlon)),
                                     int(np.round((latlim[1] - latlim[0]) / dlat)),
                                     1,
-                                    conversion[dtype],  ['COMPRESS=LZW'])
+                                    conversion[dtype], ['COMPRESS=LZW', 'BIGTIFF=YES'])
         else:
             driver = gdal.GetDriverByName('mem')
             dataset = driver.Create('',
@@ -727,3 +738,42 @@ class parseHTMLDirectoryListing(HTMLParser):
 
     def getDirListing(self):
         return self.dirList
+
+# Actually execute the code...
+if __name__ == "__main__":
+
+    stack_folder = sys.argv[1]
+    if len(sys.argv) > 2:
+        quality = sys.argv[2]
+        if quality not in ['SRTM1', 'SRTM3']:
+            quality = 'SRTM3'
+    else:
+        quality = 'SRTM3'
+
+    xml_file = os.path.join(os.path.join(stack_folder, 'doris_input.xml'))
+    print('reading xml file stack ' + xml_file)
+    tree_stack = ET.parse(xml_file)
+    settings_stack = tree_stack.getroot()[0]
+
+    xml_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'install',
+                                 'doris_config.xml')
+    print('reading xml file settings doris ' + xml_file)
+    tree_doris = ET.parse(xml_file)
+    settings_doris = tree_doris.getroot()
+
+    # Then create the dem file
+    shapefile = settings_stack.find('.shape_file_path').text
+    dem_calc_folder = settings_stack.find('.dem_processing_folder').text
+    dem_out_folder = settings_stack.find('.dem_folder').text
+
+    dem_out = os.path.join(dem_out_folder, 'dem.raw')
+    dem_var = os.path.join(dem_out_folder, 'var.raw')
+
+    srtm_username = settings_doris.find('.usgs_username').text
+    srtm_password = settings_doris.find('.usgs_password').text
+
+    dem = CreateDem()
+    dem.create(shapefile, dem_out, dem_var, resample=None,
+            doris_input=True, rounding=1, border=1,
+            data_folder=dem_calc_folder, quality=quality,
+            password=srtm_password, username=srtm_username)
