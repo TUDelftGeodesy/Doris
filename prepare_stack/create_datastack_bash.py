@@ -61,12 +61,12 @@ class CreateBash(object):
         # make sure the file is executable
         os.chmod(file_path, 0744)
 
+        file_path = os.path.join(stack_folder, 'download_sentinel.sh')
+        f = open(file_path, 'w')
 
         f.write('#!/bin/bash \n')
         f.write('\n')
 
-        file_path = os.path.join(stack_folder, 'download_sentinel.sh')
-        f = open(file_path, 'w')
         f.write('source_path=' + python_path + '\n')
         f.write('export PYTHONPATH=$source_path:$PYTHONPATH \n')
         doris_run_script = os.path.join(source_path, 'prepare_stack', 'download_sentinel_data_orbits.py')
