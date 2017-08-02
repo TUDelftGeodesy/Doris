@@ -285,11 +285,13 @@ const int16     ORB_PRM_VEL     = 31;            // POSIVELO         [MA]
 
 
 // ====== ELLIPSOID CLASS ======
-// ______flatting is different: grs80: 298,25722101
-// ______flatting is different: wgs84: 298,25723563
+// ______flatting is different: grs80: 1/298.257222101
+// ______flatting is different: wgs84: 1/298.257223563
 const   double  WGS84_A  = 6378137.000;           // semimajor axis wgs84
-const   double  WGS84_B  = 6356752.3141;          // semiminor axis wgs84
+const   double  WGS84_B  = 6356752.3142;          // semiminor axis wgs84
 
+//const   double  GRS80_A  = 6378137.000;           // semimajor axis grs80
+//const   double  GRS80_B  = 6356752.3141;          // semiminor axis grs80
 
 
 // ____ used in matric.cc: convert_type ____  [GJ] && [MA] 2009
@@ -447,10 +449,8 @@ class input_ell                 // ellips a,b
   input_ell()
     {a   = WGS84_A;
      b   = WGS84_B; 
-     e2  = 0.00669438003551279091;
-     e2b = 0.00673949678826153145;
-     //set_ecc1st_sqr();// compute e2
-     //set_ecc2nd_sqr();// compute e2b
+     e2  = 0.006694379990141;
+     e2b = 0.006739496742276;
      set_name("WGS84");
     }
   // ______ constructor ellips(a,b) ______
