@@ -20,7 +20,7 @@ SHELL = 	/bin/sh
 CC = 		gcc
 #CFLAGS =	-O3
 #CFLAGS =        -m32         # for 64-bit systems, it requires compatibility lib32, no need for epr_api v2.2
-LFLAGS =	-lm $(LDFLAGS)
+LFLAGS =	-lm
 INSTALL_DIR =	/home/gertmulder/bin/doris/doris_v5_wu_branch
 
 
@@ -28,59 +28,65 @@ INSTALL_DIR =	/home/gertmulder/bin/doris/doris_v5_wu_branch
 #############################################################
 ### THERE SHOULD BE NOTHING YOU HAVE TO CHANGE BELOW HERE ###
 #############################################################
-LIB_SRC = 	epr_api-2.2/src/epr_api.c \
-		epr_api-2.2/src/epr_band.c \
-		epr_api-2.2/src/epr_bitmask.c \
-		epr_api-2.2/src/epr_core.c \
-		epr_api-2.2/src/epr_dataset.c \
-		epr_api-2.2/src/epr_dddb.c \
-		epr_api-2.2/src/epr_dsd.c \
-		epr_api-2.2/src/epr_dump.c \
-		epr_api-2.2/src/epr_field.c \
-		epr_api-2.2/src/epr_msph.c \
-		epr_api-2.2/src/epr_param.c \
-		epr_api-2.2/src/epr_product.c \
-		epr_api-2.2/src/epr_ptrarray.c \
-		epr_api-2.2/src/epr_record.c \
-		epr_api-2.2/src/epr_string.c \
-		epr_api-2.2/src/epr_swap.c \
-		epr_api-2.2/src/epr_typconv.c
+EPR_API_SRCDIR = epr_api-2.2/src
+LIB_SRC = $(EPR_API_SRCDIR)/epr_api.c \
+		$(EPR_API_SRCDIR)/epr_band.c \
+		$(EPR_API_SRCDIR)/epr_bitmask.c \
+		$(EPR_API_SRCDIR)/epr_core.c \
+		$(EPR_API_SRCDIR)/epr_dataset.c \
+		$(EPR_API_SRCDIR)/epr_dddb.c \
+		$(EPR_API_SRCDIR)/epr_dsd.c \
+		$(EPR_API_SRCDIR)/epr_dump.c \
+		$(EPR_API_SRCDIR)/epr_field.c \
+		$(EPR_API_SRCDIR)/epr_msph.c \
+		$(EPR_API_SRCDIR)/epr_param.c \
+		$(EPR_API_SRCDIR)/epr_product.c \
+		$(EPR_API_SRCDIR)/epr_ptrarray.c \
+		$(EPR_API_SRCDIR)/epr_record.c \
+		$(EPR_API_SRCDIR)/epr_string.c \
+		$(EPR_API_SRCDIR)/epr_swap.c \
+		$(EPR_API_SRCDIR)/epr_typconv.c
+LIB_OBJ = $(LIB_SRC:.c=.o)
 
 ### targets ###
 default: 	envisat_dump_header envisat_dump_data envisat_dump_HH envisat_dump_VV  
 ### compile envisat_dump_header program (dumps envisat header info to stdout) ###
-envisat_dump_header:	BEST
-		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
-		-o envisat_dump_header \
-		epr_api-2.2/src/*.o \
-		envisat_dump_header.c
+envisat_dump_header: libepr_api.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+	-I$(EPR_API_SRCDIR) -L. \
+	-o envisat_dump_header \
+	envisat_dump_header.c \
+	-lepr_api $(LFLAGS)
 
 ### compile envisat_dump_data program (dumps envisat slc short int data to file) ###
-envisat_dump_data:	BEST
-		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
-		-o envisat_dump_data \
-		epr_api-2.2/src/*.o \
-		envisat_dump_data.c
+envisat_dump_data: libepr_api.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+	-I$(EPR_API_SRCDIR) -L. \
+	-o envisat_dump_data \
+	envisat_dump_data.c \
+	-lepr_api $(LFLAGS)
 
 ### compile envisat_dump_data program (dumps envisat slc short int data to file) ###
-envisat_dump_HH:  BEST
-		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
-    -o envisat_dump_HH \
-    epr_api-2.2/src/*.o \
-    envisat_dump_HH.c
+envisat_dump_HH: libepr_api.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+	-I$(EPR_API_SRCDIR) -L. \
+	-o envisat_dump_HH \
+	envisat_dump_HH.c \
+	-lepr_api $(LFLAGS)
 
 ### compile envisat_dump_data program (dumps envisat slc short int data to file) ###
-envisat_dump_VV:  BEST
-		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
-    -o envisat_dump_VV \
-    epr_api-2.2/src/*.o \
-    envisat_dump_VV.c
+envisat_dump_VV: libepr_api.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) \
+	-I$(EPR_API_SRCDIR) -L. \
+	-o envisat_dump_VV \
+	envisat_dump_VV.c \
+	-lepr_api $(LFLAGS)
 
 
 
 ### create object code BEST library functions ###
-BEST:           $(LIB_SRC)
-		(cd epr_api-2.2/src/; make)
+libepr_api.a: $(LIB_OBJ)
+	ar rcs libepr_api.a $(LIB_OBJ)
 
 
 ### installer ###
@@ -111,8 +117,7 @@ uninstall:	cleaner
 		@echo " "
 clean:		
 		@echo "cleaning envisat tools..."
-		(cd epr_api-2.2/src/; make clean)
-		rm -f *.o
+		rm -f *.o *.a $(LIB_OBJ)
 cleaner:	clean
 		rm -f $(PROGS)
 
