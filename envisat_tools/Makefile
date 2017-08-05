@@ -20,7 +20,7 @@ SHELL = 	/bin/sh
 CC = 		gcc
 #CFLAGS =	-O3
 #CFLAGS =        -m32         # for 64-bit systems, it requires compatibility lib32, no need for epr_api v2.2
-LFLAGS =	-lm
+LFLAGS =	-lm $(LDFLAGS)
 INSTALL_DIR =	/home/gertmulder/bin/doris/doris_v5_wu_branch
 
 
@@ -50,28 +50,28 @@ LIB_SRC = 	epr_api-2.2/src/epr_api.c \
 default: 	envisat_dump_header envisat_dump_data envisat_dump_HH envisat_dump_VV  
 ### compile envisat_dump_header program (dumps envisat header info to stdout) ###
 envisat_dump_header:	BEST
-		$(CC) $(CFLAGS) $(LFLAGS) \
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
 		-o envisat_dump_header \
 		epr_api-2.2/src/*.o \
 		envisat_dump_header.c
 
 ### compile envisat_dump_data program (dumps envisat slc short int data to file) ###
 envisat_dump_data:	BEST
-		$(CC) $(CFLAGS) $(LFLAGS) \
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
 		-o envisat_dump_data \
 		epr_api-2.2/src/*.o \
 		envisat_dump_data.c
 
 ### compile envisat_dump_data program (dumps envisat slc short int data to file) ###
 envisat_dump_HH:  BEST
-		$(CC) $(CFLAGS) $(LFLAGS) \
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
     -o envisat_dump_HH \
     epr_api-2.2/src/*.o \
     envisat_dump_HH.c
 
 ### compile envisat_dump_data program (dumps envisat slc short int data to file) ###
 envisat_dump_VV:  BEST
-		$(CC) $(CFLAGS) $(LFLAGS) \
+		$(CC) $(CPPFLAGS) $(CFLAGS) $(LFLAGS) \
     -o envisat_dump_VV \
     epr_api-2.2/src/*.o \
     envisat_dump_VV.c
@@ -88,6 +88,7 @@ PROGS =		envisat_dump_header envisat_dump_data envisat_dump_HH envisat_dump_VV
 SCRIPTS =	envisat_dump_header2doris.csh
 install:	$(PROGS) $(SCRIPTS)
 		@echo "installing envisat tools..."
+		mkdir -p $(INSTALL_DIR)
 		cp -f $(PROGS) $(SCRIPTS) $(INSTALL_DIR)/.
 		#if test -d /cygdrive/c/cygwin; then \
                 #  echo "* cygwin detected"; \
@@ -96,7 +97,6 @@ install:	$(PROGS) $(SCRIPTS)
 		#  cp -f envisat_dump_header.exe $(INSTALL_DIR)/.; \
 		#  cp -f envisat_dump_data.exe $(INSTALL_DIR)/.; \
 		#fi;
-		make cleaner;
 		@echo " "
 		@echo "------------------------------------"
 		@echo "FINISHED INSTALLING ENVISAT TOOLS..."
