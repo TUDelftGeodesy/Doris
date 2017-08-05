@@ -1363,7 +1363,7 @@ void mtiming_correl(
   int32 offsetLines  = -999; // NaN
   int32 offsetPixels = -999;
   //getoffset(Result,offsetLines,offsetPixels);   // getoffsets based on Mean
-  getmodeoffset(Result,offsetLines,offsetPixels); // [MA] max occurence
+  getmodeoffset(Result,offsetLines,offsetPixels); // [MA] max occurrence
 
 
   // ______ Convert offsets to seconds and write  master time offset to res file ______
@@ -1727,7 +1727,7 @@ void mtiming_correlfft(
   int32 offsetLines  = -999; // NaN
   int32 offsetPixels = -999;
   //getoffset(Result,offsetLines,offsetPixels);   // getoffsets based on Mean
-  getmodeoffset(Result,offsetLines,offsetPixels); // [MA] max occurence
+  getmodeoffset(Result,offsetLines,offsetPixels); // [MA] max occurrence
 
 
   // ______ Convert offsets to seconds and write master time offset to res file ______
@@ -2377,7 +2377,7 @@ cerr << endl;
                  << "\n* MTIMING_CORRELATION: Offset Frequency Table"
                  << "\n*******************************************************************"
                  << "\nUsing following data to determine coarse image offset:"
-                 << "\navg. coh    offset_L    offset_P  occurence  index"
+                 << "\navg. coh    offset_L    offset_P  occurrence  index"
                  << "\n------------------------------------------------------";  // TODO not yet: scratchlogfile << INFO
 
    // _____ Mode of offsets _____  [MA]
@@ -2385,7 +2385,7 @@ cerr << endl;
   PROGRESS << "Using as threshold:  " << thresh_coh << " and checking for mode value";
   PROGRESS.print();
   INFO.print("Using following data to determine coarse image offset:");
-  INFO.print("avg. coh    offset_L    offset_P  occurence  index");
+  INFO.print("avg. coh    offset_L    offset_P  occurrence  index");
   INFO.print("------------------------------------------------------");
 
   mysort231(sortResult);                        // re-sort on 2nd, 3rd than 1st column
@@ -2412,7 +2412,7 @@ cerr << endl;
          }
       offset_freq=0;   // reset
       offset_mcoh=0;
-      for (register uint j=0; j<nW; j++)           // scan data for occurences of an offset
+      for (register uint j=0; j<nW; j++)           // scan data for occurrences of an offset
         {                                          // for all offsets
          if ( L == int32(rint(sortResult(j,1))) && P == int32(rint(sortResult(j,2))) )
            {
@@ -2449,7 +2449,7 @@ cerr << endl;
     scratchlogfile << "\n\n*******************************************************************";
     scratchlogfile.close();  // close scratchlogmtiminghtr
 
-    // _____ Even occurence check _____
+    // _____ Even occurrence check _____
     if (mode_val == evenmode_val) // there are even values of mode.
       {
         WARNING << "There are " << nEven << " offset pairs which has equal mode values are equal.";
@@ -2471,7 +2471,7 @@ cerr << endl;
     }
   if (mode_val == 1)
     {
-    WARNING.print("getmodeoffset: all the offset occurence == 1. There is no mode value. ");
+    WARNING.print("getmodeoffset: all the offset occurrence == 1. There is no mode value. ");
     WARNING.print("(please check bottom of LOGFILE to see if offset is OK or change window size.)");
     }
   if (nW < 6)

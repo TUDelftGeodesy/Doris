@@ -197,7 +197,7 @@ void readinput(
   //char                  filename[4*ONE27];            // string for filenames // [MA] changed EIGHTY --> 2*ONE27, due to comments line gets longer
   char                  eachline[4*ONE27];           // assuming maximum char lenght of the line is 4*ONE27. It should be sufficient.
 
-  // ______ Check (multiple) occurence of cards ______
+  // ______ Check (multiple) occurrence of cards ______
   bool                  priorscreen     = false;     // no screen card present
   bool                  priormemory     = false;     // check if present for info
   bool                  priorbatch      = false;     // check if present for info
@@ -747,7 +747,7 @@ void readinput(
         {
         case true:
           WARNING << "SCREEN: line " << linecnt << ": stdout: "
-               << " ignored due to prior occurence.";
+               << " ignored due to prior occurrence.";
           WARNING.print();
           break;
 
@@ -846,7 +846,7 @@ void readinput(
         {
         case true:
           WARNING << "MEMORY: line " << linecnt
-               << ": ignored due to prior occurence.";
+               << ": ignored due to prior occurrence.";
           WARNING.print();
           break;
 
@@ -879,11 +879,11 @@ void readinput(
         {
         case true:
           WARNING << "BATCH: line: " << linecnt << ": "
-               << "ignored due to prior occurence.";
+               << "ignored due to prior occurrence.";
           WARNING.print();
           break;
         default:
-          priorbatch = true;                            // flag for occurence
+          priorbatch = true;                            // flag for occurrence
          // keyword =  word[1] ;        // pass keyword                 // argument
           keyword = word[1];                  // pass next word       (the argument)
           writearg(keyword);
@@ -913,11 +913,11 @@ void readinput(
         {
         case true:
           WARNING << "OVERWRITE: line: " << linecnt << ": "
-               << "ignored due to prior occurence.";
+               << "ignored due to prior occurrence.";
           WARNING.print();
           break;
         default:
-          prioroverwrite = true;                                // flag for occurence
+          prioroverwrite = true;                                // flag for occurrence
           keyword = word[1];                  // pass next word       (the argument)
           writearg(keyword);
           toupper(keyword);
@@ -946,11 +946,11 @@ void readinput(
         {
         case true:
           WARNING << "LISTINPUT: line: " << linecnt << ": "
-               << "ignored due to prior occurence.";
+               << "ignored due to prior occurrence.";
           WARNING.print();
           break;
         default:
-          priorlistinput = true;                                // flag for occurence
+          priorlistinput = true;                                // flag for occurrence
           keyword = word[1];                  // pass next word       (the argument)
           writearg(keyword);
           toupper(keyword);
@@ -979,7 +979,7 @@ void readinput(
       //  the flag input array 'process[NUMPROCESSES]' after reading reset input
       //  to avoid interference with PROCESS cards (ONLYPROCESS overrides)
       //
-      if (onlyprocess == -1)                             // check multiple occurences
+      if (onlyprocess == -1)                             // check multiple occurrences
         {
           keyword = word[1];                  // pass next word       (the argument)
         writearg(keyword);
@@ -1079,7 +1079,7 @@ void readinput(
         }
       else
         {
-        WARNING << "ONLYPROCESS: more than one occurence of card, ignored line: "
+        WARNING << "ONLYPROCESS: more than one occurrence of card, ignored line: "
                    << linecnt << ".";
         WARNING.print();
 
@@ -1375,7 +1375,7 @@ void readinput(
       else if (!strcmp(keyword,"XV"))
         {
         generalinput.preview = 2;
-        INFO.print("PREVIEW: \tON: generation of SUNraster files enabled + XV sytem call.");
+        INFO.print("PREVIEW: \tON: generation of SUNraster files enabled + XV system call.");
         }
       else if (!strcmp(keyword,"ON")    ||
                !strncmp(keyword,"//",2) ||              // comment
@@ -1705,7 +1705,7 @@ void readinput(
     else if (!strcmp(keyword,"M_ORBDIR"))             // orbitfile filename
       {                                               
       if (specified(porbitsinput.m_orbdir))
-               WARNING.print("Prior occurence of M_ORBDIR ignored.");
+               WARNING.print("Prior occurrence of M_ORBDIR ignored.");
       strcpy(porbitsinput.m_orbdir,  word[1] );         // pass keyword
       writearg(porbitsinput.m_orbdir);
       }
@@ -1762,7 +1762,7 @@ void readinput(
     else if (!strcmp(keyword,"S_ORBDIR"))             // orbitfile filename
       {                                               
       if (specified(porbitsinput.s_orbdir))
-              WARNING.print("Prior occurence of S_ORBDIR ignored.");
+              WARNING.print("Prior occurrence of S_ORBDIR ignored.");
       strcpy(porbitsinput.s_orbdir,  word[1] );         // pass keyword
       writearg(porbitsinput.s_orbdir);
       }
@@ -3446,7 +3446,7 @@ void readinput(
         {
         case true:
           WARNING << "RS_OUT_FILE: line: " << linecnt << ": "
-              << "ignored due to prior occurence.";
+              << "ignored due to prior occurrence.";
           WARNING.print();
           break;
         default:
@@ -5785,7 +5785,7 @@ void checkunwrap(
 
     case uw_method2:
       INFO.print("Method 2: SNAPHU is used for unwrapping.");
-      INFO.print("Please make sure snaphu is installed.  check results carefuly.");
+      INFO.print("Please make sure snaphu is installed.  check results carefully.");
       INFO << "UW_SNAPHU_LOG: \tOutput log file of snaphu: "
            << unwrapinput.snaphu_log;
       INFO.print();
