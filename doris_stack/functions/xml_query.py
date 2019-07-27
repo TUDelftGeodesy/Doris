@@ -13,7 +13,7 @@ def xml_query(input_xml):
             from lxml import etree
         except:
             #import xml.etree.ElementTree as etree
-            print 'Failed to load lxml.etree or xml.etree.cElementTree'
+            print('Failed to load lxml.etree or xml.etree.cElementTree')
             sys.exit(1)
 
     inTree = etree.parse(input_xml)

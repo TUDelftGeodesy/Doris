@@ -19,7 +19,7 @@ def orbit_read(input_EOF_FileName):
             from lxml import etree
         except:
             #import xml.etree.ElementTree as etree
-            print 'Failed to load lxml.etree or xml.etree.cElementTree'
+            print('Failed to load lxml.etree or xml.etree.cElementTree')
             sys.exit(1)
 
     inTree = etree.parse(input_EOF_FileName)

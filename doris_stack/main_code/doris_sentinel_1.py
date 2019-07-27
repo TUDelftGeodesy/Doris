@@ -14,7 +14,7 @@ class DorisSentinel1(object):
 
     def run(self, doris_parameters_path, start_date, end_date, master_date):
 
-        print 'start sentinel 1 processing'
+        print('start sentinel 1 processing')
 
         #Set your input variables here. You should use absolute paths.
         dorisParameters = DorisParameters(doris_parameters_path)
@@ -175,5 +175,5 @@ class DorisSentinel1(object):
 
         profile.log_time_stamp('end')
 
-        print 'end sentinel 1 processing'
+        print('end sentinel 1 processing')
 

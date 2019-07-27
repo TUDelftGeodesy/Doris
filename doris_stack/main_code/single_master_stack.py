@@ -122,7 +122,7 @@ class SingleMaster(object):
         self.master_key = self.master_date[:4] + self.master_date[5:7] + self.master_date[8:10]
 
         if not master_date in self.stack.keys():
-            print 'Master date is not part of the datastack. If you do not need to initialize anymore this is not a problem.'
+            print('Master date is not part of the datastack. If you do not need to initialize anymore this is not a problem.')
 
     def baseline(self):
         # Create baseline plot of datastack. Usefull to select the right master
@@ -1238,7 +1238,7 @@ class SingleMaster(object):
                 x1.append(int(self.stack[date][burst][type].processes['readfiles']['Last_pixel (w.r.t. output_image)']))
 
             for b1 in range(len(bursts)):
-                print 'hello'
+                print('hello')
 
     def esd(self, esd_type='ps', max_baseline='200'):
 
@@ -1858,7 +1858,7 @@ class SingleMaster(object):
 
             # First create an phase input file for unwrapping
             pixels = self.full_swath[date]['ifgs'].processes['filtphase']['Number of pixels (multilooked)']
-            print pixels
+            print(pixels)
             pha = ' -w ' + pixels + ' -q phase -o float -M 1/1 -f cr4 -l1 ' \
                                     '-p1 -P' + pixels + ' cint_filt_ml.raw > unwrap_input.raw'
             os.system(self.cpxfiddle + pha)

@@ -76,7 +76,7 @@ class ResData(object):
                         temp[name] = [line]
 
                 except:
-                    print 'Error occurred at line: ' + line
+                    print('Error occurred at line: ' + line)
 
     def process_reader(self,processes = ''):
         # This function reads random processes based on standard buildup of processes in res files.
@@ -171,7 +171,7 @@ class ResData(object):
                             row += 1
 
                 except:
-                    print 'Error occurred at line: ' + line
+                    print('Error occurred at line: ' + line)
 
     def process_spacing(self,process=''):
 

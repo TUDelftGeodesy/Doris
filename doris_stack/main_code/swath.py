@@ -58,8 +58,8 @@ class SwathMeta(object):
             data = [os.path.join(path,'measurement',x) for x in data if x[12:14] in pol and x[6] == swath_no]
 
         # Check if the data is there and if the filenames coincide.
-        # print xml + str(len(xml))
-        # print data + str(len(data))
+        # print(xml + str(len(xml)))
+        # print(data + str(len(data)))
 
         if type(xml) is str:
             xml = [xml]

@@ -262,7 +262,7 @@ def apply_ESD_Nida(diffBursts, Df_DC, PRF, threshold = 0.0001):
             ph_res = ph_esd - ph_est
 
             ph_test[k] = np.nanmean(np.angle(exp(1j * ph_res[:]))) # should be ph_test(k) = np.nanmean(exp(1i*ph_res[:]))
-            #print ph_test
+            #print(ph_test)
 
         ind = np.argmin(abs(ph_test))
         D_az_min.append(D_azs[ind])
@@ -278,7 +278,7 @@ def apply_ESD_Nida(diffBursts, Df_DC, PRF, threshold = 0.0001):
         D_azs = np.linspace(D_azs[ind]-D_az_span, D_azs[ind]+D_az_span,num=7)
         del ph_test
 
-    #print 'amount of loops in iteration ' + str(c)
+    #print('amount of loops in iteration ' + str(c))
 
     pix_offset = offset / (PRF/(2*np.pi*np.nanmean(Df_DC[:])))
 

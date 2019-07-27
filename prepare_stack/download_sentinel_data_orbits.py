@@ -68,7 +68,7 @@ def sentinel_available(start_day='', end_day='', sensor_mode='', product='', lev
     try:
         dat = urllib2.urlopen(request)
     except:
-        print 'not possible to connect this time'
+        print('not possible to connect this time')
         return [], [], []
 
     html_dat = ''
@@ -115,7 +115,7 @@ def load_shape_info(shapefile):
             st = st + str(p[0]) + ' ' + str(p[1]) + ','
         st = st[:-1] + ')'
     else:
-        print 'format not recognized! Pleas creat either a .kml or .shp file.'
+        print('format not recognized! Pleas creat either a .kml or .shp file.')
         return []
 
     return st
@@ -128,7 +128,7 @@ def sentinel_check_validity(products=[], destination_folder='', user='', passwor
     invalid_files = []
 
     if not products:
-        print 'Nothing to check'
+        print('Nothing to check')
         return
 
     for product in products:
@@ -183,7 +183,7 @@ def sentinel_download(products=[], xml_only=False,  destination_folder='', proje
     # Download the files which are found by the sentinel_available script.
 
     if not products:
-        print 'No files to download'
+        print('No files to download')
         return
 
     wget_base = 'wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --continue --tries=20 --no-check-certificate --user=' + user + ' --password=' + password + ' '
@@ -297,7 +297,7 @@ def sentinel_quality_check(filename, uuid, user, password):
     try:
         dat = urllib2.urlopen(request)
     except:
-        print 'not possible to connect this time'
+        print('not possible to connect this time')
         return False
 
     html_dat = ''

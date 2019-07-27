@@ -12,16 +12,16 @@ import string, time, sys
 #import types
 
 def usage():
-    print '\nUsage: python tsx_dump_header2doris.py tsx_XML_product > outputfile'
-    print '  where tsx_XML_product is the input filename'
-#    print '        outputfile      is the output DORIS resultfile'
+    print('\nUsage: python tsx_dump_header2doris.py tsx_XML_product > outputfile')
+    print('  where tsx_XML_product is the input filename')
+#    print('        outputfile      is the output DORIS resultfile')
 
 try:
     inputFileName  = sys.argv[1]
 #    outputFileName = sys.argv[2]
 #    outStream      = open(outputFileName,'w')
 except:
-    print 'Unrecognized input'
+    print('Unrecognized input')
     usage()
     sys.exit(1)
 

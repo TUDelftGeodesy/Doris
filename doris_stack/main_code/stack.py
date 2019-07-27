@@ -121,7 +121,7 @@ class StackData(object):
             if os.path.exists(precise_dir):
                 self.precise_orbits = precise_dir
             else:
-                print 'Precise orbit path does not exist'
+                print('Precise orbit path does not exist')
 
     def add_path(self,path):
         # This function adds the output path.
@@ -584,7 +584,7 @@ class StackData(object):
                         read['Number_of_lines_output_image'] = str(max_line)
                         self.datastack[date][swath]['burst_' + str(burst+1)].processes['readfiles'] = read
                     else:
-                        print 'No resfile available, so information is not added to resfile'
+                        print('No resfile available, so information is not added to resfile')
 
     def write_stack(self,write_path='',no_data=False):
         # This function writes the full datastack to a given folder using the dates / swaths / bursts setup. This
