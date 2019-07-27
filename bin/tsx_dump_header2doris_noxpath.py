@@ -123,7 +123,7 @@ for key in queryList.keys():
 
             vars()[key].append(nodes.text)
             
-            if nodes.attrib.values()[0] == '0':
+            if list(nodes.attrib.values())[0] == '0':
                 keyTemp = 'dopplerCoeff0' # reset key
                 try:
                     vars()[keyTemp];
@@ -131,7 +131,7 @@ for key in queryList.keys():
                     vars()[keyTemp] = [];
                 vars()[keyTemp].append(nodes.text)
 
-            elif nodes.attrib.values()[0] == '1':
+            elif list(nodes.attrib.values())[0] == '1':
                 keyTemp = 'dopplerCoeff1' # reset key
                 try:
                     vars()[keyTemp];
@@ -139,7 +139,7 @@ for key in queryList.keys():
                     vars()[keyTemp] = [];
                 vars()[keyTemp].append(nodes.text)
 
-            elif nodes.attrib.values()[0] == '2':
+            elif list(nodes.attrib.values())[0] == '2':
                 keyTemp = 'dopplerCoeff2' # reset key
                 try:
                     vars()[keyTemp];

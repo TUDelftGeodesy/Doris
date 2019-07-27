@@ -12,7 +12,7 @@ import numpy as np
 from shapely.geometry import shape, mapping, box
 from shapely.ops import cascaded_union
 
-import image as image
+from . import image as image
 from doris.doris_stack.functions.load_shape_unzip import extract_kml_preview, shape_im_kml, load_shape
 from doris.doris_stack.main_code.dorisparameters import DorisParameters
 from doris.doris_stack.functions.burst_metadata import center_shape_from_res
@@ -103,7 +103,7 @@ class StackData(object):
             self.end_date = np.datetime64('now').astype('datetime64[s]')
         self.start_date = np.datetime64(start_date).astype('datetime64[s]')
 
-        if isinstance(polarisation, basestring):
+        if isinstance(polarisation, str):
             polarisation = [polarisation]
             for i in polarisation:
                 if not i in ['hh','vv','hv','vh']:
@@ -173,7 +173,7 @@ class StackData(object):
                 track_dir = os.path.join(track_dir, top_dirs[0])
             elif len(top_dirs) > 1:
                 for top_dir in top_dirs:
-                    user_input = raw_input("Do you want to use folder " + top_dir + " as resource folder? (yes/no)").lower()
+                    user_input = input("Do you want to use folder " + top_dir + " as resource folder? (yes/no)").lower()
                     if user_input in ['yes', 'y']:
                         track_dir = os.path.join(track_dir, top_dir)
 
@@ -491,7 +491,7 @@ class StackData(object):
         # coordinates variable
 
         if slaves is True:
-            dates = self.datastack.keys()
+            dates = list(self.datastack.keys())
         else:
             dates = [self.master_date]
 
@@ -507,7 +507,7 @@ class StackData(object):
             for swath in self.datastack[date].keys():
 
                 self.coordinates[date][swath] = OrderedDict()
-                self.coordinates[date][swath]['corners'] = np.zeros([len(self.datastack[date][swath].keys()), 4, 2],dtype='int')
+                self.coordinates[date][swath]['corners'] = np.zeros([len(list(self.datastack[date][swath].keys())), 4, 2],dtype='int')
 
                 b = 0
                 for burst in sorted(self.datastack[date][swath].keys(), key = lambda x: int(x[6:])):

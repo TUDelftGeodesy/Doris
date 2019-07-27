@@ -1,5 +1,5 @@
 import argparse
-from prepare_datastack import PrepareDatastack
+from .prepare_datastack import PrepareDatastack
 
 """Doris prepare datastack
 arguments:  --doris_input_file, -i

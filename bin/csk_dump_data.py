@@ -122,7 +122,7 @@ for n in range(outputWinFirstLine, outputWinLastLine):
        sys.stdout.write('%s...'%(temp*10))
        temp = temp+1      
     # read the hdf5 data and write to file
-    data_line = data[n,range(outputWinFirstPix,outputWinLastPix),:]
+    data_line = data[n,list(range(outputWinFirstPix,outputWinLastPix)),:]
     data_line.tofile(fid)
     data_line = None    
 sys.stdout.write("100% - done.\n")

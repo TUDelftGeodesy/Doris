@@ -145,7 +145,7 @@ queryList = {
 
 # get variables and parameters from xml
 container = {}
-for key, value in queryList.iteritems():
+for key, value in queryList.items():
     if key.startswith('list_'):
         container[key] = [tag.text for tag in inTree.findall(nsmap_none(value, ns))]
     else:

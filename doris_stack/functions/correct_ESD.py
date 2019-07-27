@@ -9,7 +9,7 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-from resdata import ResData
+from .resdata import ResData
 
 
 def remove_ramp(file, angle_pixel):

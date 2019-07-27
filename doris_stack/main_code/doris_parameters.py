@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from doris_config import DorisConfig
+from .doris_config import DorisConfig
 import xml.etree.ElementTree as ET
 
 

@@ -7,7 +7,7 @@ from copy import deepcopy
 from doris.doris_stack.main_code.resdata import ResData
 from doris.doris_stack.main_code.dorisparameters import DorisParameters
 import collections
-from jobs import Jobs
+from .jobs import Jobs
 from doris.doris_stack.functions.baselines import baselines
 
 
@@ -174,12 +174,12 @@ class SingleMaster(object):
     def create_full_swath(self):
         # Create folders with full swath for individual interferogram.
 
-        dates = self.stack.keys()
+        dates = list(self.stack.keys())
 
         # Change the res files.
         for date in dates:
             print(date)
-            bursts = self.stack[date].keys()
+            bursts = list(self.stack[date].keys())
 
             if 'slave' in self.full_swath[date].keys() and 'master' in self.full_swath[date].keys():
                 continue
@@ -261,7 +261,7 @@ class SingleMaster(object):
         job_list1 = []
         job_list2 = []
 
-        bursts = self.stack[dates[0]].keys()
+        bursts = list(self.stack[dates[0]].keys())
 
         for date in dates:
             for burst in bursts:
@@ -333,7 +333,7 @@ class SingleMaster(object):
 
         for date in self.coreg_dates:
 
-            bursts = self.stack[date].keys()
+            bursts = list(self.stack[date].keys())
             real_trans_p = []
             real_trans_l = []
             crop_shift_p = []
@@ -392,7 +392,7 @@ class SingleMaster(object):
         job_list2 = []
 
         # Deramp slaves
-        bursts = self.stack[self.coreg_dates[0]].keys()
+        bursts = list(self.stack[self.coreg_dates[0]].keys())
 
         for date in self.coreg_dates:
             for burst in bursts:
@@ -499,7 +499,7 @@ class SingleMaster(object):
         for date in self.coreg_dates:
             # We start by adding the windows of the first burst.
             no_offset = 0
-            bursts = self.stack[date].keys()
+            bursts = list(self.stack[date].keys())
             new_icc = copy.deepcopy(self.stack[date][bursts[0]]['ifgs'].processes['fine_coreg'])
 
             im_trans_p = self.full_swath[date]['ifgs'].processes['coarse_orbits']['Coarse_orbits_translation_pixels']
@@ -811,7 +811,7 @@ class SingleMaster(object):
 
         for date in self.coreg_dates:
 
-            bursts = self.stack[date].keys()
+            bursts = list(self.stack[date].keys())
 
             res_dem = deepcopy(self.stack[date][bursts[0]]['ifgs'].processes['dem_assist'])
             master_crop = deepcopy(self.full_swath[date]['master'].processes['crop'])
@@ -890,7 +890,7 @@ class SingleMaster(object):
             return
         self.read_res(dates=self.coreg_dates)
 
-        bursts = self.stack[self.coreg_dates[0]].keys()
+        bursts = list(self.stack[self.coreg_dates[0]].keys())
 
         jobList1 = []
 
@@ -938,8 +938,8 @@ class SingleMaster(object):
         # - add the master original and deramp step same as the slave file.
 
         date = self.master_date
-        date_1 = self.stack.keys()[0]
-        bursts = self.stack[date_1].keys()
+        date_1 = list(self.stack.keys())[0]
+        bursts = list(self.stack[date_1].keys())
         burst_res = dict()
         image_res = dict()
         self.read_res(dates=[self.master_date], bursts=bursts, burst_stack=burst_res, image_stack=image_res)
@@ -1004,8 +1004,8 @@ class SingleMaster(object):
             return
 
         date = self.master_date
-        date_1 = self.stack.keys()[0]
-        bursts = self.stack[date_1].keys()
+        date_1 = list(self.stack.keys())[0]
+        bursts = list(self.stack[date_1].keys())
         burst_res = dict()
         image_res = dict()
         self.read_res()  # Read the information from other steps first.
@@ -1186,7 +1186,7 @@ class SingleMaster(object):
                     pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
                     pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
-                    burst = self.stack[date].keys()[0]
+                    burst = list(self.stack[date].keys())[0]
                     res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['interfero'])
 
                     res['First_line (w.r.t. original_master)'] = line_0
@@ -1230,7 +1230,7 @@ class SingleMaster(object):
             # First make a list of all min max coordinates of all bursts.
 
             x0=[]; x1=[]; y0=[]; y1=[]
-            bursts = self.stack[date].keys()
+            bursts = list(self.stack[date].keys())
             for burst in bursts:
                 y0.append(int(self.stack[date][burst][type].processes['readfiles']['First_line (w.r.t. output_image)']))
                 y1.append(int(self.stack[date][burst][type].processes['readfiles']['Last_line (w.r.t. output_image)']))
@@ -1248,8 +1248,8 @@ class SingleMaster(object):
 
         jobList = []
         # First run all the ESD calculations in parallel
-        for date in [self.stack.keys()[0]]:
-            bursts = self.stack[date].keys()
+        for date in [list(self.stack.keys())[0]]:
+            bursts = list(self.stack[date].keys())
             sort_id = [int(dat[6]) * 100 + int(dat[14:]) for dat in bursts]
             bursts = [x for (y, x) in sorted(zip(sort_id, bursts))]
 
@@ -1298,7 +1298,7 @@ class SingleMaster(object):
     def network_esd(self, esd_type='ps', var_calc=False):
         # This function calculates the ESD values using a network approach
 
-        dates = (self.stack.keys())
+        dates = (list(self.stack.keys()))
         dates.append(self.master_date)
         dates = sorted(dates)
 
@@ -1328,18 +1328,18 @@ class SingleMaster(object):
 
         # Find the master date
         master_num = dates.index(self.master_date)
-        slave_nums = range(len(dates))
+        slave_nums = list(range(len(dates)))
         slave_nums.remove(master_num)
 
         # Create the A matrix
         A = np.zeros(shape=(len(m_s[0]), np.max([np.max(m_s[0]), np.max(m_s[1])]) + 1))
-        A[range(len(m_s[0])), m_s[0]] = 1
-        A[range(len(m_s[0])), m_s[1]] = -1
+        A[list(range(len(m_s[0]))), m_s[0]] = 1
+        A[list(range(len(m_s[0]))), m_s[1]] = -1
         A = np.hstack((A[:, :master_num], A[:, master_num + 1:]))
 
         # Create the weight matrix
         W = np.zeros((len(m_s[0]), len(m_s[0])))
-        id = range(len(m_s[0]))
+        id = list(range(len(m_s[0])))
 
         W[id, id] = 1 / weight
         W = np.linalg.inv(W)
@@ -1408,7 +1408,7 @@ class SingleMaster(object):
                 path = self.image_path(date)
                 os.chdir(path)
 
-                burst = self.stack[date].keys()[0]
+                burst = list(self.stack[date].keys())[0]
                 slave_res = copy.deepcopy(self.stack[date][burst]['slave'].processes['resample'])
 
                 # Read number of lines
@@ -1444,8 +1444,8 @@ class SingleMaster(object):
         # symbolic links.
 
         date = self.master_date
-        date_1 = self.stack.keys()[0]
-        bursts = self.stack[date_1].keys()
+        date_1 = list(self.stack.keys())[0]
+        bursts = list(self.stack[date_1].keys())
         burst_res = dict()
         image_res = dict()
 
@@ -1461,7 +1461,7 @@ class SingleMaster(object):
         os.chdir(path)
 
         if image_res[date]['slave'].process_control != '1':
-            burst = burst_res[date].keys()[0]
+            burst = list(burst_res[date].keys())[0]
             slave_res = copy.deepcopy(burst_res[date][burst]['slave'].processes['resample'])
 
             # Read number of lines
@@ -1557,7 +1557,7 @@ class SingleMaster(object):
                     pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
                     pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
-                    burst = self.stack[date].keys()[0]
+                    burst = list(self.stack[date].keys())[0]
                     res_1 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['comp_refphase'])
                     res_2 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['subtr_refphase'])
 
@@ -1663,7 +1663,7 @@ class SingleMaster(object):
                     pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
                     pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
-                    burst = self.stack[date].keys()[0]
+                    burst = list(self.stack[date].keys())[0]
                     res_1 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['comp_refdem'])
                     res_2 = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['subtr_refdem'])
 
@@ -1748,7 +1748,7 @@ class SingleMaster(object):
                     pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
                     pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
-                    burst = self.stack[date].keys()[0]
+                    burst = list(self.stack[date].keys())[0]
                     res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['coherence'])
 
                     res['First_line (w.r.t. original_master)'] = line_0
@@ -1813,7 +1813,7 @@ class SingleMaster(object):
                     pix_0 = self.full_swath[date]['master'].processes['readfiles']['First_pixel (w.r.t. output_image)']
                     pix_1 = self.full_swath[date]['master'].processes['readfiles']['Last_pixel (w.r.t. output_image)']
 
-                    burst = self.stack[date].keys()[0]
+                    burst = list(self.stack[date].keys())[0]
                     res = copy.deepcopy(self.stack[date][burst]['ifgs'].processes['filtphase'])
 
                     res['First_line (w.r.t. original_master)'] = line_0
@@ -1879,8 +1879,8 @@ class SingleMaster(object):
 
         # choose date closest to master as reference
         date = self.master_date
-        date_1 = self.stack.keys()[0]
-        bursts = self.stack[date_1].keys()
+        date_1 = list(self.stack.keys())[0]
+        bursts = list(self.stack[date_1].keys())
         burst_res = dict()
         image_res = dict()
 
@@ -2020,7 +2020,7 @@ class SingleMaster(object):
         # This function also accepts cpxint16 datatype
 
         if not dates:
-            dates = self.stack.keys()
+            dates = list(self.stack.keys())
         job_list1 = []
 
         for date in dates:
@@ -2125,7 +2125,7 @@ class SingleMaster(object):
         # Split full swath into different burst products. (to be used for DEM result splitting)
         
         if not dates:
-            dates = self.stack.keys()
+            dates = list(self.stack.keys())
         job_list1 = []
 
         for date in dates:
@@ -2172,7 +2172,7 @@ class SingleMaster(object):
         if stack_folder == False:
             stack_folder = self.stack_folder
         if not dates:
-            dates = stack.keys()
+            dates = list(stack.keys())
 
         paths = []
         for date in dates:
@@ -2200,7 +2200,7 @@ class SingleMaster(object):
         if stack_folder == False:
             stack_folder = self.stack_folder
         if not dates:
-            dates = stack.keys()
+            dates = list(stack.keys())
 
         paths = []
         for date in dates:
@@ -2230,7 +2230,7 @@ class SingleMaster(object):
         if stack_folder == False:
             stack_folder = self.stack_folder
         if not dates:
-            dates = stack.keys()
+            dates = list(stack.keys())
 
         paths = []
         for date in dates:
@@ -2293,14 +2293,14 @@ class SingleMaster(object):
         if not image_stack:
             image_stack = self.full_swath
         if dates == 'default':
-            dates = self.stack.keys()
+            dates = list(self.stack.keys())
         if not stack_folder:
             stack_folder = self.stack_folder
 
         for date in dates:
             for burst in burst_stack[date].keys():
 
-                files = burst_stack[date][burst].keys()
+                files = list(burst_stack[date][burst].keys())
                 if 'slave' in files:
                     slave_res = self.burst_path(date, burst, 'slave.res', stack_folder=stack_folder, full_path=True)
                     burst_stack[date][burst]['slave'].write(new_filename=slave_res)
@@ -2311,7 +2311,7 @@ class SingleMaster(object):
                     ifgs_res = self.burst_path(date,burst,'ifgs.res', stack_folder=stack_folder, full_path=True)
                     burst_stack[date][burst]['ifgs'].write(new_filename=ifgs_res)
 
-            files = image_stack[date].keys()
+            files = list(image_stack[date].keys())
             if 'slave' in files:
                 slave_res = self.image_path(date, 'slave.res', stack_folder=stack_folder)
                 image_stack[date]['slave'].write(new_filename=slave_res)
@@ -2329,15 +2329,15 @@ class SingleMaster(object):
         if image_stack == '':
             image_stack = self.full_swath
         if dates == 'default':
-            dates = self.stack.keys()
+            dates = list(self.stack.keys())
         if not stack_folder:
             stack_folder = self.stack_folder
         if not bursts:
             if dates[0] in burst_stack.keys():
-                bursts = burst_stack[dates[0]].keys()
+                bursts = list(burst_stack[dates[0]].keys())
             else:
-                date_1 = self.stack.keys()[0]
-                bursts = self.stack[date_1].keys()
+                date_1 = list(self.stack.keys())[0]
+                bursts = list(self.stack[date_1].keys())
         # TODO Maybe add search for folders and bursts if no specific date or burst is specified?
 
         for date in dates:
@@ -2375,7 +2375,7 @@ class SingleMaster(object):
     def del_res(self, type='ifgs', images=False, bursts=True, dates='default', stack_folder=''):
 
         if dates == 'default':
-            dates = self.stack.keys()
+            dates = list(self.stack.keys())
 
         for date in dates:
             for burst in self.stack[date].keys():
@@ -2397,7 +2397,7 @@ class SingleMaster(object):
         if not image_stack:
             image_stack = self.full_swath
         if dates == 'default':
-            dates = self.stack.keys()
+            dates = list(self.stack.keys())
 
         self.read_res(dates=dates) # Read data
 

@@ -75,7 +75,7 @@ class DorisSentinel1(object):
         # Finally delete unzipped images
         stack.del_unpacked_image()
 
-        import single_master_stack
+        from . import single_master_stack
 
         # Now we import the script to create a single master interferogram
         processing = SingleMaster(master_date=master_date, start_date=start_date,

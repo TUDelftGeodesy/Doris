@@ -16,7 +16,7 @@ import numpy as np
 import gdal
 import gdalconst
 import osr
-from HTMLParser import HTMLParser
+from html.parser import HTMLParser
 import pickle
 import requests
 import os

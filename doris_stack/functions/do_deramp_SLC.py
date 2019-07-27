@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 from numpy import *
-from get_ramp import get_ramp
+from .get_ramp import get_ramp
 from doris.doris_stack.functions.ESD_functions import freadbk
 from doris.doris_stack.main_code.resdata import ResData
 import sys

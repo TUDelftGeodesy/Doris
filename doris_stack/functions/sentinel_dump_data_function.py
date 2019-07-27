@@ -7,7 +7,7 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-import resdata as resdata
+from . import resdata as resdata
 
 
 def dump_data(input_file,res_file, output_file='', coordinates=[]):

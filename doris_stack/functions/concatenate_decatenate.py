@@ -17,7 +17,7 @@ def decatenate(date_folder, image_file, burst_file, datatype, multilooked='none'
     image_res, burst_res = read_res(date_folder, type=res_type)
 
     # Read image size
-    bursts = burst_res.keys()
+    bursts = list(burst_res.keys())
     if multilooked != 'none':
         try:
             no_lines = int(burst_res[bursts[0]].processes['readfiles']['Number_of_ml_lines_output_image'])
@@ -57,7 +57,7 @@ def concatenate(date_folder, image_file, burst_file, datatype, multilooked='none
     image_res, burst_res = read_res(date_folder, type=res_type)
 
     # Read image size
-    bursts = burst_res.keys()
+    bursts = list(burst_res.keys())
     if multilooked != 'none':
         try:
             no_lines = int(burst_res[bursts[0]].processes['readfiles']['Number_of_ml_lines_output_image'])

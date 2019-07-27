@@ -170,7 +170,7 @@ def load_shape(shapefile, buffer=0.02):
         if isinstance(shapefile, list):  # If the coordinates are already loaded. (for example bounding box)
             shp = Polygon(shapefile)
         else:  # It should be a shape file. We always select the first shape.
-            sh = fiona.open(shapefile).next()
+            sh = next(fiona.open(shapefile))
             shp = shape(sh['geometry'])
 
         # Now we have the shape we add a buffer and simplify first to save computation time.
