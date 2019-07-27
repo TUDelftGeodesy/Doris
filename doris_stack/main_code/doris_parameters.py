@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from doris_config import DorisConfig
+from .doris_config import DorisConfig
 import xml.etree.ElementTree as ET
 
 
@@ -81,28 +81,28 @@ class DorisParameters():
         # Print parameters, check if paths exist
         #
 
-        print 'self.shape_dat: ' + self.shape_dat
+        print('self.shape_dat: ' + self.shape_dat)
         # self._check_path_exists(self.shape_dat)
-        print 'self.track_dir:	' + self.track_dir
+        print('self.track_dir:	' + self.track_dir)
         self._check_path_exists(self.track_dir)
-        print 'self.stack_path:	' + self.stack_path
+        print('self.stack_path:	' + self.stack_path)
         # self._check_path_exists(self.stack_path)
-        print 'self.precise_orbits:	' + self.precise_orbits
+        print('self.precise_orbits:	' + self.precise_orbits)
         self._check_path_exists(self.precise_orbits)
-        print 'self.input_files:	' + self.input_files
+        print('self.input_files:	' + self.input_files)
         # self._check_path_exists(self.input_files)
-#        print 'self.main_code_folder:	' + self.main_code_folder
+#        print('self.main_code_folder:	' + self.main_code_folder)
 #        self._check_path_exists(self.main_code_folder)
-#        print 'self.script_folder:	' + self.script_folder
+#        print('self.script_folder:	' + self.script_folder)
 #        self._check_path_exists(self.script_folder)
-        print 'self.nr_of_jobs:	' + str(self.nr_of_jobs)
-        print 'self.initialize_flag:	' + str(self.initialize_flag)
-        print 'self.jobHandlerScript:	' + self.job_handler_script
+        print('self.nr_of_jobs:	' + str(self.nr_of_jobs))
+        print('self.initialize_flag:	' + str(self.initialize_flag))
+        print('self.jobHandlerScript:	' + self.job_handler_script)
         self._check_path_exists(self.job_handler_script)
 
     def _check_path_exists(self, path):
         if not(os.path.exists(path)):
-            print 'Error Doris_Parameters: path ' + path + ' does not exist'
+            print('Error Doris_Parameters: path ' + path + ' does not exist')
             
     def _settings_get(self, string):
         return self.settings.find('*/' + string).text

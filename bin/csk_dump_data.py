@@ -15,26 +15,26 @@ from array import array
 codeRevision=1.0   # this code revision number
 
 def usage():
-    print 'INFO    : @(#)Doris InSAR software, $Revision: %s $, $Author: TUDelft $' % codeRevision
-    print
-    print 'Usage   : csk_dump_data.py <inputfile> <outputfile> [l0 lN p0 pN] [-res RESFILE]'
-    print
-    print '          inputfile         is the input Cosmo-skymed HDF5 filename : master.hd5'
-    print '          outputfile        is the output filename                  : master.slc'
-    print '          l0                is the first azimuth line (starting at 1)'
-    print '          lN                is the last azimuth line'
-    print '          p0                is the first range pixel (starting at 1)'
-    print '          pN                is the last range pixel'
-    print '          RESFILE           DORIS result file that is to be updated for crop metadata (optional)'
-    print
-    print '          This software is part of Doris InSAR software package.\n'
-    print '(c) 1999-2010 Delft University of Technology, the Netherlands.\n'
+    print('INFO    : @(#)Doris InSAR software, $Revision: %s $, $Author: TUDelft $' % codeRevision)
+    print('')
+    print('Usage   : csk_dump_data.py <inputfile> <outputfile> [l0 lN p0 pN] [-res RESFILE]')
+    print()
+    print('          inputfile         is the input Cosmo-skymed HDF5 filename : master.hd5')
+    print('          outputfile        is the output filename                  : master.slc')
+    print('          l0                is the first azimuth line (starting at 1)')
+    print('          lN                is the last azimuth line')
+    print('          p0                is the first range pixel (starting at 1)')
+    print('          pN                is the last range pixel')
+    print('          RESFILE           DORIS result file that is to be updated for crop metadata (optional)')
+    print()
+    print('          This software is part of Doris InSAR software package.\n')
+    print('(c) 1999-2010 Delft University of Technology, the Netherlands.\n')
 
 try:
     inputFileName  = sys.argv[1]
     outputFileName = sys.argv[2]
 except:
-    print '\nError   : Unrecognized input or missing arguments\n\n'
+    print('\nError   : Unrecognized input or missing arguments\n\n')
     usage()
     sys.exit(1)
 
@@ -42,7 +42,7 @@ except:
 f = h5py.File(inputFileName, 'r')
 sbi = f.get('/S01/SBI')
 if f.parent.__contains__('/') == False or f.parent.__contains__('/S01') == False or f.parent.__contains__('/S01/SBI') == False :
-   print 'ERROR: Wrong HDF5 format!'
+   print('ERROR: Wrong HDF5 format!')
 data = array('h')
 data = sbi[:,:,:]
 Number_of_lines_original = sbi.shape[0]
@@ -69,7 +69,7 @@ elif len(sys.argv) > 3 and len(sys.argv) < 9:
     outputWinFirstPix  = int(sys.argv[5])-1    # gdal srcwin starting at 0
     outputWinLastPix   = int(sys.argv[6])      # Lastpix  --> yoff  (later)
 elif len(sys.argv) > 3 and len(sys.argv) < 7:
-    print 'Unrecognized input'
+    print('Unrecognized input')
     usage()
     sys.exit(1)
 else:
@@ -86,13 +86,13 @@ else:
 #    outputWinLastLine  = Number_of_lines_original-1
 #    outputWinFirstPix = 0
 #    outputWinLastPix  = Number_of_pixels_original-1
-#    print 'crop parameters not provided,so cropping the whole image'
+#    print('crop parameters not provided,so cropping the whole image')
 if outputWinFirstLine == None or outputWinLastLine == None or outputWinFirstPix == None or outputWinLastPix == None :
-    print '%s: running failed: crop size unknown !' % (sys.argv[0])
+    print('%s: running failed: crop size unknown !' % (sys.argv[0]))
     sys.exit(1)
 
 if outputWinLastLine-outputWinFirstLine+1 <0  or outputWinLastPix-outputWinFirstPix+1 <=0 :
-    print '%s running failed: crop dimensions are not invalid !' % (sys.argv[0])
+    print('%s running failed: crop dimensions are not invalid !' % (sys.argv[0]))
     sys.exit(1)
 
 # compute crop dimensions
@@ -122,7 +122,7 @@ for n in range(outputWinFirstLine, outputWinLastLine):
        sys.stdout.write('%s...'%(temp*10))
        temp = temp+1      
     # read the hdf5 data and write to file
-    data_line = data[n,range(outputWinFirstPix,outputWinLastPix),:]
+    data_line = data[n,list(range(outputWinFirstPix,outputWinLastPix)),:]
     data_line.tofile(fid)
     data_line = None    
 sys.stdout.write("100% - done.\n")
@@ -142,7 +142,7 @@ headerFileStream.write('END\n')
 
 # check whether the resfile exist!!!
 if resFile is not None:
-    print resFile
+    print(resFile)
     # load header
     headerFileStream = open(os.path.splitext(outputFileName)[0]+'.hdr','r')
     for line in headerFileStream:

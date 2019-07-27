@@ -19,7 +19,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("Enter the path to the archive data folder: ")
+            user_input = input("Enter the path to the archive data folder: ")
             if os.path.exists(user_input):
                 self.input_file_dict['sar_data_folder'] = user_input
                 input = True
@@ -28,7 +28,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("Which polarisation do you want to use (vv,hh,vh,hv): ")
+            user_input = input("Which polarisation do you want to use (vv,hh,vh,hv): ")
             if user_input in ['vv', 'hh', 'vh', 'hv']:
                 self.input_file_dict['polarisation'] = user_input
                 input = True
@@ -37,7 +37,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("Which track do you want to work with? (explore on https://scihub.copernicus.eu/dhus/) : ")
+            user_input = input("Which track do you want to work with? (explore on https://scihub.copernicus.eu/dhus/) : ")
             try:
                 input = str(int(user_input)).zfill(3)
                 self.input_file_dict['track'] = user_input
@@ -47,7 +47,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("Is this track ascending or descending? (asc/dsc) : ")
+            user_input = input("Is this track ascending or descending? (asc/dsc) : ")
             if user_input in ['asc', 'dsc']:
                 self.input_file_dict['direction'] = user_input
                 input = True
@@ -56,7 +56,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            self.input_file_dict['datastack_folder'] = raw_input("Enter the path to the folder of new datastack: ")
+            self.input_file_dict['datastack_folder'] = input("Enter the path to the folder of new datastack: ")
             if os.path.exists(self.input_file_dict['datastack_folder']):
                 input = True
             else:
@@ -64,7 +64,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            self.input_file_dict['shape_file_path'] = raw_input("Enter full path to the shapefile: ")
+            self.input_file_dict['shape_file_path'] = input("Enter full path to the shapefile: ")
             if os.path.exists(self.input_file_dict['shape_file_path']) and self.input_file_dict['shape_file_path'].endswith('.shp'):
                 input = True
             else:
@@ -72,7 +72,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("Enter the path to the folder of the orbit files: ")
+            user_input = input("Enter the path to the folder of the orbit files: ")
             if os.path.exists(user_input):
                 self.input_file_dict['orbits_folder'] = user_input
                 input = True
@@ -81,7 +81,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("Do you want to generate the DEM file automaticly (Yes/No): ").lower()
+            user_input = input("Do you want to generate the DEM file automaticly (Yes/No): ").lower()
             if user_input == 'yes' or user_input == 'no':
                 self.input_file_dict['generate_dem'] = user_input
                 input = True
@@ -90,7 +90,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            self.input_file_dict['dem_processing_folder'] = raw_input("Enter path to the dem folder: ")
+            self.input_file_dict['dem_processing_folder'] = input("Enter path to the dem folder: ")
             self.input_file_dict['dem_folder'] = os.path.join(self.input_file_dict['datastack_folder'], 'dem')
             if os.path.exists(self.input_file_dict['dem_processing_folder']):
                 input = True
@@ -99,7 +99,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("Do you want to use parallel computing (Yes/No): ").lower()
+            user_input = input("Do you want to use parallel computing (Yes/No): ").lower()
             if user_input == 'yes' or user_input == 'no':
                 self.input_file_dict['parallel'] = user_input
                 input = True
@@ -107,12 +107,12 @@ class CreateDorisInputXml(object):
                 print('You should use either yes of no')
 
         if user_input == 'yes':
-            nodes = raw_input("How many cores do you want to use: ")
+            nodes = input("How many cores do you want to use: ")
             self.input_file_dict['cores'] = nodes
 
         input = False
         while input == False:
-            user_input = raw_input("What is the start date of your stack in yyyy-mm-dd (can be changed later): ").lower()
+            user_input = input("What is the start date of your stack in yyyy-mm-dd (can be changed later): ").lower()
             try:
                 date = datetime.strptime(user_input, '%Y-%m-%d')
                 self.input_file_dict['start_date'] = user_input
@@ -123,7 +123,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("What is the end date of your stack in yyyy-mm-dd (can be changed later): ").lower()
+            user_input = input("What is the end date of your stack in yyyy-mm-dd (can be changed later): ").lower()
             try:
                 date = datetime.strptime(user_input, '%Y-%m-%d')
                 self.input_file_dict['end_date'] = user_input
@@ -134,7 +134,7 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("What is the master date of your stack in yyyy-mm-dd (can be changed later): ").lower()
+            user_input = input("What is the master date of your stack in yyyy-mm-dd (can be changed later): ").lower()
             try:
                 date = datetime.strptime(user_input, '%Y-%m-%d')
                 self.input_file_dict['master_date'] = user_input

@@ -1,32 +1,32 @@
 #!/usr/bin/env python
 import numpy as np
 from numpy import *
-from get_ramp import get_ramp
+from .get_ramp import get_ramp
 from doris.doris_stack.functions.ESD_functions import freadbk
 from doris.doris_stack.main_code.resdata import ResData
 import sys
 
 
 def usage():
-    print '\nUsage: python do_deramp_SLC_nom.py dataFilename  resFilename plotFlag'
-    print '  where dataFilename     is the name of burst you want to deramp'
-    print '        resFilename      is the .res file of burst'
-    print '        plotFlag         is a boolean var, to plot only'
-    print '                         default of doPlot is false'
-    print ' This function removes the phase ramp (Doppler centroid variations) from single burst of' 
-    print ' RS2 or S1 TOPS acquisition. The original binary image at path '
-    print " DATAFILENAME is saved in 'DATAFILENAME'.orig, whereas the new instance " 
-    print ' will be characterized by baseband spectrum. The function also requires '
-    print ' the .res file RESFILENAME.                                             '     
-    print '  for example                                                           '
-    print ' python  do_deramp_SLC.py   20140821_iw_2_burst_1.raw slave.res False   '
-    print ' created by Gert Mulder'
-    print ' Part of code adapted from Lorenzo Iannini and Wu Wenhao'
+    print('\nUsage: python do_deramp_SLC_nom.py dataFilename  resFilename plotFlag')
+    print('  where dataFilename     is the name of burst you want to deramp')
+    print('        resFilename      is the .res file of burst')
+    print('        plotFlag         is a boolean var, to plot only')
+    print('                         default of doPlot is false')
+    print(' This function removes the phase ramp (Doppler centroid variations) from single burst of')
+    print(' RS2 or S1 TOPS acquisition. The original binary image at path ')
+    print(" DATAFILENAME is saved in 'DATAFILENAME'.orig, whereas the new instance " )
+    print(' will be characterized by baseband spectrum. The function also requires ')
+    print(' the .res file RESFILENAME.                                             ')
+    print('  for example                                                           ')
+    print(' python  do_deramp_SLC.py   20140821_iw_2_burst_1.raw slave.res False   ')
+    print(' created by Gert Mulder')
+    print(' Part of code adapted from Lorenzo Iannini and Wu Wenhao')
 try:
     dataFilename = sys.argv[1]
     resFilename = sys.argv[2]
 except:
-    print 'Unrecognized input'
+    print('Unrecognized input')
     usage()
     sys.exit(1)
 
@@ -78,4 +78,4 @@ else:  # cpxint16
 fid.write(slc_dat)
 fid.close()
 
-print "\nDeramp operation completed\n"
+print("\nDeramp operation completed\n")

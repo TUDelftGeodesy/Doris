@@ -30,20 +30,20 @@ from datetime import datetime
 codeRevision=1.2   # this code revision number
 
 def usage():
-    print 'INFO    : @(#)Doris InSAR software, $Revision: %s $, $Author: TUDelft $' % codeRevision
-    print
-    print 'Usage   : python rs2_dump_header2doris.py rs2_XML_product > outputfile'
-    print '                           where rs2_XML_product is the input filename'
-    print
-    print '          This software is part of Doris InSAR software package.\n'
-    print '(c) 1999-2010 Delft University of Technology, the Netherlands.\n'
+    print('INFO    : @(#)Doris InSAR software, $Revision: %s $, $Author: TUDelft $' % codeRevision)
+    print()
+    print('Usage   : python rs2_dump_header2doris.py rs2_XML_product > outputfile')
+    print('                           where rs2_XML_product is the input filename')
+    print()
+    print('          This software is part of Doris InSAR software package.\n')
+    print('(c) 1999-2010 Delft University of Technology, the Netherlands.\n')
 
 try:
     inputFileName  = sys.argv[1]
 #    outputFileName = sys.argv[2]
 #    outStream      = open(outputFileName,'w')
 except:
-    print '\nError   : Unrecognized input or missing arguments\n\n'
+    print('\nError   : Unrecognized input or missing arguments\n\n')
     usage()
     sys.exit(1)
 
@@ -145,7 +145,7 @@ queryList = {
 
 # get variables and parameters from xml
 container = {}
-for key, value in queryList.iteritems():
+for key, value in queryList.items():
     if key.startswith('list_'):
         container[key] = [tag.text for tag in inTree.findall(nsmap_none(value, ns))]
     else:
@@ -184,7 +184,7 @@ if container['sceneBeam'] != 'S3': # Hacky fix for S3 merged images
 
 # ---------------------------------------------------------------------------------------------------------
 
-#print container['mission']
+#print(container['mission'])
 #exit()
 
 dummyVar = 'DUMMY'

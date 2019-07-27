@@ -7,7 +7,7 @@ if __name__ == "__main__":
     print(folder)
     sys.path.extend([folder])
 
-import resdata as resdata
+from . import resdata as resdata
 
 
 def dump_data(input_file,res_file, output_file='', coordinates=[]):
@@ -22,7 +22,7 @@ def dump_data(input_file,res_file, output_file='', coordinates=[]):
 
     if not coordinates:
         if res_vars.process_control['crop'] == '0':
-            print 'There is no information available about how to crop this file!'
+            print('There is no information available about how to crop this file!')
             return
         else:
             outputWinFirstPix = int(res_vars.processes['crop']['First_pixel (w.r.t. original_image)'])
@@ -58,7 +58,7 @@ def dump_data(input_file,res_file, output_file='', coordinates=[]):
 
     failure = os.system(cmd)
     if failure:
-        print '%s: running %s failed' % (sys.argv[0],cmd)
+        print('%s: running %s failed' % (sys.argv[0],cmd))
         sys.exit(1)
     else:
         os.rename(os.path.splitext(output_file)[0]+'.j00',output_file)

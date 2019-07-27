@@ -67,7 +67,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
             os.remove(Link_DATA)
 
         RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_slave_pixel)
-        print "RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH
+        print("RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH)
         os.symlink(RAW_DATA_ABSOLUTE_PATH,Link_DATA)
 
         outStream      = open(Path_MFF_HDR,'w')
@@ -99,7 +99,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
 
 
         RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_slave_line)
-        print "RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH
+        print("RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH)
         os.symlink(RAW_DATA_ABSOLUTE_PATH,Link_DATA)
 
         outStream      = open(Path_MFF_HDR,'w')
@@ -137,7 +137,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
         TazGrid = np.tile(Tvect_az, (1, Nrg_res))
         
     else:
-        print 'variable resampled can only be 0 or 1!'
+        print('variable resampled can only be 0 or 1!')
         return
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,7 +200,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
     elif type == 'DC':
         data = Df_AzCtr + Taz_vec * DR_est 
     else:
-        print 'Choose either chirp or DC for type'
+        print('Choose either chirp or DC for type')
         return
 
     return data
@@ -260,23 +260,23 @@ def freadbk(path_file,line_start=1, pixels_start=1,nofLines1=None,nofPixels1=Non
     gdal.AllRegister()
     thisBurstData_file=gdal.Open(path_file,GA_ReadOnly)
     if thisBurstData_file is None:
-        print 'Could not open'+Path_MFF_HDR
+        print('Could not open'+Path_MFF_HDR)
         sys.exit(1)
-    #print 'Driver: ', thisBurstData_file.GetDriver().ShortName,'/', \
-    #      thisBurstData_file.GetDriver().LongName
-    #print 'Size is ',thisBurstData_file.RasterXSize,'x',thisBurstData_file.RasterYSize, \
-    #      'x',thisBurstData_file.RasterCount
-    #print 'Projection is ',thisBurstData_file.GetProjection()
+    #print('Driver: ', thisBurstData_file.GetDriver().ShortName,'/', \
+    #      thisBurstData_file.GetDriver().LongName)
+    #print('Size is ',thisBurstData_file.RasterXSize,'x',thisBurstData_file.RasterYSize, \
+    #      'x',thisBurstData_file.RasterCount)
+    #print('Projection is ',thisBurstData_file.GetProjection())
     geotransform = thisBurstData_file.GetGeoTransform()
     if not geotransform is None:
-        print 'Origin = (',geotransform[0], ',',geotransform[3],')'
-        print 'Pixel Size = (',geotransform[1], ',',geotransform[5],')'
+        print('Origin = (',geotransform[0], ',',geotransform[3],')')
+        print('Pixel Size = (',geotransform[1], ',',geotransform[5],')')
 
     cint_srd=thisBurstData_file.GetRasterBand(1)
-    #print 'Band Type=',gdal.GetDataTypeName(cint_srd.DataType)
+    #print('Band Type=',gdal.GetDataTypeName(cint_srd.DataType))
 
     if cint_srd.GetOverviewCount() > 0:
-            print 'Band has ', cint_srd.GetOverviewCount(), ' overviews.'
+            print('Band has ', cint_srd.GetOverviewCount(), ' overviews.')
     thisBurstData= cint_srd.ReadAsArray(int(pixels_start-1),int(line_start-1),nofPixels1,nofLines1)
     return thisBurstData
 ##################################################################################

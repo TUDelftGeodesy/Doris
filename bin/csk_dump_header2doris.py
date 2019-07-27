@@ -14,18 +14,18 @@ import numpy, h5py, sys, math, time, string # numpy and h5py  required for HDF5 
 codeRevision=1.0   # this code revision number
 
 def usage():
-    print 'INFO    : @(#)Doris InSAR software, $Revision: %s $, $Author: TUDelft $' % codeRevision
-    print
-    print 'Usage   : python csk_dump_header2doris.py csk_HDF5_product > OutputFileName'
-    print '                               where csk_HDF5_product is the input filename'
-    print
-    print '          This software is part of Doris InSAR software package.\n'
-    print '(c) 1999-2010 Delft University of Technology, the Netherlands.\n'
+    print('INFO    : @(#)Doris InSAR software, $Revision: %s $, $Author: TUDelft $' % codeRevision)
+    print()
+    print('Usage   : python csk_dump_header2doris.py csk_HDF5_product > OutputFileName')
+    print('                               where csk_HDF5_product is the input filename')
+    print()
+    print('          This software is part of Doris InSAR software package.\n')
+    print('(c) 1999-2010 Delft University of Technology, the Netherlands.\n')
 
 try:
   inputFileName  = sys.argv[1]
 except:
-    print '\nError   : Unrecognized input or missing arguments\n\n'
+    print('\nError   : Unrecognized input or missing arguments\n\n')
     usage()
     sys.exit(1)
 
@@ -38,7 +38,7 @@ qlk = s01.get('QLK')
 
 
 if f.parent.__contains__('/') == False or f.parent.__contains__('/S01') == False or f.parent.__contains__('/S01/SBI') == False or f.parent.__contains__('/S01/B001') == False or f.parent.__contains__('/S01/QLK') == False :
-   print 'ERROR: Wrong HDF5 format!'
+   print('ERROR: Wrong HDF5 format!')
 
 # reading the attributes  
 VolumeFile = f.attrs.__getitem__('Product Filename')

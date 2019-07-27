@@ -1,8 +1,8 @@
 # This file contains a function to check which files for sentinel are available, which ones are downloaded and a quality
 # check for the files which are downloaded.
 
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import ssl
 import re
 import os, sys
@@ -56,19 +56,19 @@ def sentinel_available(start_day='', end_day='', sensor_mode='', product='', lev
 
     # Finally we do the query to get the search result.
     string = string[5:] + '&rows=1000'
-    url = 'https://scihub.copernicus.eu/dhus/search?q=' + urllib.quote_plus(string)
+    url = 'https://scihub.copernicus.eu/dhus/search?q=' + urllib.parse.quote_plus(string)
     print(url)
 
     print('Requesting available products: ' + url)
-    request = urllib2.Request(url)
+    request = urllib.request.Request(url)
     base64string = base64.b64encode('%s:%s' % (user, password))
     request.add_header("Authorization", "Basic %s" % base64string)
 
     # connect to server. Hopefully this works at once
     try:
-        dat = urllib2.urlopen(request)
+        dat = urllib.request.urlopen(request)
     except:
-        print 'not possible to connect this time'
+        print('not possible to connect this time')
         return [], [], []
 
     html_dat = ''
@@ -115,7 +115,7 @@ def load_shape_info(shapefile):
             st = st + str(p[0]) + ' ' + str(p[1]) + ','
         st = st[:-1] + ')'
     else:
-        print 'format not recognized! Pleas creat either a .kml or .shp file.'
+        print('format not recognized! Pleas creat either a .kml or .shp file.')
         return []
 
     return st
@@ -128,7 +128,7 @@ def sentinel_check_validity(products=[], destination_folder='', user='', passwor
     invalid_files = []
 
     if not products:
-        print 'Nothing to check'
+        print('Nothing to check')
         return
 
     for product in products:
@@ -183,7 +183,7 @@ def sentinel_download(products=[], xml_only=False,  destination_folder='', proje
     # Download the files which are found by the sentinel_available script.
 
     if not products:
-        print 'No files to download'
+        print('No files to download')
         return
 
     wget_base = 'wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --continue --tries=20 --no-check-certificate --user=' + user + ' --password=' + password + ' '
@@ -192,7 +192,7 @@ def sentinel_download(products=[], xml_only=False,  destination_folder='', proje
         date = str(product.findall('date')[1].text)
         date = datetime.datetime.strptime(date[:19], '%Y-%m-%dT%H:%M:%S')
 
-        url = str('"'+product.findall('link')[0].attrib['href'][:-6]+ urllib.quote_plus('$value') +'"')
+        url = str('"'+product.findall('link')[0].attrib['href'][:-6]+ urllib.parse.quote_plus('$value') +'"')
         name = str(product.find('title').text)
 
         track = str(product.find('int[@name="relativeorbitnumber"]').text)
@@ -246,8 +246,8 @@ def sentinel_download(products=[], xml_only=False,  destination_folder='', proje
         kml = "'map-overlay.kml'"
         dat = "'" + name + ".SAFE'"
 
-        preview_url = url[:-10] + '/Nodes(' + dat + ')/Nodes(' + prev + ')/Nodes(' + png + ')/' + urllib.quote_plus('$value') + '"'
-        kml_url = url[:-10] + '/Nodes(' + dat + ')/Nodes(' + prev + ')/Nodes(' + kml + ')/' + urllib.quote_plus('$value') + '"'
+        preview_url = url[:-10] + '/Nodes(' + dat + ')/Nodes(' + prev + ')/Nodes(' + png + ')/' + urllib.parse.quote_plus('$value') + '"'
+        kml_url = url[:-10] + '/Nodes(' + dat + ')/Nodes(' + prev + ')/Nodes(' + kml + ')/' + urllib.parse.quote_plus('$value') + '"'
 
         # Download data files and create symbolic link
         if xml_only == False: # So we also download the file
@@ -288,16 +288,16 @@ def sentinel_download(products=[], xml_only=False,  destination_folder='', proje
 def sentinel_quality_check(filename, uuid, user, password):
     # Check whether the zip files can be unpacked or not. This is part of the download procedure.
 
-    checksum_url = "https://scihub.copernicus.eu/dhus/odata/v1/Products('" + uuid + "')/Checksum/Value/" + urllib.quote_plus('$value')
-    request = urllib2.Request(checksum_url)
+    checksum_url = "https://scihub.copernicus.eu/dhus/odata/v1/Products('" + uuid + "')/Checksum/Value/" + urllib.parse.quote_plus('$value')
+    request = urllib.request.Request(checksum_url)
     base64string = base64.b64encode('%s:%s' % (user, password))
     request.add_header("Authorization", "Basic %s" % base64string)
 
     # connect to server. Hopefully this works at once
     try:
-        dat = urllib2.urlopen(request)
+        dat = urllib.request.urlopen(request)
     except:
-        print 'not possible to connect this time'
+        print('not possible to connect this time')
         return False
 
     html_dat = ''
@@ -336,9 +336,9 @@ def download_orbits(start_date, end_date, pages=30, precise_folder='', restitute
             url = 'https://qc.sentinel1.eo.esa.int/aux_poeorb/?page=' + str(i + 1)
             gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
             try:
-                page = urllib2.urlopen(url, context=gcontext)
+                page = urllib.request.urlopen(url, context=gcontext)
             except TypeError:
-                page = urllib2.urlopen(url)
+                page = urllib.request.urlopen(url)
 
             html = page.read().split('\n')
             orb_files = []
@@ -360,9 +360,9 @@ def download_orbits(start_date, end_date, pages=30, precise_folder='', restitute
                     url = 'https://qc.sentinel1.eo.esa.int/aux_poeorb/' + orb
                     if not os.path.exists(filename):
                         try:
-                            urllib.urlretrieve(url, filename, context=gcontext)
+                            urllib.request.urlretrieve(url, filename, context=gcontext)
                         except TypeError:
-                            urllib.urlretrieve(url, filename)
+                            urllib.request.urlretrieve(url, filename)
                         print(orb + ' downloaded')
                     else:
                         print(orb + ' already downloaded')
@@ -387,9 +387,9 @@ def download_orbits(start_date, end_date, pages=30, precise_folder='', restitute
                 url = 'https://qc.sentinel1.eo.esa.int/aux_resorb/?page=' + str(i + 1)
                 gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
                 try:
-                    page = urllib2.urlopen(url, context=gcontext)
+                    page = urllib.request.urlopen(url, context=gcontext)
                 except TypeError:
-                    page = urllib2.urlopen(url)
+                    page = urllib.request.urlopen(url)
 
                 html = page.read().split('\n')
                 orb_files = []
@@ -408,9 +408,9 @@ def download_orbits(start_date, end_date, pages=30, precise_folder='', restitute
                         url = 'https://qc.sentinel1.eo.esa.int/aux_poeorb/' + orb
                         if not os.path.exists(filename):
                             try:
-                                urllib.urlretrieve(url, filename, context=gcontext)
+                                urllib.request.urlretrieve(url, filename, context=gcontext)
                             except TypeError:
-                                urllib.urlretrieve(url, filename)
+                                urllib.request.urlretrieve(url, filename)
                             print(orb + ' downloaded')
                         else:
                             print(orb + ' already downloaded')

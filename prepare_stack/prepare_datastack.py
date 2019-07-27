@@ -11,10 +11,10 @@
 # - the dem source folder where the intermediate DEM data is stored
 
 import os
-from create_dem import CreateDem
-from create_inputfiles import CreateInputFiles
-from create_doris_input_xml import CreateDorisInputXml
-from create_datastack_bash import CreateBash
+from .create_dem import CreateDem
+from .create_inputfiles import CreateInputFiles
+from .create_doris_input_xml import CreateDorisInputXml
+from .create_datastack_bash import CreateBash
 import xml.etree.ElementTree as ET
 
 class PrepareDatastack(object):

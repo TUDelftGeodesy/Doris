@@ -7,24 +7,24 @@ from doris.doris_stack.main_code.resdata import ResData
 import sys
 
 def usage():
-    print '\nUsage: python  do_reramp_SLC.py dataFilename resFilename resampled'
-    print '  where dataFilename        is the name of burst you want to deramp'
-    print '        resFilename         is the .res file of burst              '
-    print ' This python applies the inverse phase ramp to the burst pointed by DATAFILENAME (slc)'
-    print ' and RESFILENAME (res) that was deramped by deramp_SLC.m. The phase screen'
-    print ' must account for the new resampled grids PIXRGGRID and PIXAZGRID    '
-    print ' [Nlines_mst x Nsamples_mst] that contain the time coordinates of the'
-    print ' resampled image into the master grid:                               '
-    print '  for example                                                        '
-    print ' python   do_reramp_SLC.py slave_rsmp.raw slave.res False            '
-    print ' created by Gert Mulder'
-    print ' Part of code adapted from Lorenzo Iannini and Wu Wenhao'
+    print('\nUsage: python  do_reramp_SLC.py dataFilename resFilename resampled')
+    print('  where dataFilename        is the name of burst you want to deramp')
+    print('        resFilename         is the .res file of burst              ')
+    print(' This python applies the inverse phase ramp to the burst pointed by DATAFILENAME (slc)')
+    print(' and RESFILENAME (res) that was deramped by deramp_SLC.m. The phase screen')
+    print(' must account for the new resampled grids PIXRGGRID and PIXAZGRID    ')
+    print(' [Nlines_mst x Nsamples_mst] that contain the time coordinates of the')
+    print(' resampled image into the master grid:                               ')
+    print('  for example                                                        ')
+    print(' python   do_reramp_SLC.py slave_rsmp.raw slave.res False            ')
+    print(' created by Gert Mulder')
+    print(' Part of code adapted from Lorenzo Iannini and Wu Wenhao')
 try:
     dataFilename = sys.argv[1]
     resFilename = sys.argv[2]
      
 except:
-    print 'Unrecognized input'
+    print('Unrecognized input')
     usage()
     sys.exit(1)
 if len(sys.argv) == 3:
@@ -32,7 +32,7 @@ if len(sys.argv) == 3:
 elif len(sys.argv) == 4:
     resampled = sys.argv[3]
 else:
-    print 'Unrecognized input'
+    print('Unrecognized input')
     usage()
     sys.exit(1)
 
@@ -96,4 +96,4 @@ else:  # cpxint16
 fid.write(slc_dat)
 fid.close()
 
-print "\nReramp operation completed\n"
+print("\nReramp operation completed\n")

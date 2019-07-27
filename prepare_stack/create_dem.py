@@ -16,7 +16,7 @@ import numpy as np
 import gdal
 import gdalconst
 import osr
-from HTMLParser import HTMLParser
+from html.parser import HTMLParser
 import pickle
 import requests
 import os
@@ -436,7 +436,7 @@ class CreateDem:
             latlim = [min(lat), max(lat)]
             lonlim = [min(lon), max(lon)]
         else:
-            print 'format not recognized! Pleas creat either a .kml or .shp file.'
+            print('format not recognized! Pleas creat either a .kml or .shp file.')
             return []
 
         return latlim, lonlim
@@ -580,9 +580,9 @@ class CreateDem:
 
             conn = requests.get(server + '/' + folder, auth=(username, password))
             if conn.status_code == 200:
-                print "status200 received ok"
+                print("status200 received ok")
             else:
-                print "an error occurred during connection"
+                print("an error occurred during connection")
 
             data = conn.text
             parser = parseHTMLDirectoryListing()
@@ -691,7 +691,7 @@ class CreateDem:
 # https://svn.openstreetmap.org/applications/utils/import/srtm2wayinfo/python/srtm.py
 class parseHTMLDirectoryListing(HTMLParser):
     def __init__(self):
-        # print "parseHTMLDirectoryListing.__init__"
+        # print("parseHTMLDirectoryListing.__init__")
         HTMLParser.__init__(self)
         self.title = "Undefined"
         self.isDirListing = False
@@ -702,7 +702,7 @@ class parseHTMLDirectoryListing(HTMLParser):
         self.currHref = ""
 
     def handle_starttag(self, tag, attrs):
-        # print "Encountered the beginning of a %s tag" % tag
+        # print("Encountered the beginning of a %s tag" % tag)
         if tag == "title":
             self.inTitle = True
         if tag == "a":
@@ -713,7 +713,7 @@ class parseHTMLDirectoryListing(HTMLParser):
                     self.currHref = attr[1]
 
     def handle_endtag(self, tag):
-        # print "Encountered the end of a %s tag" % tag
+        # print("Encountered the end of a %s tag" % tag)
         if tag == "title":
             self.inTitle = False
         if tag == "a":
@@ -727,9 +727,9 @@ class parseHTMLDirectoryListing(HTMLParser):
     def handle_data(self, data):
         if self.inTitle:
             self.title = data
-            print "title=%s" % data
+            print("title=%s" % data)
             if "Index of" in self.title:
-                # print "it is an index!!!!"
+                # print("it is an index!!!!")
                 self.isDirListing = True
         if self.inHyperLink:
             # We do not include parent directory in listing.

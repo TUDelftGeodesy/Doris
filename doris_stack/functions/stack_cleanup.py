@@ -89,8 +89,8 @@ def cleanup(stack_folder, cleanup_ps=True, cleanup_ds=False, full_swath_rm=[], f
     burst_endings = {'b_folder': '', 'b_raw': '.raw', 'b_ras': '.ras', 'b_res': '.res'}
 
     # Finally, make a list of which endings should be deleted
-    swath_remove = [dat for key, dat in swath_endings.iteritems() if swath_clean[key]]
-    burst_remove = [dat for key, dat in burst_endings.iteritems() if burst_clean[key]]
+    swath_remove = [dat for key, dat in swath_endings.items() if swath_clean[key]]
+    burst_remove = [dat for key, dat in burst_endings.items() if burst_clean[key]]
 
     # Check the total ifgs in the stack
     swath_folders = scan_stack(stack_folder)
@@ -118,10 +118,10 @@ def scan_stack(stack_folder):
     # exist.
 
     swath_folders = []
-    root, dirs, files = os.walk(stack_folder).next()
+    root, dirs, files = next(os.walk(stack_folder))
 
     for folder in dirs:
-        r, folders, files = os.walk(os.path.join(root, folder)).next()
+        r, folders, files = next(os.walk(os.path.join(root, folder)))
 
         if 'swath_1' in folders and 'master.res' in files and 'ifgs.res' in files and 'cint.raw' in files:
             swath_folders.append(os.path.join(root, folder))
@@ -133,7 +133,7 @@ def remove_burst_folders(swath_folder, remove):
     # Remove all burst folders from swath folder
 
     folder_names = []
-    root, dirs, files = os.walk(swath_folder).next()
+    root, dirs, files = next(os.walk(swath_folder))
 
     for folder in dirs:
         if folder.startswith('swath'):
@@ -148,7 +148,7 @@ def remove_file(swath_folder, file_endings, remove):
     # Remove the files in the main folder.
 
     file_names = []
-    root, dirs, files = os.walk(swath_folder).next()
+    root, dirs, files = next(os.walk(swath_folder))
 
     for filename in files:
         for end in file_endings:
@@ -164,16 +164,16 @@ def remove_burst_files(swath_folder, file_endings, remove):
     # Remove the files in the burst folders.
 
     file_names = []
-    root1, swaths, files = os.walk(swath_folder).next()
+    root1, swaths, files = next(os.walk(swath_folder))
 
     if len(swaths) == 0:
         'Files seems to be deleted already!'
         return file_names
 
     for swath in swaths:
-        root2, bursts, files = os.walk(os.path.join(root1, swath)).next()
+        root2, bursts, files = next(os.walk(os.path.join(root1, swath)))
         for burst in bursts:
-            root3, burst_fold, files = os.walk(os.path.join(root2, burst)).next()
+            root3, burst_fold, files = next(os.walk(os.path.join(root2, burst)))
             for filename in files:
                 for end in file_endings:
                     if filename.endswith(end) and remove:
