@@ -25,7 +25,7 @@ class ResData(object):
 
         # Create a ResData object (single/interferogram)
         if type not in ['single','interferogram'] and not filename:
-            warnings.warn('Define if results data is slave, master or interferogram')
+            warnings.warn('Define if results data is subordinate, main or interferogram')
             return
         else:
             self.res_type = type
@@ -37,7 +37,7 @@ class ResData(object):
                 self.res_read()
         else:
             if type == 'single':
-                self.process_control = collections.OrderedDict([('readfiles', '0'),('leader_datapoints', '0'), ('precise_orbits', '0'), ('crop', '0'), ('sim_amplitude', '0'), ('master_timing' , '0'),
+                self.process_control = collections.OrderedDict([('readfiles', '0'),('leader_datapoints', '0'), ('precise_orbits', '0'), ('crop', '0'), ('sim_amplitude', '0'), ('main_timing' , '0'),
                                        ('oversample', '0'), ('resample', '0') , ('filt_azi', '0'), ('filt_range', '0'), ('NOT_USED' , '0')])
             elif type == 'interferogram':
                 self.process_control = collections.OrderedDict([('coarse_orbits','0'),('coarse_correl','0'),('fine_coreg','0'),('timing_error','0'),('dem_assist','0'),

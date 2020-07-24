@@ -31,7 +31,7 @@ class DorisParameters():
         data_path = self._settings_get('.sar_data_folder')
         self.data_path = data_path
         #
-        # used in single_master.py
+        # used in single_main.py
         #
         #
         # used in test_dat_ESD

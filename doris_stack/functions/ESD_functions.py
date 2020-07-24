@@ -96,8 +96,8 @@ def get_f_DC_difference(nBurst):
     burst1 = 'burst_' + str(nBurst) + '/'
     burst2 = 'burst_' + str(nBurst + 1) + '/'
 
-    this_m_resData = burst1 + 'master.res'
-    next_m_resData = burst2 + 'master.res'
+    this_m_resData = burst1 + 'main.res'
+    next_m_resData = burst2 + 'main.res'
 
     os.chdir(os.getcwd() + '/' + burst1)
     f_DC_1 = get_ramp(os.path.basename(this_m_resData), resampled=0, type='DC')
@@ -118,8 +118,8 @@ def get_coordinates(nBurst):
 
     burst1 = 'burst_' + str(nBurst) + '/'
     burst2 = 'burst_' + str(nBurst+1) + '/'
-    this_m_resData = burst1 + 'master.res'
-    next_m_resData = burst2 + 'master.res'
+    this_m_resData = burst1 + 'main.res'
+    next_m_resData = burst2 + 'main.res'
 
     # Get variables from first burst
     this_line_first     = int(get_parameter('First_line (w.r.t. output_image)',this_m_resData,1))

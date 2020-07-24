@@ -5,7 +5,7 @@ from datetime import timedelta
 from doris.doris_stack.functions.ESD_functions import get_f_DC_difference, get_coordinates, freadbk
 
 
-def save_overlapping(stack_folder, master_date, dates, overlap):
+def save_overlapping(stack_folder, main_date, dates, overlap):
 
     nBurst, burst, next_burst = get_burst(overlap)
 
@@ -27,33 +27,33 @@ def save_overlapping(stack_folder, master_date, dates, overlap):
     burst1 = 'burst_' + str(nBurst) + '/'
     burst2 = 'burst_' + str(nBurst + 1) + '/'
 
-    # First get the data for the master and df_dc
-    master_path = os.path.join(overlap_path, master_date)
+    # First get the data for the main and df_dc
+    main_path = os.path.join(overlap_path, main_date)
     df_dc_path = os.path.join(overlap_path, 'df_dc')
 
-    master_1 = master_file(burst)
-    master_2 = master_file(next_burst)
+    main_1 = main_file(burst)
+    main_2 = main_file(next_burst)
 
-    if not os.path.exists(master_path + '_1') or not os.path.exists(master_path + '_2'):
-        master_1 = freadbk(burst1 + master_1, line_start, first_pixel_this, line_length,
+    if not os.path.exists(main_path + '_1') or not os.path.exists(main_path + '_2'):
+        main_1 = freadbk(burst1 + main_1, line_start, first_pixel_this, line_length,
                           pixel_length, 'cpxint16', this_nr_oflines, this_nr_ofpixels)
-        master_2 = freadbk(burst2 + master_2, 1, first_pixel_next, line_length, pixel_length,
+        main_2 = freadbk(burst2 + main_2, 1, first_pixel_next, line_length, pixel_length,
                           'cpxint16', next_nr_oflines, next_nr_ofpixels)
-        master_1_file = np.memmap(master_path + '_1', 'complex64', shape=master_1.shape, mode='w+')
-        master_2_file = np.memmap(master_path + '_2', 'complex64', shape=master_2.shape, mode='w+')
-        master_1_file[:] = master_1
-        master_2_file[:] = master_2
-        master_1_file.flush()
-        master_2_file.flush()
+        main_1_file = np.memmap(main_path + '_1', 'complex64', shape=main_1.shape, mode='w+')
+        main_2_file = np.memmap(main_path + '_2', 'complex64', shape=main_2.shape, mode='w+')
+        main_1_file[:] = main_1
+        main_2_file[:] = main_2
+        main_1_file.flush()
+        main_2_file.flush()
 
     if not os.path.exists(df_dc_path):
         df_dc = get_f_DC_difference(nBurst)
         df_dc_file = np.memmap(df_dc_path, 'float32', shape=df_dc.shape, mode='w+')
         df_dc_file[:,:] = df_dc[:,:]
 
-    # Then loop over the slaves
+    # Then loop over the subordinates
     for date in dates:
-        if date == master_date:
+        if date == main_date:
             continue
 
         path = swath_path(stack_folder, date, burst)
@@ -66,14 +66,14 @@ def save_overlapping(stack_folder, master_date, dates, overlap):
         burst2 = 'burst_' + str(nBurst + 1) + '/'
 
         if not os.path.exists(data_path + '_1') or not os.path.exists(data_path + '_2'):
-            slave_1 = freadbk(burst1 + 'slave_rsmp_reramped.raw', line_start, first_pixel_this, line_length, pixel_length , 'complex64',  this_nr_oflines, this_nr_ofpixels)
-            slave_2 = freadbk(burst2 + 'slave_rsmp_reramped.raw', 1, first_pixel_next, line_length, pixel_length, 'complex64', next_nr_oflines, next_nr_ofpixels)
-            slave_1_file = np.memmap(data_path + '_1', 'complex64', shape=slave_1.shape, mode='w+')
-            slave_2_file = np.memmap(data_path + '_2', 'complex64', shape=slave_2.shape, mode='w+')
-            slave_1_file[:] = slave_1
-            slave_2_file[:] = slave_2
-            slave_1_file.flush()
-            slave_2_file.flush()
+            subordinate_1 = freadbk(burst1 + 'subordinate_rsmp_reramped.raw', line_start, first_pixel_this, line_length, pixel_length , 'complex64',  this_nr_oflines, this_nr_ofpixels)
+            subordinate_2 = freadbk(burst2 + 'subordinate_rsmp_reramped.raw', 1, first_pixel_next, line_length, pixel_length, 'complex64', next_nr_oflines, next_nr_ofpixels)
+            subordinate_1_file = np.memmap(data_path + '_1', 'complex64', shape=subordinate_1.shape, mode='w+')
+            subordinate_2_file = np.memmap(data_path + '_2', 'complex64', shape=subordinate_2.shape, mode='w+')
+            subordinate_1_file[:] = subordinate_1
+            subordinate_2_file[:] = subordinate_2
+            subordinate_1_file.flush()
+            subordinate_2_file.flush()
 
 
 def find_ps_overlapping(stack_folder, overlap):
@@ -149,19 +149,19 @@ def select_ps_data(stack_folder, overlap):
 
     # Save only the ps points to file.
     for date in dates:
-        slave_ps_name = os.path.join(overlap_path, date + '_1_ps')
-        master_ps_name = os.path.join(overlap_path, date + '_2_ps')
+        subordinate_ps_name = os.path.join(overlap_path, date + '_1_ps')
+        main_ps_name = os.path.join(overlap_path, date + '_2_ps')
 
-        if not os.path.exists(slave_ps_name) or not os.path.exists(master_ps_name):
-            slave_ps = np.memmap(slave_ps_name, 'complex64', mode='w+', shape=(ps_num))
-            master_ps = np.memmap(master_ps_name, 'complex64', mode='w+', shape=(ps_num))
-            slave = np.memmap(os.path.join(overlap_path, date + '_1'), 'complex64', mode='r',
+        if not os.path.exists(subordinate_ps_name) or not os.path.exists(main_ps_name):
+            subordinate_ps = np.memmap(subordinate_ps_name, 'complex64', mode='w+', shape=(ps_num))
+            main_ps = np.memmap(main_ps_name, 'complex64', mode='w+', shape=(ps_num))
+            subordinate = np.memmap(os.path.join(overlap_path, date + '_1'), 'complex64', mode='r',
                                      shape=(line_length, pixel_length))
-            master = np.memmap(os.path.join(overlap_path, date + '_2'), 'complex64', mode='r',
+            main = np.memmap(os.path.join(overlap_path, date + '_2'), 'complex64', mode='r',
                                     shape=(line_length, pixel_length))
             if ps_num > 0:
-                slave_ps[:] = slave[ps_dat]
-                master_ps[:] = master[ps_dat]
+                subordinate_ps[:] = subordinate[ps_dat]
+                main_ps[:] = main[ps_dat]
     # Do the same for the df_dc file
     if not os.path.exists(os.path.join(overlap_path, 'df_dc_ps')):
         df_dc_ps = np.memmap(os.path.join(overlap_path, 'df_dc_ps'), 'float32', mode='w+', shape=(ps_num))
@@ -171,7 +171,7 @@ def select_ps_data(stack_folder, overlap):
             df_dc_ps[:] = df_dc[ps_dat]
 
 
-def network_esd_ps(stack_folder, overlap, master_date, max_baseline, max_offset=0.02):
+def network_esd_ps(stack_folder, overlap, main_date, max_baseline, max_offset=0.02):
     # Based on ps point esd is calculated using a network approach
 
     dates, overlap_path, diff_matrix, var_matrix, to_angle_matrix, weight_matrix, processing = prepare_esd(stack_folder, overlap)
@@ -202,16 +202,16 @@ def network_esd_ps(stack_folder, overlap, master_date, max_baseline, max_offset=
             timediff = datetime.strptime(date_2, '%Y-%m-%d') - datetime.strptime(date, '%Y-%m-%d')
             if timediff > timedelta(minutes=1) and timediff < timedelta(days=max_baseline):
 
-                first_master = np.memmap(os.path.join(overlap_path, date + '_1_ps'), 'complex64', mode='r',
+                first_main = np.memmap(os.path.join(overlap_path, date + '_1_ps'), 'complex64', mode='r',
                                          shape=ps_num)
-                first_slave = np.memmap(os.path.join(overlap_path, date_2 + '_1_ps'), 'complex64', mode='r',
+                first_subordinate = np.memmap(os.path.join(overlap_path, date_2 + '_1_ps'), 'complex64', mode='r',
                                         shape=ps_num)
-                second_master = np.memmap(os.path.join(overlap_path, date + '_2_ps'), 'complex64', mode='r',
+                second_main = np.memmap(os.path.join(overlap_path, date + '_2_ps'), 'complex64', mode='r',
                                           shape=ps_num)
-                second_slave = np.memmap(os.path.join(overlap_path, date_2 + '_2_ps'), 'complex64', mode='r',
+                second_subordinate = np.memmap(os.path.join(overlap_path, date_2 + '_2_ps'), 'complex64', mode='r',
                                          shape=ps_num)
 
-                double_diff = (first_master * first_slave.conj()) * (second_master * second_slave.conj()).conj()
+                double_diff = (first_main * first_subordinate.conj()) * (second_main * second_subordinate.conj()).conj()
 
                 # Now select all pixels with an offset of less than x milipixel
                 double_diff[np.isnan(double_diff)] = 0.050
@@ -231,10 +231,10 @@ def network_esd_ps(stack_folder, overlap, master_date, max_baseline, max_offset=
     return diff_matrix, var_matrix, to_angle_matrix, weight_matrix, dates
 
 
-def network_esd_coh(stack_folder, overlap, master_date, max_baseline, ra=10, az=2):
+def network_esd_coh(stack_folder, overlap, main_date, max_baseline, ra=10, az=2):
 
     dates, overlap_path, diff_matrix, var_matrix, to_angle_matrix, weight_matrix, processed = prepare_esd(stack_folder, overlap)
-    folder = master_date[0:4] + master_date[5:7] + master_date[8:10] + "_" + dates[0][0:4] + dates[0][5:7] + dates[0][8:10]
+    folder = main_date[0:4] + main_date[5:7] + main_date[8:10] + "_" + dates[0][0:4] + dates[0][5:7] + dates[0][8:10]
     os.chdir(os.path.join(stack_folder, folder, overlap[0:7]))
 
     nBurst = int(overlap.split('_')[3])
@@ -426,10 +426,10 @@ def swath_path(stack_folder, date, key):
     return file_path
 
 
-def master_file(key):
+def main_file(key):
     # This function converts combinations of dates and keys to a datafile name
     string = '_iw_' + key[6] + '_burst_' + key[14:]
-    string = 'master' + string + '.raw'
+    string = 'main' + string + '.raw'
 
     return string
 
@@ -442,14 +442,14 @@ if __name__ == "__main__":
         overlap       = sys.argv[2]
         esd_type      = sys.argv[3]
         max_baseline  = sys.argv[4]
-        master_date   = sys.argv[5]
+        main_date   = sys.argv[5]
         ps_select     = sys.argv[6]  # Use 1 if needed, use 0 if not
     elif len(sys.argv) == 6:
         stack_folder  = sys.argv[1]
         overlap       = sys.argv[2]
         esd_type      = sys.argv[3]
         max_baseline  = sys.argv[4]
-        master_date   = sys.argv[5]
+        main_date   = sys.argv[5]
     else:
         sys.exit('usage: stack_folder type burst')
 
@@ -457,17 +457,17 @@ if __name__ == "__main__":
     print('burst is ' + overlap)
     print('ps select is ' + ps_select)
     print('max baseline is ' + max_baseline)
-    print('master date is ' + master_date)
+    print('main date is ' + main_date)
     print('type ESD is ' + esd_type)
 
     # first get all the dates from the stack:
-    master_key = master_date[:4] + master_date[5:7] + master_date[8:]
+    main_key = main_date[:4] + main_date[5:7] + main_date[8:]
 
     ifgs = [f for f in os.listdir(stack_folder) if len(f) == 8]
-    dates = [f[:4] + '-' + f[4:6] + '-' + f[6:8] for f in ifgs if f != master_key]
+    dates = [f[:4] + '-' + f[4:6] + '-' + f[6:8] for f in ifgs if f != main_key]
 
     # Then run the overlap cutout / ps selection and
-    save_overlapping(stack_folder, master_date, dates, overlap)
+    save_overlapping(stack_folder, main_date, dates, overlap)
 
     # If we want to select ps points
     if ps_select == '1':
@@ -477,9 +477,9 @@ if __name__ == "__main__":
     max_baseline = int(max_baseline)
     if esd_type == 'ps':
         select_ps_data(stack_folder, overlap)
-        diff_matrix, var_matrix, to_angle_matrix, weight, dates = network_esd_ps(stack_folder, overlap, master_date, max_baseline)
+        diff_matrix, var_matrix, to_angle_matrix, weight, dates = network_esd_ps(stack_folder, overlap, main_date, max_baseline)
     elif esd_type == 'coh':
-        diff_matrix, var_matrix, to_angle_matrix, weight, dates = network_esd_coh(stack_folder, overlap, master_date, max_baseline)
+        diff_matrix, var_matrix, to_angle_matrix, weight, dates = network_esd_coh(stack_folder, overlap, main_date, max_baseline)
     else:
         sys.exit('Type should either be coh or ps')
 

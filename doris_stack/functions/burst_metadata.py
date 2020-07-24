@@ -115,7 +115,7 @@ def burst_crop(meta,burst_num,swath_data,new_burst_num):
     first_sample = [int(x) for x in meta['aux']['firstValidSample'][burst_num-1].split()]
 
     swath_data = os.path.basename(swath_data)
-    crop['Data_output_file'] = 'slave_iw_' + swath_data[6] + '_burst_' + str(new_burst_num) + '.raw'
+    crop['Data_output_file'] = 'subordinate_iw_' + swath_data[6] + '_burst_' + str(new_burst_num) + '.raw'
     crop['Data_output_format'] = 'complex_short'
 
     # Start line of this burst in total swath product

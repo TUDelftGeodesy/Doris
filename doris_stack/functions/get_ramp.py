@@ -39,10 +39,10 @@ def get_ramp(res_file, resampled=0, type='chirp'):
     lNum = int(get_parameter('Number_of_lines_original', res_file,1))
 
     if resampled == 1:
-        l0 = int(get_parameter('First_line (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
-        lN = int(get_parameter('Last_line (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
-        p0 = int(get_parameter('First_pixel (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
-        pN = int(get_parameter('Last_pixel (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
+        l0 = int(get_parameter('First_line (w.r.t. original_main)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
+        lN = int(get_parameter('Last_line (w.r.t. original_main)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
+        p0 = int(get_parameter('First_pixel (w.r.t. original_main)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
+        pN = int(get_parameter('Last_pixel (w.r.t. original_main)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
     else:
         l0 = int(get_parameter('First_line (w.r.t. original_image)', res_file, 1))
         lN = int(get_parameter('Last_line (w.r.t. original_image)', res_file, 1))
@@ -54,19 +54,19 @@ def get_ramp(res_file, resampled=0, type='chirp'):
     Nrg_res = pN-p0+1
 
     if resampled == 1:
-        # Read the resampled image and slave coordinates in master geometry
+        # Read the resampled image and subordinate coordinates in main geometry
         #################################################################################
 
-        Path_MFF_HDR   ='rsmp_orig_slave_pixel'+'.hdr'
-        Link_DATA      ='rsmp_orig_slave_pixel'+'.r00'  # the default format should be r00
-        Link_rsmp_orig_slave_pixel ='rsmp_orig_slave_pixel.raw'
+        Path_MFF_HDR   ='rsmp_orig_subordinate_pixel'+'.hdr'
+        Link_DATA      ='rsmp_orig_subordinate_pixel'+'.r00'  # the default format should be r00
+        Link_rsmp_orig_subordinate_pixel ='rsmp_orig_subordinate_pixel.raw'
 
         if (os.path.isfile(Path_MFF_HDR)):
             os.remove(Path_MFF_HDR)
         if (os.path.isfile(Link_DATA)):
             os.remove(Link_DATA)
 
-        RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_slave_pixel)
+        RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_subordinate_pixel)
         print "RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH
         os.symlink(RAW_DATA_ABSOLUTE_PATH,Link_DATA)
 
@@ -88,9 +88,9 @@ def get_ramp(res_file, resampled=0, type='chirp'):
             os.remove(Link_DATA)
         #################################################################################
 
-        Path_MFF_HDR   ='rsmp_orig_slave_line'+'.hdr'
-        Link_DATA      ='rsmp_orig_slave_line'+'.r00'
-        Link_rsmp_orig_slave_line ='rsmp_orig_slave_line.raw'
+        Path_MFF_HDR   ='rsmp_orig_subordinate_line'+'.hdr'
+        Link_DATA      ='rsmp_orig_subordinate_line'+'.r00'
+        Link_rsmp_orig_subordinate_line ='rsmp_orig_subordinate_line.raw'
 
         if (os.path.isfile(Path_MFF_HDR)):
             os.remove(Path_MFF_HDR)
@@ -98,7 +98,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
             os.remove(Link_DATA)
 
 
-        RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_slave_line)
+        RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_subordinate_line)
         print "RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH
         os.symlink(RAW_DATA_ABSOLUTE_PATH,Link_DATA)
 

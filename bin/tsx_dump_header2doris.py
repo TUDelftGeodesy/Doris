@@ -135,7 +135,7 @@ dummyVar = 'DUMMY'
 # outStream.write('precise_orbits:         0\n')
 # outStream.write('crop:			0\n')
 # outStream.write('sim_amplitude:		0\n')
-# outStream.write('master_timing:		0\n')
+# outStream.write('main_timing:		0\n')
 # outStream.write('oversample:		0\n')
 # outStream.write('resample:		0\n')
 # outStream.write('filt_azi:		0\n')

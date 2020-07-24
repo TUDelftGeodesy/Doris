@@ -134,14 +134,14 @@ class CreateDorisInputXml(object):
 
         input = False
         while input == False:
-            user_input = raw_input("What is the master date of your stack in yyyy-mm-dd (can be changed later): ").lower()
+            user_input = raw_input("What is the main date of your stack in yyyy-mm-dd (can be changed later): ").lower()
             try:
                 date = datetime.strptime(user_input, '%Y-%m-%d')
-                self.input_file_dict['master_date'] = user_input
+                self.input_file_dict['main_date'] = user_input
                 input = True
             except:
                 print('Format not recognized, 01-01-2016 chosen. Check https://scihub.copernicus.eu/dhus/#/home for valid date')
-                self.input_file_dict['master_date'] = user_input
+                self.input_file_dict['main_date'] = user_input
 
         xml_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'doris_input_template.xml')
         tree = ET.parse(xml_file)

@@ -63,11 +63,11 @@ def baselines(dir_in,inputfile,start_date='2014-01-01',end_date='2018-01-01',dor
     resfiles = dict()
 
     # First create the ifgs.res files and store the data in a res data class.
-    master = res[0]
-    copyfile(master,os.path.join(process_folder,'master.res'))
+    main = res[0]
+    copyfile(main,os.path.join(process_folder,'main.res'))
 
     for resultfile, dat in zip(res, date):
-        copyfile(resultfile,os.path.join(process_folder,'slave.res'))
+        copyfile(resultfile,os.path.join(process_folder,'subordinate.res'))
         subprocess.call([doris + ' ' + inputfile], shell=True)
 
         dat = dat.astype(datetime.datetime).strftime('%Y-%m-%d')

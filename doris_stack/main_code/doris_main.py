@@ -21,8 +21,8 @@ settings = tree.getroot()[0]
 
 start_date = settings.find('.start_date').text
 end_date = settings.find('.end_date').text
-master_date = settings.find('.master_date').text
+main_date = settings.find('.main_date').text
 
 #start doris sentinel1 run
 doris_sentinel_1 = DorisSentinel1()
-doris_sentinel_1.run(args.parameterfilepath, start_date, end_date, master_date)
+doris_sentinel_1.run(args.parameterfilepath, start_date, end_date, main_date)
