@@ -14,9 +14,9 @@ def usage():
     print ' and RESFILENAME (res) that was deramped by deramp_SLC.m. The phase screen'
     print ' must account for the new resampled grids PIXRGGRID and PIXAZGRID    '
     print ' [Nlines_mst x Nsamples_mst] that contain the time coordinates of the'
-    print ' resampled image into the master grid:                               '
+    print ' resampled image into the main grid:                               '
     print '  for example                                                        '
-    print ' python   do_reramp_SLC.py slave_rsmp.raw slave.res False            '
+    print ' python   do_reramp_SLC.py subordinate_rsmp.raw subordinate.res False            '
     print ' created by Gert Mulder'
     print ' Part of code adapted from Lorenzo Iannini and Wu Wenhao'
 try:
@@ -43,10 +43,10 @@ res = ResData(resFilename)
 
 # Image size properties
 if res.process_control['resample'] == '1': #oversampled data
-    l0 = int(res.processes['resample']['First_line (w.r.t. original_master)'])
-    lN = int(res.processes['resample']['Last_line (w.r.t. original_master)'])
-    p0 = int(res.processes['resample']['First_pixel (w.r.t. original_master)'])
-    pN = int(res.processes['resample']['Last_pixel (w.r.t. original_master)'])
+    l0 = int(res.processes['resample']['First_line (w.r.t. original_main)'])
+    lN = int(res.processes['resample']['Last_line (w.r.t. original_main)'])
+    p0 = int(res.processes['resample']['First_pixel (w.r.t. original_main)'])
+    pN = int(res.processes['resample']['Last_pixel (w.r.t. original_main)'])
     dataFormat = 'complex64'
     resampled = True
 else: # original data

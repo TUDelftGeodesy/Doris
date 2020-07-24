@@ -3,15 +3,15 @@ import numpy as np
 import os, sys
 
 
-def decatenate(date_folder, image_file, burst_file, datatype, multilooked='none', res_type='master'):
+def decatenate(date_folder, image_file, burst_file, datatype, multilooked='none', res_type='main'):
     # Decatenate data.
     # Multilooks can be none > not concatenated, only > only multilooked images are concatenated or >
     # all > both original and multilooked images are concatenated.
 
     if len(multilooked) == 7:
-        master = os.path.join(date_folder, image_file[:-4] + '_' + multilooked + '.raw')
+        main = os.path.join(date_folder, image_file[:-4] + '_' + multilooked + '.raw')
     else:
-        master = os.path.join(date_folder, image_file)
+        main = os.path.join(date_folder, image_file)
 
     # Load .res files
     image_res, burst_res = read_res(date_folder, type=res_type)
@@ -30,10 +30,10 @@ def decatenate(date_folder, image_file, burst_file, datatype, multilooked='none'
         no_pixels = int(burst_res[bursts[0]].processes['readfiles']['Number_of_pixels_output_image'])
 
     # First use memmap to get a memory map of the full file.
-    full_image = np.memmap(master, dtype=datatype, mode='r', shape=(no_lines, no_pixels))
+    full_image = np.memmap(main, dtype=datatype, mode='r', shape=(no_lines, no_pixels))
 
     for burst in bursts:
-        # Finally write all data from individual bursts to master file. We assume a simple 20 pixel offset from
+        # Finally write all data from individual bursts to main file. We assume a simple 20 pixel offset from
         # the side to prevent copying data without information.
 
         burst_dat, line_0, line_1, pix_0, pix_1, burst_pix, burst_line, az_offset, ra_offset = \
@@ -45,13 +45,13 @@ def decatenate(date_folder, image_file, burst_file, datatype, multilooked='none'
         burst_image.flush()
 
 
-def concatenate(date_folder, image_file, burst_file, datatype, multilooked='none', res_type='master'):
+def concatenate(date_folder, image_file, burst_file, datatype, multilooked='none', res_type='main'):
     # Concatenate data.
 
     if len(multilooked) == 7:
-        master = os.path.join(date_folder, image_file[:-4] + '_' + multilooked + '.raw')
+        main = os.path.join(date_folder, image_file[:-4] + '_' + multilooked + '.raw')
     else:
-        master = os.path.join(date_folder, image_file)
+        main = os.path.join(date_folder, image_file)
 
     # Load .res files
     image_res, burst_res = read_res(date_folder, type=res_type)
@@ -70,10 +70,10 @@ def concatenate(date_folder, image_file, burst_file, datatype, multilooked='none
         no_pixels = int(burst_res[bursts[0]].processes['readfiles']['Number_of_pixels_output_image'])
 
     # First use memmap to get a memory map of the full file.
-    full_image = np.memmap(master, dtype=datatype, mode='w+', shape=(no_lines, no_pixels))
+    full_image = np.memmap(main, dtype=datatype, mode='w+', shape=(no_lines, no_pixels))
 
     for burst in bursts:
-        # Finally write all data from individual bursts to master file. We assume a simple 20 pixel offset from
+        # Finally write all data from individual bursts to main file. We assume a simple 20 pixel offset from
         # the side to prevent copying data without information. (corrected with multilooking factor)
 
         burst_dat, line_0, line_1, pix_0, pix_1, burst_pix, burst_line, daz, dra = \
@@ -87,12 +87,12 @@ def concatenate(date_folder, image_file, burst_file, datatype, multilooked='none
 def burst_info(burst, burst_file, burst_res, multilooked='none'):
     # Information about this specific burst
 
-    if burst_file == 'master.raw':
+    if burst_file == 'main.raw':
         if multilooked:
             string = '_iw_' + burst[6] + '_burst_' + burst[17:] + '_' + multilooked + '.raw'
         else:
             string = '_iw_' + burst[6] + '_burst_' + burst[17:] + '.raw'
-    elif burst_file == 'master_deramped.raw':
+    elif burst_file == 'main_deramped.raw':
         if multilooked:
             string = '_iw_' + burst[6] + '_burst_' + burst[17:] + '_deramped' + '_' + multilooked + '.raw'
         else:
@@ -126,7 +126,7 @@ def burst_info(burst, burst_file, burst_res, multilooked='none'):
     return burst_dat, line_0, line_1, pix_0, pix_1, burst_pix, burst_line, az_offset, ra_offset
 
 
-def read_res(date_folder, type='master'):
+def read_res(date_folder, type='main'):
     # Read .res data to the burst objects. Generally done after a processing step.
 
     swaths = next(os.walk(date_folder))[1]
@@ -140,36 +140,36 @@ def read_res(date_folder, type='master'):
         bursts = [burst for burst in bursts if burst.startswith('burst')]
 
         for burst in bursts:
-            slave_res = os.path.join(date_folder, swath, burst, 'slave.res')
-            master_res = os.path.join(date_folder, swath, burst, 'master.res')
+            subordinate_res = os.path.join(date_folder, swath, burst, 'subordinate.res')
+            main_res = os.path.join(date_folder, swath, burst, 'main.res')
 
             burst_name = swath + '_' + burst
 
-            if type == 'master' and os.path.exists(master_res):
-                res_burst[burst_name] = ResData(filename=master_res)
-            elif type == 'slave' and os.path.exists(slave_res):
-                res_burst[burst_name]= ResData(filename=slave_res)
-            elif os.path.exists(master_res):
-                res_burst[burst_name] = ResData(filename=master_res)
-            elif os.path.exists(slave_res):
-                res_burst[burst_name]= ResData(filename=slave_res)
+            if type == 'main' and os.path.exists(main_res):
+                res_burst[burst_name] = ResData(filename=main_res)
+            elif type == 'subordinate' and os.path.exists(subordinate_res):
+                res_burst[burst_name]= ResData(filename=subordinate_res)
+            elif os.path.exists(main_res):
+                res_burst[burst_name] = ResData(filename=main_res)
+            elif os.path.exists(subordinate_res):
+                res_burst[burst_name]= ResData(filename=subordinate_res)
             else:
-                print('No burst master or slave image available')
+                print('No burst main or subordinate image available')
                 return
 
-    slave_res = os.path.join(date_folder, 'slave.res')
-    master_res = os.path.join(date_folder, 'master.res')
+    subordinate_res = os.path.join(date_folder, 'subordinate.res')
+    main_res = os.path.join(date_folder, 'main.res')
 
-    if type == 'master' and os.path.exists(master_res):
-        res_image = ResData(filename=master_res)
-    elif type == 'slave' and os.path.exists(slave_res):
-        res_image = ResData(filename=slave_res)
-    elif os.path.exists(master_res):
-        res_image = ResData(filename=master_res)
-    elif os.path.exists(slave_res):
-        res_image = ResData(filename=slave_res)
+    if type == 'main' and os.path.exists(main_res):
+        res_image = ResData(filename=main_res)
+    elif type == 'subordinate' and os.path.exists(subordinate_res):
+        res_image = ResData(filename=subordinate_res)
+    elif os.path.exists(main_res):
+        res_image = ResData(filename=main_res)
+    elif os.path.exists(subordinate_res):
+        res_image = ResData(filename=subordinate_res)
     else:
-        print('No image master or slave image available')
+        print('No image main or subordinate image available')
         return
 
     return res_image, res_burst
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 6:
         res_type = sys.argv[6]
     else:
-        res_type = 'master'
+        res_type = 'main'
 
     print('concatenate folder is ' + date_folder)
     print('burst_file is ' + burst_file)

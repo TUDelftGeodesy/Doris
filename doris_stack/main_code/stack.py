@@ -38,7 +38,7 @@ class StackData(object):
         self.search_path = []
         self.start_date = []
         self.end_date = []
-        self.master_date = []
+        self.main_date = []
         self.shape = []
         self.shape_filename = shape_dat
         self.buffer = []
@@ -219,15 +219,15 @@ class StackData(object):
         self.shape = load_shape(shape_dat, buffer)
         self.buffer = buffer
 
-    def check_new_images(self, master):
+    def check_new_images(self, main):
         # This function checks which images are already processed, and which are not. If certain dates are already
-        # processed they are removed from the list. You have to specify the master date, otherwise the script will not
+        # processed they are removed from the list. You have to specify the main date, otherwise the script will not
         # know how many burst are expected per date.
 
         # Which dates are available?
         image_dates = [im.astype('datetime64[D]') for im in self.image_dates]
-        # What is the master date
-        date = np.datetime64(master).astype('datetime64[D]')
+        # What is the main date
+        date = np.datetime64(main).astype('datetime64[D]')
 
         date_folders = [d for d in next(os.walk(self.path))[1] if len(d) == 8]
         rm_id = []
@@ -238,20 +238,20 @@ class StackData(object):
             if date in dates:
                 date_folder = date_folders[np.where(dates == date)[0][0]]
 
-                # Check existing files in master folder
+                # Check existing files in main folder
                 swaths = dict()
                 swath_folders = next(os.walk(os.path.join(self.path, date_folder)))[1]
                 if len(swath_folders) == 0:
-                    print('No swaths in master folder')
+                    print('No swaths in main folder')
                     return
 
                 for swath in swath_folders:
                     self.swath_names.append(swath)
                     swaths[swath] = sorted(next(os.walk(os.path.join(self.path, date_folder, swath)))[1])
 
-                # Now check if the burst also in slave folders exist....
+                # Now check if the burst also in subordinate folders exist....
                 for folder, d in zip(date_folders, dates):
-                    # Check existing files in master folder
+                    # Check existing files in main folder
                     try:
                         swath_folders = next(os.walk(os.path.join(self.path, folder)))[1]
                         if not set(swath_folders) == set(swaths.keys()):
@@ -263,14 +263,14 @@ class StackData(object):
                                 raise LookupError('Amount of bursts is not the same for ' + folder)
 
                             if d == date:
-                                # If the master is already processed we have to create the list of center and coverage of
+                                # If the main is already processed we have to create the list of center and coverage of
                                 # bursts.
                                 # TODO make this robust for the case no seperate input data folders are created.
                                 res_files = []
                                 for burst in bursts:
                                     dat_file = [r for r in next(os.walk(os.path.join(self.path, date_folder, swath, burst)))[2]
-                                                if (r.startswith('slave_iw') and len(r) < 25)]
-                                    res_file = os.path.join(self.path, date_folder, swath, burst, 'slave.res')
+                                                if (r.startswith('subordinate_iw') and len(r) < 25)]
+                                    res_file = os.path.join(self.path, date_folder, swath, burst, 'subordinate.res')
                                     res_files.append(res_file)
 
                                     center, coverage = center_shape_from_res(resfile=res_file)
@@ -330,11 +330,11 @@ class StackData(object):
         # bursts at other dates. This function can be run later on to update the datastack.
 
         if self.burst_names:
-            print('Master data is already loaded from earlier processed data.')
+            print('Main data is already loaded from earlier processed data.')
             return
 
         image_dates = [im.astype('datetime64[D]') for im in self.image_dates]
-        # First select which date will be the master
+        # First select which date will be the main
         if date:
             date = np.datetime64(date).astype('datetime64[D]')
             # date = deepcopy(image_dates[min(abs(self.image_dates-date))])
@@ -353,7 +353,7 @@ class StackData(object):
         # Order the selected images by acquisition time.
         image_id = [x for (y,x) in sorted(zip([self.image_dates[i] for i in image_id],image_id))]
         date = date.astype(datetime).strftime('%Y-%m-%d')
-        self.master_date = date
+        self.main_date = date
         self.datastack[date] = dict()
 
         swath_nums = ['1', '2', '3']
@@ -430,7 +430,7 @@ class StackData(object):
                 continue
 
             for i in image_id:
-                if date_str == self.master_date:
+                if date_str == self.main_date:
                     continue
                 print('processing data: ' + self.images[i].unzip_path)
                 self.images[i].meta_swath(precise_folder=self.precise_orbits)
@@ -485,15 +485,15 @@ class StackData(object):
                 print('Number of burst for ' + key + ' is ' + str(burst_no) + ' instead of ' + str(self.burst_no) +
                       ' and is removed from the datastack.')
 
-    def define_burst_coordinates(self,slaves=False):
+    def define_burst_coordinates(self,subordinates=False):
         # This function defines the exact coordinates in pixels of every burst based on the lower left corner of the first
         # burst image. In this way the total overlap of these bursts can easily be monitored. Results are written to the
         # coordinates variable
 
-        if slaves is True:
+        if subordinates is True:
             dates = self.datastack.keys()
         else:
-            dates = [self.master_date]
+            dates = [self.main_date]
 
         self.coordinates = OrderedDict()
 
@@ -622,8 +622,8 @@ class StackData(object):
                     image_no = str(self.datastack[date][swath][burst].burst_num)
                     stack_no = burst[6:]
                     xml_base = os.path.basename(xml)
-                    res_name = os.path.join(burst_path, 'slave.res')
-                    outdata = os.path.join(burst_path, 'slave_iw_' + xml_base[6] + '_burst_' + stack_no + '.raw')
+                    res_name = os.path.join(burst_path, 'subordinate.res')
+                    outdata = os.path.join(burst_path, 'subordinate_iw_' + xml_base[6] + '_burst_' + stack_no + '.raw')
 
                     self.datastack[date][swath][burst].write(res_name)
                     if not os.path.exists(res_name) or not os.path.exists(outdata):

@@ -22,8 +22,8 @@ def usage():
     print
     print 'Usage   : rs2_dump_data.py <inputfile> <outputfile> [l0 lN p0 pN] [-res RESFILE]'
     print 
-    print '          inputfile         is the input Radarsat-2 geotiff filename : master.tif'
-    print '          outputfile        is the output filename                   : master.slc'
+    print '          inputfile         is the input Radarsat-2 geotiff filename : main.tif'
+    print '          outputfile        is the output filename                   : main.slc'
     print '          l0                is the first azimuth line (starting at 1)'
     print '          lN                is the last azimuth line'
     print '          p0                is the first range pixel (starting at 1)'

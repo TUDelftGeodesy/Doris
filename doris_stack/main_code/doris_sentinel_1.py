@@ -8,11 +8,11 @@ import sys
 from doris.doris_stack.main_code.stack import StackData
 from doris.doris_stack.main_code.dorisparameters import DorisParameters
 from doris.doris_stack.main_code.grs_profile import GRS_Profile
-from doris.doris_stack.main_code.single_master_stack import SingleMaster
+from doris.doris_stack.main_code.single_main_stack import SingleMain
 
 class DorisSentinel1(object):
 
-    def run(self, doris_parameters_path, start_date, end_date, master_date):
+    def run(self, doris_parameters_path, start_date, end_date, main_date):
 
         print 'start sentinel 1 processing'
 
@@ -51,19 +51,19 @@ class DorisSentinel1(object):
         # Select the images which are new in this datastack.
         stack.select_image()
         # Then these images are unzipped
-        stack.check_new_images(master=master_date)
+        stack.check_new_images(main=main_date)
         # All images which correspond with the start and end date are selected
         stack.unpack_image()
         # Based on the shape file bursts are selected for one date
 
-        print('master date is ' + master_date)
-        stack.select_burst(date=master_date)
+        print('main date is ' + main_date)
+        stack.select_burst(date=main_date)
         # And also for the other dates the needed bursts are selected
         stack.extend_burst()
         # Remove the images which are not fully present
         stack.remove_incomplete_images()
         # Now the exact coordinates of the different burst in the concatenated image is calculated
-        stack.define_burst_coordinates(slaves=True)
+        stack.define_burst_coordinates(subordinates=True)
         # Write the datastack to the stack_path folder
         stack.write_stack(write_path=stack_path,no_data=False)
         # A few auxiliary functions which are not strictly necessary.
@@ -75,10 +75,10 @@ class DorisSentinel1(object):
         # Finally delete unzipped images
         stack.del_unpacked_image()
 
-        import single_master_stack
+        import single_main_stack
 
-        # Now we import the script to create a single master interferogram
-        processing = SingleMaster(master_date=master_date, start_date=start_date,
+        # Now we import the script to create a single main interferogram
+        processing = SingleMain(main_date=main_date, start_date=start_date,
                                                       end_date=end_date, stack_folder=stack_path,
                                                       input_files=input_files, processing_folder=stack_path)
 
@@ -91,10 +91,10 @@ class DorisSentinel1(object):
         if(dorisParameters.do_coarse_orbits):
             profile.log_time_stamp('coarse_orbits')
             processing.coarse_orbits()
-        # Deramp the data of both slave and master
+        # Deramp the data of both subordinate and main
         if(dorisParameters.do_deramp):
             profile.log_time_stamp('deramp')
-            processing.deramp(master=True) # Still needed for coherence...
+            processing.deramp(main=True) # Still needed for coherence...
         # Fake the use of fine window coregistration, which is officially not needed
         if(dorisParameters.do_fake_fine_coreg_bursts):
             profile.log_time_stamp('fake_fine_coreg_bursts')

@@ -15,8 +15,8 @@ from resdata import ResData
 def remove_ramp(file, angle_pixel):
     # Remove ramp from burst
 
-    res_file = 'master.res'
-    res_dat = ResData(res_file, 'master')
+    res_file = 'main.res'
+    res_dat = ResData(res_file, 'main')
     crop = res_dat.processes['crop']
     lines = int(crop['Last_line (w.r.t. original_image)']) - int(crop['First_line (w.r.t. original_image)']) + 1
     pixels = int(crop['Last_pixel (w.r.t. original_image)']) - int(crop['First_pixel (w.r.t. original_image)']) + 1

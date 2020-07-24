@@ -86,7 +86,7 @@ class BurstMeta(ResData):
 
         # Read metadata from xml and inserts in resdata of burst
         # Insert the different steps (readfiles, orbits and crop)
-        self.header = burst_header('master.res')
+        self.header = burst_header('main.res')
         self.insert(readfiles, process='readfiles')
         self.insert(self.datapoints, process=self.orbit_type)
         self.insert(crop, process='crop')

@@ -37,10 +37,10 @@ def cleanup(stack_folder, cleanup_ps=True, cleanup_ds=False, full_swath_rm=[], f
     ifg unwrapped                   ifg_unw                 NA (yes)    no
     dem pixel shift (pixel)         dac_delta_p             yes         yes
     dem pixel shift (line)          dac_delta_l             yes         yes
-    slave image                     s_ramp                  yes         yes
-    slave image deramped            s_deramp                no          yes
-    master image                    m_ramp                  yes         yes
-    master image deramped           m_deramp                no (*)      yes
+    subordinate image                     s_ramp                  yes         yes
+    subordinate image deramped            s_deramp                no          yes
+    main image                    m_ramp                  yes         yes
+    main image deramped           m_deramp                no (*)      yes
     dem phase                       dem                     no          no
     latitude                        phi                     no (*)      no
     longitude                       lam                     no (*)      no
@@ -50,7 +50,7 @@ def cleanup(stack_folder, cleanup_ps=True, cleanup_ds=False, full_swath_rm=[], f
         burst ras files             b_ras                   yes         yes
         burst res files             b_res                   yes         yes
 
-    * Only one needed in a single master stack. Is not implemented yet.
+    * Only one needed in a single main stack. Is not implemented yet.
     """
 
     # First check what should be removed.
@@ -114,7 +114,7 @@ def cleanup(stack_folder, cleanup_ps=True, cleanup_ds=False, full_swath_rm=[], f
 
 
 def scan_stack(stack_folder):
-    # This function enters the children directories and checks whether a master.res, ifgs.res, swath folder and ifg
+    # This function enters the children directories and checks whether a main.res, ifgs.res, swath folder and ifg
     # exist.
 
     swath_folders = []
@@ -123,7 +123,7 @@ def scan_stack(stack_folder):
     for folder in dirs:
         r, folders, files = os.walk(os.path.join(root, folder)).next()
 
-        if 'swath_1' in folders and 'master.res' in files and 'ifgs.res' in files and 'cint.raw' in files:
+        if 'swath_1' in folders and 'main.res' in files and 'ifgs.res' in files and 'cint.raw' in files:
             swath_folders.append(os.path.join(root, folder))
 
     return swath_folders

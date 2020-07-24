@@ -167,7 +167,7 @@ dummyVar = 'DUMMY'
 # print('precise_orbits:	0')
 # print('crop:			0')
 # print('sim_amplitude:		0')
-# print('master_timing:		0')
+# print('main_timing:		0')
 # print('oversample:		0')
 # print('resample:		0')
 # print('filt_azi:		0')

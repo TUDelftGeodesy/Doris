@@ -1,9 +1,9 @@
 # This script can be used to cleanup a datastack
 # In this script we use the following rational
-# 1. Data from the master date and ESD are always kept (can change when these scripts evolve)
+# 1. Data from the main date and ESD are always kept (can change when these scripts evolve)
 # 2. The last processing step is saved (or if different processing steps are connected and the last one is not finished yet
 # 3. All .res and .ras files are kept.
-# 4. Following steps are never deleted > resampled slave / subt_refdem / filtphase (multilooked) / coherence (multilooked) / unwrap
+# 4. Following steps are never deleted > resampled subordinate / subt_refdem / filtphase (multilooked) / coherence (multilooked) / unwrap
 
 import os
 import sys
@@ -15,38 +15,38 @@ def res_file_selection(path, dat_type='burst'):
     del_files = []
     res_dat = dict()
 
-    # First check if slave / master / ifgs res files are there
-    for res_type in ['master', 'slave', 'ifgs']:
+    # First check if subordinate / main / ifgs res files are there
+    for res_type in ['main', 'subordinate', 'ifgs']:
         if os.path.exists(os.path.join(path, res_type + '.res')):
             res_dat[res_type] = ResData(os.path.join(path, res_type + '.res'), type=res_type)
         else:
             print('No data found in ' + path)
             return []
 
-    if res_dat['slave'].process_control['readfiles'] == '1' and res_dat['slave'].process_control['crop'] == '1':
-        if res_dat['slave'].processes['readfiles']['deramp'] == '1':
+    if res_dat['subordinate'].process_control['readfiles'] == '1' and res_dat['subordinate'].process_control['crop'] == '1':
+        if res_dat['subordinate'].processes['readfiles']['deramp'] == '1':
             # Remove the ramped image data.
-            del_files.append(res_dat['slave'].processes['crop']['Data_output_file'][:-12] + '.raw')
+            del_files.append(res_dat['subordinate'].processes['crop']['Data_output_file'][:-12] + '.raw')
     if res_dat['ifgs'].process_control['dem_assist'] == '1':
         # Remove the temporary files for dem_assist
         del_files.extend(['dac_delta_demline.temp', 'dac_delta_dempixel.temp', 'dac_m_demline.temp', 'dac_m_dempixel.temp'])
-    if res_dat['slave'].process_control['resample'] == '1' and res_dat['ifgs'].process_control['dem_assist'] == '1':
+    if res_dat['subordinate'].process_control['resample'] == '1' and res_dat['ifgs'].process_control['dem_assist'] == '1':
         del_files.extend(['dac_delta_line.raw', 'dac_delta_pixel.raw'])
-    if res_dat['slave'].process_control['resample'] == '1':
+    if res_dat['subordinate'].process_control['resample'] == '1':
         # After resampling the deramped file is not needed anymore. Also processing data from resampling is not needed.
-        del_files.append(res_dat['slave'].processes['crop']['Data_output_file'])
-        del_files.extend(['rsmp_orig_slave_line.raw', 'rsmp_orig_slave_pixel.raw'])
+        del_files.append(res_dat['subordinate'].processes['crop']['Data_output_file'])
+        del_files.extend(['rsmp_orig_subordinate_line.raw', 'rsmp_orig_subordinate_pixel.raw'])
 
-    # Now the resampled slave stays.
+    # Now the resampled subordinate stays.
     if res_dat['ifgs'].process_control['subtr_refphase'] == '1':
-        # If the reference phase is subtracted both the reramped slave and interferogram can be removed
-        del_files.extend(['cint.raw', 'slave_rsmp_reramped.raw'])
+        # If the reference phase is subtracted both the reramped subordinate and interferogram can be removed
+        del_files.extend(['cint.raw', 'subordinate_rsmp_reramped.raw'])
     if res_dat['ifgs'].process_control['subtr_refdem'] == '1':
         # When the dem phase is removed, the interferogram with subtracted reference phase can be removed.
-        del_files.extend(['cint.raw', 'cint_srp.raw', 'demcrop.raw', 'dem_radar.raw', 'master_slave.crd'])
+        del_files.extend(['cint.raw', 'cint_srp.raw', 'demcrop.raw', 'dem_radar.raw', 'main_subordinate.crd'])
     if res_dat['ifgs'].process_control['filtphase'] == '1':
         # When after the the removal of the reference dem the filtphase step is done, the subtrefdem ifgs is removed.
-        del_files.extend(['cint.raw', 'cint_srp.raw', 'cint_srd.raw', 'demcrop.raw', 'dem_radar.raw', 'master_slave.crd'])
+        del_files.extend(['cint.raw', 'cint_srp.raw', 'cint_srd.raw', 'demcrop.raw', 'dem_radar.raw', 'main_subordinate.crd'])
 
     # Finally if it is about a burst image, we can check whether the filtered and coherence files are already
     # concatenated, which means they can be removed.
@@ -77,15 +77,15 @@ def res_file_selection(path, dat_type='burst'):
 
     return del_files
 
-def cleanup_stack(path, master_key):
+def cleanup_stack(path, main_key):
     # This is the main cleanup function.
 
     folders = next(os.walk(path))[1]
-    if not master_key in folders:
-        print('master folder not found in path')
+    if not main_key in folders:
+        print('main folder not found in path')
         return
     else:
-        folders.remove(master_key)
+        folders.remove(main_key)
 
     del_files = []
 
@@ -117,9 +117,9 @@ def find_burst_folders(folder):
 # Actually execute the code...
 if __name__ == "__main__":
     path = sys.argv[1]
-    master_key = sys.argv[2]
+    main_key = sys.argv[2]
 
     print('path to be cleaned ' + path)
-    print('master key is ' + master_key)
+    print('main key is ' + main_key)
 
-    cleanup_stack(path, master_key)
+    cleanup_stack(path, main_key)

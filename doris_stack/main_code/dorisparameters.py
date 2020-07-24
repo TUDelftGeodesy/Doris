@@ -39,7 +39,7 @@ class DorisParameters():
         direction = self._settings_get('.direction')
         self.direction = direction
         #
-        # used in single_master.py
+        # used in single_main.py
         #
         #
         # used in test_dat_ESD

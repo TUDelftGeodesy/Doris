@@ -19,8 +19,8 @@ def usage():
     print
     print 'Usage   : csk_dump_data.py <inputfile> <outputfile> [l0 lN p0 pN] [-res RESFILE]'
     print
-    print '          inputfile         is the input Cosmo-skymed HDF5 filename : master.hd5'
-    print '          outputfile        is the output filename                  : master.slc'
+    print '          inputfile         is the input Cosmo-skymed HDF5 filename : main.hd5'
+    print '          outputfile        is the output filename                  : main.slc'
     print '          l0                is the first azimuth line (starting at 1)'
     print '          lN                is the last azimuth line'
     print '          p0                is the first range pixel (starting at 1)'

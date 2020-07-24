@@ -19,7 +19,7 @@ def usage():
     print ' will be characterized by baseband spectrum. The function also requires '
     print ' the .res file RESFILENAME.                                             '     
     print '  for example                                                           '
-    print ' python  do_deramp_SLC.py   20140821_iw_2_burst_1.raw slave.res False   '
+    print ' python  do_deramp_SLC.py   20140821_iw_2_burst_1.raw subordinate.res False   '
     print ' created by Gert Mulder'
     print ' Part of code adapted from Lorenzo Iannini and Wu Wenhao'
 try:
