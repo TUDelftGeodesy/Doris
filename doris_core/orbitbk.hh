@@ -139,6 +139,7 @@ class orbit
     cn getxyzdot    (real8 time);
     cn getxyzddot   (real8 time);
 
+    /*
     // ====== Conversion between coordinate systems ======
     // ______ radar coordinate line/pixel to xyz on ellipsoid ______
     friend int32 lp2xyz(
@@ -205,7 +206,7 @@ class orbit
         real8           &returnheight,
         int32            MAXITER=10,
         real8            CRITERPOS=1e-6);   // meter
-
+    */
     // ====== Information/debugging ======
     // ______ dump computed coeffs, interpolated orbit, etc. ______
     void dumporbit(
@@ -221,6 +222,71 @@ class orbit
         orbit           &slaveorbit);
 
   }; // END class orbit
+
+int32 lp2xyz(
+    real8            line,
+    real8            pixel,
+    const input_ell &ell,
+    const slcimage  &image,
+    orbit           &orb,
+    cn              &returnpos,
+    int32            MAXITER=10,            // [.] defaults
+    real8            CRITERPOS=1e-6);       // [m]
+
+// ______ xyz cartesian on ellipsoid to orbital coord. ______
+int32 xyz2orb(
+    cn              &returnpossat,
+    const slcimage  &image,
+    orbit           &orb,
+    const cn        &pointonellips,
+    int32            MAXITER=10,            // [.] defaults
+    real8            CRITERTIM=1e-10);      // [s]
+
+// ______ xyz cartesian on ellipsoid to azimuth/range time ______
+int32 xyz2t(
+    real8           &returntazi,            // azimuth
+    real8           &returntran,            // and range time
+    const slcimage  &image,
+    orbit           &orb,
+    const cn        &pos,
+    int32            MAXITER=10,            // [.] defaults
+    real8            CRITERTIM=1e-10);      // [s]
+
+// ______ convert xyz-ellipsoid to line/pixel ______
+int32 xyz2lp(
+    real8           &returnline,
+    real8           &returnpixel,
+    const slcimage  &image,
+    orbit           &orb,
+    const cn        &pos,
+    int32            MAXITER=10,             // defaults
+    real8            CRITERTIM=1e-10);       // seconds
+
+// ______ Convert ellipsoid to radar coordinates ______
+int32 ell2lp(
+    real8           &returnline,
+    real8           &returnpixel,
+    const input_ell &ell,
+    const slcimage  &image,
+    orbit           &orb,
+    real8            phi,
+    real8            lambda,
+    real8            height,
+    int32            MAXITER=10,
+    real8            CRITERTIM=1e-10);  // seconds
+
+// ______ Convert radar coordinates to ellipsoidal coordinates ______
+int32 lp2ell(
+    real8            line,
+    real8            pixel,
+    const input_ell &ell,
+    const slcimage  &image,
+    orbit           &orb,
+    real8           &returnphi,
+    real8           &returnlambda,
+    real8           &returnheight,
+    int32            MAXITER=10,
+    real8            CRITERPOS=1e-6);   // meter
 
 #endif // ORBITBK_H guard
 
