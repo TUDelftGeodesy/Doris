@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 from datetime import datetime
 from collections import OrderedDict
@@ -304,12 +305,12 @@ class SingleMaster(object):
                     os.chdir(path)
                     if ps is True:
                         master_file = self.burst_path(key=burst,dat_type='master',full_path=False)
-                        command1 = 'python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc'
+                        command1 = sys.executable + ' -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc'
                         job_list1.append({"path": path, "command": command1})
                         command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr')
                         job_list2.append({"path": path, "command": command2})
                         if not self.parallel:
-                            os.system('python -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc')
+                            os.system(sys.executable + ' -m ' + 'get_winpos' + ' ' + master_file + ' master.res 21 winpos_cc.asc')
                             os.system(command2)
                     if ps is False:
                         command = self.doris_path + ' ' + os.path.join(self.input_files, 'input.coarsecorr')
@@ -401,7 +402,7 @@ class SingleMaster(object):
                 slave_deramped = self.burst_path(key=burst, dat_type='slave_deramped', full_path=False)
 
                 if not os.path.exists(os.path.join(path, slave_deramped)):
-                    command2 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
+                    command2 = sys.executable + ' ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + slave_file + ' slave.res'
                     job_list2.append({"path": path, "command": command2})
                     if not self.parallel:
                         os.chdir(path)
@@ -423,7 +424,7 @@ class SingleMaster(object):
             master_deramped = self.burst_path(key=burst, dat_type='slave_deramped', full_path=False)
 
             if not os.path.exists(os.path.join(path, master_deramped)) or not master:
-                command1 = 'python ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' slave.res'
+                command1 = sys.executable + ' ' + os.path.join(self.function_path, 'do_deramp_SLC.py') + ' ' + master_file + ' slave.res'
                 job_list1.append({"path": path, "command": command1})
                 if not self.parallel:
                     os.chdir(path)
@@ -469,7 +470,7 @@ class SingleMaster(object):
                     if not(self.parallel):
                         os.chdir(path)
                     if ps == True:
-                        command1 = 'python -m' + 'get_winpos'  + ' ' + master_file + ' master.res 101 winpos_fine.asc'
+                        command1 = sys.executable + ' -m' + 'get_winpos'  + ' ' + master_file + ' master.res 101 winpos_fine.asc'
                         job_list1.append({"path": path, "command": command1})
                         command2 = self.doris_path + ' ' + os.path.join(self.input_files,'input.finecoreg_icc_pointscat')
                         job_list2.append({"path": path, "command": command2})
@@ -900,7 +901,7 @@ class SingleMaster(object):
 
                 if not os.path.exists(os.path.join(path, 'slave_rsmp_reramped.raw')):
                     # If we are before the ESD step and reramp is not jet done.
-                    command1 = 'python ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
+                    command1 = sys.executable + ' ' + os.path.join(self.function_path, 'do_reramp_SLC.py') + ' slave_rsmp.raw slave.res'
                     jobList1.append({"path": path, "command": command1})
                     if not self.parallel:
                         os.chdir(path)
@@ -1262,7 +1263,7 @@ class SingleMaster(object):
                     overlap = burst + '_' + next_burst
                     ps_select = '1'
                     master_date = self.master_date
-                    command = 'python ' + os.path.join(self.function_path, 'ESD_ps_ds.py') + ' ' + stack_folder + ' ' \
+                    command = sys.executable + ' ' + os.path.join(self.function_path, 'ESD_ps_ds.py') + ' ' + stack_folder + ' ' \
                               + overlap + ' ' + esd_type + ' ' + max_baseline + ' ' + master_date + ' ' + ps_select
                     jobList.append({"path": stack_folder, "command": command})
 
@@ -1374,7 +1375,7 @@ class SingleMaster(object):
                     else:
                         angle_pixel = str(offset / angle)
                     script = os.path.join(self.function_path, 'correct_ESD.py')
-                    command = 'python ' + script + ' ' + filename + ' ' + angle_pixel
+                    command = sys.executable + ' ' + script + ' ' + filename + ' ' + angle_pixel
 
                     jobList.append({"path": path, "command": command})
                     self.stack[date][burst]['slave'].processes['readfiles']['ESD_correct'] = '1'
@@ -1634,7 +1635,7 @@ class SingleMaster(object):
                     command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.subtrrefdem')
                     job_list1.append({"path": path, "command": command1})
                     if network:
-                        command2 = 'python ' + os.path.join(self.function_path, 'remove_dem_earth_phase.py') + ' ' + \
+                        command2 = sys.executable + ' ' + os.path.join(self.function_path, 'remove_dem_earth_phase.py') + ' ' + \
                                    self.stack_folder + ' ' + date + ' ' + burst
                         job_list2.append({"path": path, "command": command2})
                     if not self.parallel:
@@ -2028,7 +2029,7 @@ class SingleMaster(object):
             final_path = os.path.join(path, master_file)
 
             if not os.path.exists(final_path) or overwrite == True:
-                command1 = 'python ' + os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path \
+                command1 = sys.executable + ' ' + os.path.join(self.function_path, 'concatenate_decatenate.py') + ' ' + path \
                            + ' concatenate ' + burst_file + ' ' + dt.name + ' ' + multilooked + ' ' + res_type
                 job_list1.append({"path": path, "command": command1})
 

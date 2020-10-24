@@ -628,7 +628,7 @@ class StackData(object):
                     self.datastack[date][swath][burst].write(res_name)
                     if not os.path.exists(res_name) or not os.path.exists(outdata):
 
-                        write_jobs.append('python ' + self.function_path + 'sentinel_dump_data_function.py ' + data + ' ' + res_name + ' ' + outdata)
+                        write_jobs.append(sys.executable + ' ' + self.function_path + 'sentinel_dump_data_function.py ' + data + ' ' + res_name + ' ' + outdata)
                         burst_num.append(stack_no + '_' + xml_base[6] + '_' + xml_base[15:23])
 
         # Burst are sorted in such a way that mainly read from different data files sorted by burst then swath then date.
@@ -666,7 +666,7 @@ class StackData(object):
             shapefile = self.shape_filename
             pol = self.polarisation[0]
             overwrite = False
-            command1 = ('python ' + self.function_path + 'load_shape_unzip.py ' + zipped_folder + ' ' + dest_folder +
+            command1 = (sys.executable + ' ' + self.function_path + 'load_shape_unzip.py ' + zipped_folder + ' ' + dest_folder +
                         ' ' + shapefile + ' ' + pol + ' ' + str(overwrite))
             jobList1.append({"path": self.path, "command": command1})
             if not self.parallel:
