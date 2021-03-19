@@ -362,7 +362,7 @@ void slant2hschwabisch(
          << 100*(buffer-1)/(FULLBUFFERS+EXTRABUFFER) << "%";
     PROGRESS.print();
 
-    // ______ In original master coordinate sytem ______
+    // ______ In original master coordinate system ______
     const real8 firstline = veryfirstline + (buffer-1) * bufferlines * multiL;
 
     // ______ Set indices for loading / check last buffer ______

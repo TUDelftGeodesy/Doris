@@ -211,7 +211,7 @@ class bk_messages
       if (strlen(id)>=10)
         {
         strncpy(name_,id, 9);
-        strcat(name_,'\0');// terminate id
+        name_[9] = '\0';// terminate id
         }
       else
         {

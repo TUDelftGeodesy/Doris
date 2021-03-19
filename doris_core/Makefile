@@ -44,7 +44,7 @@ SHELL   = /bin/sh
 
 ### Specify compiler/installation directory ###
 INSTALLDIR = /data/src/Doris_s1_git/bin
-CC	   = g++
+CXX	   = g++
 SCRIPTSDIR = ../bin
 
 ### Define statements controlling compilation ###
@@ -93,7 +93,7 @@ CFLAGS 	= $(CFLAGSOPT)
 ### Library locations flag ###
 ### -lcl : used for veclib 
 ### -lm  : used for fftw
-LFLAGS  =   -L/lib64 -lfftw3f -lm
+LFLAGS  =   -L/lib64 -lfftw3f -lm $(LDFLAGS)
 
 
 #####################################################
@@ -155,7 +155,7 @@ default:        $(EXECUTABLE)
 ### how to compile object code .o from C++ source files .cc (general rule) ###
 # space between -o and filename for SUN make (BK 7 july 2000)
 .cc.o:		
-		$(CC) $(CFLAGS) -c -o $(@) $<
+		$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $(@) $<
 
 #####################################################
 ### Make object code from source ###
@@ -170,7 +170,7 @@ swobjs:		$(SWOBJS)
 ### BK 07-Feb-2002
 $(EXECUTABLE):	$(SWOBJS) tmp_strptime.cc slcimage.cc productinfo.cc orbitbk.cc
 		$(CC) $(CFLAGS) -c -o triangle.o -DTRILIBRARY -DANSI_DECLARATORS triangle.c
-		$(CC) $(CFLAGS)\
+		$(CXX) $(CFLAGS)\
 		tmp_strptime.cc $(SWOBJS) triangle.o\
 		slcimage.cc productinfo.cc orbitbk.cc\
 		$(LFLAGS) -o $@
@@ -184,6 +184,7 @@ $(EXECUTABLE):	$(SWOBJS) tmp_strptime.cc slcimage.cc productinfo.cc orbitbk.cc
 ### Install executable in installdir ###
 install:	$(EXECUTABLE)
 		@echo "* Installing $(EXECUTABLE) in: $(INSTALLDIR)"
+		mkdir -p $(INSTALLDIR)
 		@cp -f $(EXECUTABLE) $(INSTALLDIR)/.
 		( cd $(SCRIPTSDIR); cp -f $(SCRIPTS) $(INSTALLDIR)/. )
 		$(MAKE) cleaner

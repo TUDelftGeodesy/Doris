@@ -1854,7 +1854,7 @@ static struct option const long_options[] =
   // filename: last argument
   // cerr << "OPTARG: " << argv[argc-1] << endl;
   // cerr << "OPTARG: " << argv[optind] << endl;
-  if (argv[optind]=='\0')
+  if (argv[optind]==0 || argv[optind][0]=='\0')
     {
     cerr << argv[0] << ": ERROR: No input file specified.\n";
     return false;

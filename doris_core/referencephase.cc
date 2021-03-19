@@ -57,8 +57,9 @@
 #define VOID int
 #define REAL double
 #define ANSI_DECLARATORS
+extern "C" {
 #include "triangle.h"
-
+}
 
 
 /****************************************************************

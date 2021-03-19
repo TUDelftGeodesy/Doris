@@ -1708,7 +1708,7 @@ else//RSAT method specified
   // to what (time) does the annotated GMHA refer?
   DEBUG << "GMHA [rad]: " << GMHA;
   DEBUG.print();
-  DEBUG << "Convertion from inertial to earth fixed [1/-1]: " << csi2cse;
+  DEBUG << "Conversion from inertial to earth fixed [1/-1]: " << csi2cse;
   DEBUG.print();
   DEBUG << "earthrot [rad/s]: " << earthrot;
   DEBUG.print();
@@ -2355,7 +2355,7 @@ if (readfiles_arg.sensor_id==SLC_RSAT && readfiles_arg.sar_processor==SARPR_ATL)
   scratchresfile
     << "Leader file:                                 \t"
     <<  readfiles_arg.leaderfile
-    << "\nSensor platform mission identifer:         \t"
+    << "\nSensor platform mission identifier:        \t"
     <<  c32sensorid
     << "\nScene_centre_latitude:                     \t"
     <<  c16centerlat

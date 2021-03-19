@@ -37,7 +37,7 @@ class CreateBash(object):
         f.write('source_path=' + python_path + '\n')
         f.write('export PYTHONPATH=$source_path:$PYTHONPATH \n')
         f.write('export PATH=' + doris_folder + ':' + cpxfiddle_folder + ':' + snaphu_folder + ':' + '$PATH \n')
-        f.write('python ' + doris_run_script + ' -p ' + processing + ' \n')
+        f.write(sys.executable + ' ' + doris_run_script + ' -p ' + processing + ' \n')
 
         f.close()
 
@@ -55,7 +55,7 @@ class CreateBash(object):
         f.write('\n')
         f.write('source_path=' + python_path + '\n')
         f.write('export PYTHONPATH=$source_path:$PYTHONPATH \n')
-        f.write('python ' + doris_run_script + ' ' + processing + ' SRTM3 \n')
+        f.write(sys.executable + ' ' + doris_run_script + ' ' + processing + ' SRTM3 \n')
         f.close()
 
         # make sure the file is executable
@@ -72,7 +72,7 @@ class CreateBash(object):
         doris_run_script = os.path.join(source_path, 'prepare_stack', 'download_sentinel_data_orbits.py')
         processing = stack_folder
 
-        f.write('python ' + doris_run_script + ' ' + processing + ' \n')
+        f.write(sys.executable + ' ' + doris_run_script + ' ' + processing + ' \n')
         f.close()
 
         # make sure the file is executable

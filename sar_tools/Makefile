@@ -26,8 +26,8 @@ SHELL	=	/bin/sh
 INSTALL_DIR =	/home/dlevelt/src/Doris_s1_git/bin
 
 ### GCC compiler
-CC 	=	g++
-CFLAGS  =       -O3 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE  -D_LARGEFILE64_SOURCE #-m32 to force 32bit on 64bit platform
+CXX 	=	g++
+CFLAGS  +=       -O3 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE  -D_LARGEFILE64_SOURCE #-m32 to force 32bit on 64bit platform
 
 ### Intel compiler
 #CC	=	icpc
@@ -67,29 +67,29 @@ dummy:
 
 # the utilities.
 bkconvert:	bkconvert.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 wrap:		wrap.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 cpxmult:	cpxmult.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 cpxdiv: 	cpxdiv.o 
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 cpxconj:	cpxconj.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 cpxfiddle:	cpxfiddle.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 flapjack:	flapjack.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 floatmask:	floatmask.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 floatmult:	floatmult.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 readrasterheader:	readrasterheader.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 rasterheader:	rasterheader.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 dateconv:	dateconv.o
-		$(CC) $(CFLAGS) $@.o -o $@
+		$(CXX) $(CFLAGS) $(LDFLAGS) $@.o -o $@
 
 
 ### Install in CB_INSTALL by linking/copying executables ###
@@ -103,15 +103,11 @@ install:	$(PROGS)
 
 ### Use symbolic links at our system, copy to /usr/local/bin on other.
 definstall:	$(PROGS)
-		dir=$(INSTALL_DIR); \
-        	if test ! -d $$dir; then \
-		  echo "Sorry, dir $(INSTALL_DIR) does not exist, exiting..."; exit; fi; \
-		echo Installing in directory: $$dir; \
+		mkdir -p $(INSTALL_DIR)
 		list='$(PROGS) $(SCRIPTS)'; for p in $$list; do \
 		  echo "Installing (copy): $$p"; \
 		  cp -f $$p $(INSTALL_DIR)/$$p; \
 		done
-		$(MAKE) cleaner
 
 ### Use symbolic links at our system, copy to /usr/local/bin on other.
 cbinstall:
@@ -158,7 +154,7 @@ uninstall:	cleaner
 
 ### How to make object files ###
 .cc.o:		
-	$(CC) $(CFLAGS) -c -o $(@) $<
+	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $(@) $<
 
 ### EOF.
 

@@ -107,8 +107,8 @@ void handle_signal(int signum)
       break;
 #endif
     case SIGINT:
-      cout << "Caught SIGINT: User interupt signal." << endl;
-      cerr << "Caught SIGINT: User interupt signal." << endl;
+      cout << "Caught SIGINT: User interrupt signal." << endl;
+      cerr << "Caught SIGINT: User interrupt signal." << endl;
       exit(1);
       break;
     case SIGFPE:
