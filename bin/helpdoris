@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ##!/bin/ksh
 # processor.helpfile
 # simulate man like help for processor options

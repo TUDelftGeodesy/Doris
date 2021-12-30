@@ -2010,7 +2010,7 @@ void azimuthfilter(
     {
     INFO << "Variation of fDC for master and slave < " << max_fdc_change;
     INFO.print();
-    INFO.print("Reseting Doppler polynomial to constant of center crop:");
+    INFO.print("Resetting Doppler polynomial to constant of center crop:");
     master.f_DC_a0 = master_fdc_p05;
     master.f_DC_a1 = 0.0;
     master.f_DC_a2 = 0.0;

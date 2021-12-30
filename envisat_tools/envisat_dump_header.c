@@ -11,7 +11,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include "epr_api-2.2/src/epr_api.h"
+#include <epr_api.h>
 #if defined(WIN32) && defined(_DEBUG)
 #include <crtdbg.h>
 #endif /* if defined(WIN32) && defined(_DEBUG) */

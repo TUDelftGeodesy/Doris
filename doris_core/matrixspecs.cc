@@ -3250,22 +3250,8 @@ matrix<complr4> mat2cr4(
  * C *= A;      pointwise multiplication, CR4 R4                *
  #%// BK 26-Oct-2000
  ****************************************************************/
-#if __GNUC__ < 4
-//template<> // essential for specialization
-//template<class>  // seems not allowed for g++2.95
-//#if __GNUC_MINOR__ < 95
-//#endif
-//
-#else 
-#if __GNUC_MINOR__ > 0
-template<> // essential for specialization
-template<>  // seems required for specialization g++-4.0 upwards
-#else
-template<> // essential for specialization
-template<class>  // seems required for specialization g++-4.0 upwards
-#endif
-#endif
-// ****************************************************************
+template <>
+template <>
 matrix<complr4>& matrix<complr4>::operator *= (const matrix<real4> &A)
   {
   #ifdef __DEBUGMAT2
@@ -3293,21 +3279,8 @@ matrix<complr4>& matrix<complr4>::operator *= (const matrix<real4> &A)
  * C /= A;      pointwise division, CR4 R4                      *
  #%// BK 27-Oct-2000                                            *
  ****************************************************************/
-#if __GNUC__ < 4
-//template<> // essential for specialization
-//template<class>  // seems not allowed for g++2.95
-//#if __GNUC_MINOR__ < 95
-//#endif
-//
-#else   /* g++-4.0 upwards */
-#if __GNUC_MINOR__ > 0
-template<> // essential for specialization
-template<>  // seems required for specialization g++-4.0 upwards
-#else
-template<> // essential for specialization
-template<class>  // seems required for specialization g++-4.0 upwards
-#endif
-#endif
+template <>
+template <>
 matrix<complr4>& matrix<complr4>::operator /= (const matrix<real4> &A)
   {
   #ifdef __DEBUGMAT2
@@ -3335,21 +3308,8 @@ matrix<complr4>& matrix<complr4>::operator /= (const matrix<real4> &A)
  * C += A;      pointwise addition, CR4 R4              *
  #%// BK 27-Oct-2000                                            *
  ****************************************************************/
-#if __GNUC__ < 4
-//template<> // essential for specialization
-//template<class>  // seems not allowed for g++2.95
-//#if __GNUC_MINOR__ < 95
-//#endif
-//
-#else   /* g++-4.0 upwards */
-#if __GNUC_MINOR__ > 0
-template<> // essential for specialization
-template<>  // seems required for specialization g++-4.0 upwards
-#else
-template<> // essential for specialization
-template<class>  // seems required for specialization g++-4.0 upwards
-#endif
-#endif
+template <>
+template <>
 matrix<complr4>& matrix<complr4>::operator += (const matrix<real4> &A)
   {
   #ifdef __DEBUGMAT2
@@ -3377,21 +3337,8 @@ matrix<complr4>& matrix<complr4>::operator += (const matrix<real4> &A)
  * C -= A;      pointwise subtraction, CR4 R4           *
  #%// BK 27-Oct-2000                                            *
  ****************************************************************/
-#if __GNUC__ < 4
-//template<> // essential for specialization
-//template<class>  // seems not allowed for g++2.95
-//#if __GNUC_MINOR__ < 95
-//#endif
-//
-#else   /* g++-4.0 upwards */
-#if __GNUC_MINOR__ > 0
-template<> // essential for specialization
-template<>  // seems required for specialization g++-4.0 upwards
-#else
-template<> // essential for specialization
-template<class>  // seems required for specialization g++-4.0 upwards
-#endif
-#endif
+template <>
+template <>
 matrix<complr4>& matrix<complr4>::operator -= (const matrix<real4> &A)
   {
   #ifdef __DEBUGMAT2

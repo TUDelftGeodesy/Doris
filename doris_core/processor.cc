@@ -3926,7 +3926,7 @@ void quote()
     "Beauty can be perceived but not explained.", // 130
     "Programming is like sex: one mistake and you have to\n\tsupport it for the rest of your life. [Michael Sinz]",
     "I wish you were here and I was there [me].",
-    "In mathematics you dont understand things, you just get used to them [Neumann].",
+    "In mathematics you don't understand things, you just get used to them [Neumann].",
     "A man is incomplete until he is married. After that, he is finished [Zsa Zsa Gabor].",
     "Unlikely children's book title:\n\t\"The Kids' Guide to Hitchhiking\".", // 138
     "Unlikely children's book title:\n\t\"Whining, Kicking and Crying to Get Your Way\".",

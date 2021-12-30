@@ -50,7 +50,7 @@ set key = $<
 
 
 # Declare variables.
-set CC          = ""
+set CXX         = ""
 set GppCOMPILER = n
 set FFTW        = n
 set VECLIB      = n
@@ -76,12 +76,12 @@ echo "   Using temp dir: $TMPDIR"
 
 
 # Get most likely compiler, first check g++
-foreach TMPCC ( g++ g++-3.4 g++-4.0 g++-4.1 g++-4.2 g++-4.3 CC aCC icpc )
+foreach TMPCC ( g++ g++-3.4 g++-4.0 g++-4.1 g++-4.2 g++-4.3 CXX CC aCC icpc )
   echo Checking compiler: \"$TMPCC\"...
   $TMPCC -v > & /dev/null
   if ( ! $status ) then
     echo "   I found a working(?) compiler: $TMPCC"
-    set CC = "$TMPCC"
+    set CXX = "$TMPCC"
     break
   endif
 end
@@ -91,7 +91,7 @@ end
 # Set flag for g++, this define enables some functions like sqr(int)
 # that are not standard C++, but were provided with, e.g., HP aCC compiler.
 #
-if ( "$CC" == "g++" ) set GppCOMPILER = "y"
+if ( "$CXX" == "g++" ) set GppCOMPILER = "y"
 
 
 #
@@ -119,7 +119,7 @@ int main()
   }
 __EOFDH
 echo "Compiling test program: $TSTPRG"
-$CC $TSTPRG.cc -o $TSTPRG > & /dev/null
+$CXX $TSTPRG.cc -o $TSTPRG > & /dev/null
 if ( $status != 0 ) then
   echo "   ---------------------------------------------------------------"
   echo "   Sorry, could not compile test program, continuing."
@@ -175,7 +175,7 @@ int main()
   }
 __EOFDH
 echo "Compiling test program: $TSTPRG"
-$CC $TSTPRG.cc -o $TSTPRG > & /dev/null
+$CXX $TSTPRG.cc -o $TSTPRG > & /dev/null
 if ( $status != 0 ) then
   echo "   function strptime not found in library, using internal definition."
   echo "   by define -D__NO_STRPTIME (change by editing DEF8 in $MAKEFILE)"
@@ -264,10 +264,10 @@ echo " "
 #
 # Interactive questions/check by user:
 #
-echo "===> What is your C++ compiler? [$CC] "
+echo "===> What is your C++ compiler? [$CXX] "
 set key = $<
-if ( "X$key" != "X" ) set CC = "$key"
-if ( "$CC" == "g++" ) set GppCOMPILER = y
+if ( "X$key" != "X" ) set CXX = "$key"
+if ( "$CXX" == "g++" ) set GppCOMPILER = y
 
 echo "===> Do you have the FFTW library (y/n)? [$FFTW] "
 set key = $<
@@ -390,7 +390,7 @@ end
 ###################################################
 echo " "
 echo " Creating Makefile for:"
-echo " compiler:       $CC"
+echo " compiler:       $CXX"
 echo " fftw:           $FFTW"
 if ( "$FFTW" == "y" ) echo " FFTW LIB DIR:     $FFTWLIBDIR"
 if ( "$FFTW" == "y" ) echo " FFTW INCLUDE DIR: $FFTWINCLDIR"
@@ -488,7 +488,7 @@ cat << __EOFHD > $MAKEFILE
 # If this does not work, try a more controlled approach by:		#
 #									#
 # 0. inspect set up of this Makefile					#
-# 1. set CC DEFS LIBS etc., first set these to debug values		#
+# 1. set CXX DEFS LIBS etc., first set these to debug values		#
 #    (read NOTE there if problems)					#
 # 2. compile software sources to *.o:     "make swobjs"			#
 # 3. link object together to executable:  "make doris"			#
@@ -511,14 +511,14 @@ cat << __EOFHD > $MAKEFILE
 #########################################################################
 ###################################################################
 ###################################################################
-# Please change if required: DEF[1-6], CC, CFLAGS, LIBDIR,      ###
+# Please change if required: DEF[1-6], CXX, CFLAGS, LIBDIR,     ###
 ###################################################################
 ### The shell used by this makefile ###
 SHELL   = /bin/sh
 
 ### Specify compiler/installation directory ###
 INSTALLDIR = $INSTALLDIR
-CC	   = $CC
+CXX	   = $CXX
 SCRIPTSDIR = ../bin
 
 ### Define statements controlling compilation ###
@@ -594,7 +594,7 @@ cat << __EOFHD >> $MAKEFILE
 ### Library locations flag ###
 ### -lcl : used for veclib 
 ### -lm  : used for fftw
-LFLAGS  = $LFLAGS
+LFLAGS  = $LFLAGS \$(LDFLAGS)
 
 
 #####################################################
@@ -656,7 +656,7 @@ default:        \$(EXECUTABLE)
 ### how to compile object code .o from C++ source files .cc (general rule) ###
 # space between -o and filename for SUN make (BK 7 july 2000)
 .cc.o:		
-		\$(CC) \$(CFLAGS) -c -o \$(@) \$<
+		\$(CXX) \$(CPPFLAGS) \$(CFLAGS) -c -o \$(@) \$<
 
 #####################################################
 ### Make object code from source ###
@@ -671,7 +671,7 @@ swobjs:		\$(SWOBJS)
 ### BK 07-Feb-2002
 \$(EXECUTABLE):	\$(SWOBJS) tmp_strptime.cc slcimage.cc productinfo.cc orbitbk.cc
 		\$(CC) \$(CFLAGS) -c -o triangle.o -DTRILIBRARY -DANSI_DECLARATORS triangle.c
-		\$(CC) \$(CFLAGS)\
+		\$(CXX) \$(CPPFLAGS) \$(CFLAGS)\
 		tmp_strptime.cc \$(SWOBJS) triangle.o\
 		slcimage.cc productinfo.cc orbitbk.cc\
 		\$(LFLAGS) -o \$@
@@ -685,6 +685,7 @@ swobjs:		\$(SWOBJS)
 ### Install executable in installdir ###
 install:	\$(EXECUTABLE)
 		@echo "* Installing \$(EXECUTABLE) in: \$(INSTALLDIR)"
+		mkdir -p \$(INSTALLDIR)
 		@cp -f \$(EXECUTABLE) \$(INSTALLDIR)/.
 		( cd \$(SCRIPTSDIR); cp -f \$(SCRIPTS) \$(INSTALLDIR)/. )
 		\$(MAKE) cleaner
@@ -721,14 +722,14 @@ testdoris:	\$(EXECUTABLE)
 
 ### Orbit test program for debugging ###
 test-orbit:	ioroutines.o matrixspecs.o utilities.o exceptions.cc slcimage.cc orbitbk.cc matrixbk.cc bk_messages.hh
-		\$(CC) \$(CFLAGS) -D__TESTMAIN__ \
+		\$(CXX) \$(CPPFLAGS) \$(CFLAGS) -D__TESTMAIN__ \
 		ioroutines.o matrixspecs.o utilities.o exceptions.cc slcimage.cc orbitbk.cc \
 		\$(LFLAGS) \
 		-o \$@
 ### Matrix test program for debugging ###
 ### fast_sin defined in utilities.cc, which requires ioroutines, which, etc.
 test-matrix:  matrix_test.cc matrixspecs.o utilities.o utilities.o ioroutines.o matrixbk.cc
-		\$(CC) \$(CFLAGS) matrix_test.cc matrixspecs.o \
+		\$(CXX) \$(CPPFLAGS) \$(CFLAGS) matrix_test.cc matrixspecs.o \
 		utilities.o ioroutines.o exceptions.cc orbitbk.cc \
 		\$(LFLAGS) \
 		-o \$@

@@ -80,7 +80,7 @@ To use the Doris Python scripts you will need to install the following Python pa
 -       numpy, scipy (for calculations)
 -       matplotlib (visualization)
 -       requests (data download)
--       gdal, gdal-dev, shapely, fiona, pyproj, fastkml, osr (GIS)
+-       gdal, gdal-dev, shapely, fiona, pyproj, fastkml
 This can be done using:
 
 23. pip install [package_name]

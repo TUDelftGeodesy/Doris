@@ -9,5 +9,5 @@ setup(
     author='Gert Mulder',
     author_email='g.mulder-@tudelft.nl',
     description='doris InSAR processing software',
-    install_requires=['numpy', 'shapely', 'requests', 'fiona', 'gdal', 'osr', 'scipy', 'fastkml']
+    install_requires=['numpy', 'shapely', 'requests', 'fiona', 'gdal', 'scipy', 'fastkml']
 )
