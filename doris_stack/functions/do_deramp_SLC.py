@@ -32,7 +32,7 @@ except:
 
 #*****************************************************************************#
 # Calculate chirp for deramping
-ChirpFilt = get_ramp(resFilename, resampled=0, type='chirp')
+ChirpFilt = get_ramp(resFilename, resampled=0,oversample=0, type='chirp')#updated by anurag to include oversampling
 
 res = ResData(resFilename)
 
@@ -42,7 +42,8 @@ if res.process_control['oversample'] == '1': #oversampled data
     lN = int(res.processes['oversample']['Last_line (w.r.t. ovs_image)'])
     p0 = int(res.processes['oversample']['First_pixel (w.r.t. ovs_image)'])
     pN = int(res.processes['oversample']['Last_pixel (w.r.t. ovs_image)'])
-    dataFormat = 'cpxfloat32'
+    #dataFormat = 'cpxfloat32'
+    dataFormat = 'cpxint16'
 else: # original data
     l0 = int(res.processes['crop']['First_line (w.r.t. original_image)'])
     lN = int(res.processes['crop']['Last_line (w.r.t. original_image)'])
@@ -53,7 +54,7 @@ else: # original data
 # Image size
 Naz_res = lN-l0+1
 Nrg_res = pN-p0+1
-
+print(Naz_res)
 ################################################################################
 # Read data
 

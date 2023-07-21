@@ -4,7 +4,7 @@ import gdal
 from gdalconst import *
 import sys
 
-def get_ramp(res_file, resampled=0, type='chirp'):
+def get_ramp(res_file, resampled=0, oversample=0, type='chirp'):
     # Read information
     ################################################################################
 
@@ -32,17 +32,22 @@ def get_ramp(res_file, resampled=0, type='chirp'):
     Trg_start = np.float64(get_parameter('Range_time_to_first_pixel (2way) (ms)', res_file,1))*1e-3
     fsRg = np.float64(get_parameter('Range_sampling_rate (computed, MHz)', res_file,1))
 
-    dt_az = np.float64(get_parameter('Azimuth_time_interval (s)', res_file,1))
+    dt_az = np.float64(get_parameter('Azimuth_time_interval (s)', res_file,1)) #anurag on 04042020
     dt_rg = 1/fsRg/1e6
 
     # Number of lines
-    lNum = int(get_parameter('Number_of_lines_original', res_file,1))
+    lNum = int(get_parameter('Number_of_lines_original', res_file,1)) #anurag on 04042020
 
     if resampled == 1:
         l0 = int(get_parameter('First_line (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
         lN = int(get_parameter('Last_line (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
         p0 = int(get_parameter('First_pixel (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
         pN = int(get_parameter('Last_pixel (w.r.t. original_master)', res_file,2,'*_Start_resample','* End_resample:_NORMAL'))
+    elif oversample==1:
+        l0 = int(get_parameter('First_line (w.r.t. ovs_image)', res_file, 1))
+        lN = int(get_parameter('Last_line (w.r.t. ovs_image)', res_file, 1))
+        p0 = int(get_parameter('First_pixel (w.r.t. ovs_image)', res_file, 1))
+        pN = int(get_parameter('Last_pixel (w.r.t. ovs_image)', res_file, 1))
     else:
         l0 = int(get_parameter('First_line (w.r.t. original_image)', res_file, 1))
         lN = int(get_parameter('Last_line (w.r.t. original_image)', res_file, 1))
@@ -67,7 +72,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
             os.remove(Link_DATA)
 
         RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_slave_pixel)
-        print "RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH
+        print("RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH)
         os.symlink(RAW_DATA_ABSOLUTE_PATH,Link_DATA)
 
         outStream      = open(Path_MFF_HDR,'w')
@@ -99,7 +104,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
 
 
         RAW_DATA_ABSOLUTE_PATH=os.path.abspath(Link_rsmp_orig_slave_line)
-        print "RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH
+        print("RAW_DATA_ABSOLUTE_PATH=", RAW_DATA_ABSOLUTE_PATH)
         os.symlink(RAW_DATA_ABSOLUTE_PATH,Link_DATA)
 
         outStream      = open(Path_MFF_HDR,'w')
@@ -137,7 +142,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
         TazGrid = np.tile(Tvect_az, (1, Nrg_res))
         
     else:
-        print 'variable resampled can only be 0 or 1!'
+        print('variable resampled can only be 0 or 1!')
         return
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,7 +205,7 @@ def get_ramp(res_file, resampled=0, type='chirp'):
     elif type == 'DC':
         data = Df_AzCtr + Taz_vec * DR_est 
     else:
-        print 'Choose either chirp or DC for type'
+        print('Choose either chirp or DC for type')
         return
 
     return data
@@ -260,7 +265,7 @@ def freadbk(path_file,line_start=1, pixels_start=1,nofLines1=None,nofPixels1=Non
     gdal.AllRegister()
     thisBurstData_file=gdal.Open(path_file,GA_ReadOnly)
     if thisBurstData_file is None:
-        print 'Could not open'+Path_MFF_HDR
+        print('Could not open'+Path_MFF_HDR)
         sys.exit(1)
     #print 'Driver: ', thisBurstData_file.GetDriver().ShortName,'/', \
     #      thisBurstData_file.GetDriver().LongName
@@ -269,14 +274,14 @@ def freadbk(path_file,line_start=1, pixels_start=1,nofLines1=None,nofPixels1=Non
     #print 'Projection is ',thisBurstData_file.GetProjection()
     geotransform = thisBurstData_file.GetGeoTransform()
     if not geotransform is None:
-        print 'Origin = (',geotransform[0], ',',geotransform[3],')'
-        print 'Pixel Size = (',geotransform[1], ',',geotransform[5],')'
+        print('Origin = (',geotransform[0], ',',geotransform[3],')')
+        print('Pixel Size = (',geotransform[1], ',',geotransform[5],')')
 
     cint_srd=thisBurstData_file.GetRasterBand(1)
     #print 'Band Type=',gdal.GetDataTypeName(cint_srd.DataType)
 
     if cint_srd.GetOverviewCount() > 0:
-            print 'Band has ', cint_srd.GetOverviewCount(), ' overviews.'
+            print('Band has ', cint_srd.GetOverviewCount(), ' overviews.')
     thisBurstData= cint_srd.ReadAsArray(int(pixels_start-1),int(line_start-1),nofPixels1,nofLines1)
     return thisBurstData
 ##################################################################################

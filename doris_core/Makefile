@@ -43,8 +43,8 @@
 SHELL   = /bin/sh
 
 ### Specify compiler/installation directory ###
-INSTALLDIR = /data/src/Doris_s1_git/bin
-CC	   = g++
+INSTALLDIR = /usr/local/bin
+CC	   = g++-5
 SCRIPTSDIR = ../bin
 
 ### Define statements controlling compilation ###
@@ -93,7 +93,7 @@ CFLAGS 	= $(CFLAGSOPT)
 ### Library locations flag ###
 ### -lcl : used for veclib 
 ### -lm  : used for fftw
-LFLAGS  =   -L/lib64 -lfftw3f -lm
+LFLAGS  =   -L/usr/lib/x86_64-linux-gnu -lfftw3f -lm
 
 
 #####################################################
@@ -121,7 +121,7 @@ SWOBJS	=	$(SWSRCS:.cc=.o)
 SCRIPTS	=	helpdoris \
 		baseline.doris.sh \
 		baseline.doris.csh \
-                construct_dem.sh \
+#                 construct_dem.sh \
 		coregpm.doris \
 		doris* \
 		heightamb \

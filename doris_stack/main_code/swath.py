@@ -7,6 +7,10 @@ import os
 from doris.doris_stack.main_code.burst import BurstMeta
 from doris.doris_stack.functions.swath_metadata import burst_coverage, swath_coverage, swath_precise
 
+#from ..functions.xml_query import xml_query
+#from burst import BurstMeta
+#from ..functions.swath_metadata import burst_coverage, swath_coverage, swath_precise
+
 
 class SwathMeta(object):
     # Class which stores and gathers information of a swath in a sentinel dataset

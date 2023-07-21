@@ -6,6 +6,7 @@ import zipfile
 import copy
 
 from doris.doris_stack.main_code.swath import SwathMeta
+#from swath import SwathMeta
 
 
 class ImageMeta(object):

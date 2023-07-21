@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--Document created by: Gert Mulder additional options can be found in the doris guide-->
+<!--Document created by: Gert Mulder additional options can be found in the doris guide
+Edited by Anurag on 21-02-2020: Edit: Line 54: CRD_OUT_DEM_H2PH -> CRD_OUT_H2PH
+-->
 <sensors>
 	<sentinel-1>sentinel-1
 		<header_settings>Settings for the headers
@@ -49,7 +51,7 @@
 			<CRD_INCLUDE_FE comment="phase w.r.t. ellipsoid" c="on">OFF</CRD_INCLUDE_FE>
 			<CRD_OUT_FILE comment="" c="off">refdem.raw</CRD_OUT_FILE>
 			<CRD_OUT_DEM_LP comment="" c="off">dem_radar.raw</CRD_OUT_DEM_LP>
-			<CRD_OUT_DEM_H2PH comment="" c="off">h2ph_srd.raw</CRD_OUT_DEM_H2PH>
+			<CRD_OUT_H2PH comment="" c="off">h2ph_srd.raw</CRD_OUT_H2PH>
 			<CRD_OUT_FILE comment="" c="off">master_slave.crd</CRD_OUT_FILE>
 			<CRD_IN_DEM comment="" c="off" var='in_dem'></CRD_IN_DEM>
 			<CRD_IN_FORMAT comment="" c="off" var='in_format'></CRD_IN_FORMAT>

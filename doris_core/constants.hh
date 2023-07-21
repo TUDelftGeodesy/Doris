@@ -227,7 +227,7 @@ const int16     ONE27           = 127;
 
 // doris memory for buffer operations
 const uint32    MEMORY_DEF      = 500;          // default memory (~500MB), unit Mbits [MA]
-const uint32    MEMORY_MAX      = 12000;        // maximum memory (~12GB) 
+const uint32    MEMORY_MAX      = 60000;        // maximum memory (~12GB) 
 
 // ______ Handy for software, IDs have to be enumerated (used in loop) ______
 const int16     LOGID           = 1;            // general identifier for log

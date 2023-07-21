@@ -13,10 +13,10 @@
 # Description srtm q data: https://lpdaac.usgs.gov/node/505
 
 import numpy as np
-import gdal
-import gdalconst
-import osr
-from HTMLParser import HTMLParser
+from osgeo import gdal
+from osgeo import gdalconst
+from osgeo import osr
+from html.parser import HTMLParser
 import pickle
 import requests
 import os
@@ -68,16 +68,17 @@ class CreateDem:
             except:
                 print('Not possible to create DEM grid.')
                 return
-
+        
         # Now add the rounding and borders to add the sides of our image
         # Please use rounding as a n/60 part of a degree (so 1/15 , 1/10 or 1/20 of a degree for example..)
         latlim = [np.floor((latlim[0] - border) / rounding) * rounding, np.ceil((latlim[1] + border) / rounding) * rounding]
         lonlim = [np.floor((lonlim[0] - border) / rounding) * rounding, np.ceil((lonlim[1] + border) / rounding) * rounding]
-
+        
         # First download needed .hgt files. Quality is either 1, 3 or 30. If possible the files are downloaded. Otherwise
         # we fall back to lower quality. This is done using the elevation package
         tiles, q_tiles, tiles_30 = self._download_dem_files(latlim, lonlim, quality, data_folder, password=password, username=username)
-
+        print(tiles, q_tiles, tiles_30)
+        #sys.exit()
         # Then create the final grid. This depends on the needed data type and possible resampling...
         if quality == 'SRTM1':
             pixel_degree = 3600
@@ -262,7 +263,7 @@ class CreateDem:
             else:
                 print('You should specify a username and password to download SRTM data. ')
                 return
-
+        
         filelist = self._srtm_listing(data_folder, username=username, password=password)
         outfiles = []
         q_files = []
@@ -436,7 +437,7 @@ class CreateDem:
             latlim = [min(lat), max(lat)]
             lonlim = [min(lon), max(lon)]
         else:
-            print 'format not recognized! Pleas creat either a .kml or .shp file.'
+            print('format not recognized! Pleas creat either a .kml or .shp file.')
             return []
 
         return latlim, lonlim
@@ -456,18 +457,27 @@ class CreateDem:
         if not os.path.exists(egm_source_tiff):
             if not os.path.exists(filename):
                 # Download egm96 file
-                command = 'wget http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/binary/WW15MGH.DAC -O ' + filename
+                #command = 'wget http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/binary/WW15MGH.DAC -O ' + filename
+                command = 'wget https://github.com/anurag-kulshrestha/geoinformatics/raw/master/WW15MGH.DAC -O ' + filename
                 os.system(command)
 
             # Get georeference
             latlim = [-90.125, 90.125]
-            lonlim = [-0.125, 359.875]
+            #lonlim = [-0.125, 359.875]
+            lonlim = [-179.125, 180.875]
             dlat = 0.25
             dlon = 0.25
             egm_data = self._create_georeference(latlim, lonlim, dlat, dlon, 'float32', egm_source_tiff)
 
             # Load data
-            egm96 = np.fromfile(filename, dtype='>i2').reshape((721, 1440)).astype('float32')
+            shp = (721, 1440)
+            egm96 = np.fromfile(filename, dtype='>i2').reshape(shp).astype('float32')
+            #Patch to flip the array to Aus on the right and South America on the left
+            egm96_flipped = np.empty(egm96.shape)
+            
+            egm96_flipped[:, :shp[1]//2] = egm96[:, shp[1]//2 :]
+            egm96_flipped[:, shp[1]//2:] = egm96[:, :shp[1]//2 ]
+            egm96 = egm96_flipped
 
             # Save as geotiff
             egm_data.GetRasterBand(1).WriteArray(egm96 / 100)
@@ -480,7 +490,8 @@ class CreateDem:
         gdal.ReprojectImage(egm_source, egm_data, None, None, gdalconst.GRA_Bilinear)
         egm_data = None
 
-        dem_new = dem_tiff + '.new'
+        dem_new = dem_tiff + '_new.tiff'# patch by anurag on 16-06-2021
+        #dem_new = dem_tiff + '.new'
 
         # Finally open original dataset and subtract
         command = 'gdal_calc.py -A ' + dem_tiff + ' -B ' + egm_tiff + ' --outfile=' + dem_new + ' --calc="A+B"'
@@ -504,7 +515,7 @@ class CreateDem:
 
         output_txt = out_file + '.doris_inputfile'
         output_var = var_file
-        output_var = open(output_var, 'w')
+        output_var = open(output_var, 'wb')
         txtfile = open(output_txt, 'w')
 
         dem_var = dict()
@@ -559,38 +570,43 @@ class CreateDem:
     def _srtm_listing(self, data_folder, username, password):
         # This script makes a list of all the available 1,3 and 30 arc second datafiles.
         # This makes it easier to detect whether files do or don't exist.
-
+        
         data_file = os.path.join(data_folder, 'filelist')
         if os.path.exists(data_file):
             dat = open(data_file, 'r')
             filelist = pickle.load(dat)
             dat.close()
             return filelist
+        #*******************************************************
+        #Patch by Anurag
+        server = "https://e4ftl01.cr.usgs.gov"
 
-        server = "http://e4ftl01.cr.usgs.gov"
-
-        folders = 'SRTM/SRTMGL1.003/2000.02.11/', 'SRTM/SRTMGL3.003/2000.02.11/', 'SRTM/SRTMGL30.002/2000.02.11/'
-        keys = ['SRTM1', 'SRTM3', 'SRTM30']
+        folders = 'MEASURES/SRTMGL1.003/2000.02.11/SRTMGL1_page_1.html', 'MEASURES/SRTMGL1.003/2000.02.11/SRTMGL1_page_2.html', 'MEASURES/SRTMGL1.003/2000.02.11/SRTMGL1_page_3.html', 'MEASURES/SRTMGL1.003/2000.02.11/SRTMGL1_page_4.html','MEASURES/SRTMGL1.003/2000.02.11/SRTMGL1_page_5.html' , 'MEASURES/SRTMGL1.003/2000.02.11/SRTMGL1_page_6.html', 'MEASURES/SRTMGL3.003/2000.02.11/', 'MEASURES/SRTMGL30.002/2000.02.11/'
+        keys = ['SRTM1','SRTM1','SRTM1','SRTM1','SRTM1','SRTM1', 'SRTM3', 'SRTM30']
+        #*******************************************************
         filelist = dict()
         filelist['SRTM1'] = dict()
         filelist['SRTM3'] = dict()
         filelist['SRTM30'] = dict()
-
+        #print('aaya')
         for folder, key_value in zip(folders, keys):
-
-            conn = requests.get(server + '/' + folder, auth=(username, password))
+            print(server+'/'+folder)
+            conn = requests.get(server + '/' + folder)#, auth=(username, password))
+            
             if conn.status_code == 200:
-                print "status200 received ok"
+                print("status200 received ok")
             else:
-                print "an error occurred during connection"
+                print("an error occurred during connection")
 
             data = conn.text
             parser = parseHTMLDirectoryListing()
             parser.feed(data)
             files = parser.getDirListing()
-
+            
             if key_value == 'SRTM1' or key_value == 'SRTM3':
-                files = [f for f in files if f.endswith('hgt.zip')]
+                #files = [f for f in files if f.endswith('hgt.zip')]
+                files_com = [f for f in files if f.endswith('hgt.zip')]
+                files = [f.split('/')[-1] for f in files_com]
                 north = [int(filename[1:3]) for filename in files]
                 east = [int(filename[4:7]) for filename in files]
                 for i in [i for i, filename in enumerate(files) if filename[0] == 'S']:
@@ -606,12 +622,12 @@ class CreateDem:
                 for i in [i for i, filename in enumerate(files) if filename[0] == 'w']:
                     east[i] = east[i] * -1
 
-            for filename, n, e in zip(files, north, east):
+            for filename, n, e in zip(files_com, north, east):
                 if not str(n) in filelist[key_value]:
                     filelist[key_value][str(n)] = dict()
-                filelist[key_value][str(n)][str(e)] = server + '/' + folder + filename
+                filelist[key_value][str(n)][str(e)] = filename#server + '/' + folder + filename
 
-        file_list = open(os.path.join(data_folder, 'filelist'), 'w')
+        file_list = open(os.path.join(data_folder, 'filelist'), 'wb')
         pickle.dump(filelist, file_list)
         file_list.close()
 
@@ -727,7 +743,7 @@ class parseHTMLDirectoryListing(HTMLParser):
     def handle_data(self, data):
         if self.inTitle:
             self.title = data
-            print "title=%s" % data
+            print("title=%s" % data)
             if "Index of" in self.title:
                 # print "it is an index!!!!"
                 self.isDirListing = True

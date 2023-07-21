@@ -35,8 +35,8 @@ There are 5 components in this distribution (doris v5.0beta).
 --------------------------------------------
 7. cd ../doris_core
 8. Read the README file
-9. ./configure             (creates "Makefile")  # requires tcsh shell to run, to install type "sudo apt-get install
-                            tcsh" at shell prompt on Ubuntu platform.
+9. ./configure             (creates "Makefile")  # requires tcsh shell to run, to install type "" at shell prompt sudo apt-get install
+                            tcshon Ubuntu platform.
                             ( +answer the questions about libraries, etc.)
 10. make                    (compiles the software)
 11. make install            (installs doris and bin scripts)

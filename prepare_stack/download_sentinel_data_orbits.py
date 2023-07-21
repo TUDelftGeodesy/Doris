@@ -2,7 +2,7 @@
 # check for the files which are downloaded.
 
 import urllib
-import urllib2
+import urllib2, urllib3
 import ssl
 import re
 import os, sys
@@ -57,7 +57,8 @@ def sentinel_available(start_day='', end_day='', sensor_mode='', product='', lev
     # Finally we do the query to get the search result.
     string = string[5:] + '&rows=1000'
     url = 'https://scihub.copernicus.eu/dhus/search?q=' + urllib.quote_plus(string)
-    print(url)
+    #url = 'https://scihub.copernicus.eu/gnss/search?q=' + urllib.quote_plus(string)# check for new orbit data downloading
+    #print(url)
 
     print('Requesting available products: ' + url)
     request = urllib2.Request(url)
@@ -65,10 +66,11 @@ def sentinel_available(start_day='', end_day='', sensor_mode='', product='', lev
     request.add_header("Authorization", "Basic %s" % base64string)
 
     # connect to server. Hopefully this works at once
+    gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     try:
-        dat = urllib2.urlopen(request)
+        dat = urllib2.urlopen(request, context=gcontext)
     except:
-        print 'not possible to connect this time'
+        print('not possible to connect this time')
         return [], [], []
 
     html_dat = ''
@@ -88,6 +90,82 @@ def sentinel_available(start_day='', end_day='', sensor_mode='', product='', lev
 
     return products, links, dates
 
+def sentinel_available_gnss(start_day='', end_day='', sensor_mode='', product='', level='', track='', polarisation='', orbit_direction='', ROI='', user='', password=''):
+    # All available sentinel 1 images are detected and printed on screen.
+    # Following variables can be used to make a selection.
+    # start_day > first day for downloads (default one month before now) [yyyymmdd]
+    # end_day > last day for downloads (default today)
+    # 
+
+    # string is the field we enter as url
+    string = ''
+    #add platform-name
+    string = string + ' AND ' + 'platformname:'+'Sentinel-1'
+    
+    if sensor_mode:
+        string = string + ' AND ' + 'sensoroperationalmode:' + sensor_mode
+    if product:
+        string = string + ' AND ' + 'producttype:' + product
+    if level:
+        string = string + ' AND ' + level
+    if orbit_direction:
+        string = string + ' AND ' + 'orbitdirection:' + orbit_direction
+    if track:
+        string = string + ' AND ' + 'relativeorbitnumber:' + track
+    if start_day:
+        start = datetime.datetime.strptime(start_day, '%Y-%m-%d').strftime('%Y-%m-%d')
+    else:
+        start = (datetime.datetime.now() - datetime.timedelta(days=350)).strftime('%Y-%m-%d')
+    if end_day:
+        end = datetime.datetime.strptime(end_day, '%Y-%m-%d').strftime('%Y-%m-%d')
+    else:
+        end = datetime.datetime.now().strftime('%Y-%m-%d')
+    if polarisation:
+        string = string + ' AND ' + 'polarisationmode:' + polarisation
+    if ROI:
+        shape_str = load_shape_info(ROI)
+        string = string + ' AND footprint:"Intersects(POLYGON(' + shape_str + '))"'
+
+    date_string = 'beginPosition:[' + start + 'T00:00:00.000Z TO ' + end + 'T23:59:59.999Z] AND endPosition:[' + start + 'T00:00:00.000Z TO ' + end + 'T23:59:59.999Z]'
+    string = string + ' AND ' + date_string
+    
+    # Finally we do the query to get the search result.
+    string = string[5:] #+ '&rows=100'
+    #url = 'https://scihub.copernicus.eu/dhus/search?q=' + urllib.quote_plus(string)
+    url = 'https://scihub.copernicus.eu/gnss/search?q=' + urllib.quote_plus(string)# check for new orbit data downloading
+    #url = 'https://scihub.copernicus.eu/gnss/search?q=' + string
+    #url = url+'&start=100&rows=100'#
+    #TODO: automate swwitching between pages
+    print(url)
+
+    print('Requesting available products: ' + url)
+    request = urllib2.Request(url)
+    base64string = base64.b64encode('%s:%s' % (user, password))
+    request.add_header("Authorization", "Basic %s" % base64string)
+    # connect to server. Hopefully this works at once
+    gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    try:
+        dat = urllib2.urlopen(request, context=gcontext)
+    except:
+        print('not possible to connect this time')
+        return [], [], []
+
+    html_dat = ''
+    for line in dat:
+        #print(line)
+        html_dat = html_dat + line
+
+    parser = etree.HTMLParser()
+    tree = etree.fromstring(html_dat, parser)
+    products = [data for data in tree.iter(tag='entry')]
+    links = [data.find('link').attrib for data in tree.iter(tag='entry')]
+    dates = [data.findall('date')[1].text for data in tree.iter(tag='entry')]
+
+    print('Following products will be downloaded')
+    for link in links:
+        print(link)
+
+    return products, links, dates
 
 def load_shape_info(shapefile):
     # This script converts .kml, .shp and .txt files to the right format. If multiple shapes are available the script
@@ -115,7 +193,7 @@ def load_shape_info(shapefile):
             st = st + str(p[0]) + ' ' + str(p[1]) + ','
         st = st[:-1] + ')'
     else:
-        print 'format not recognized! Pleas creat either a .kml or .shp file.'
+        print('format not recognized! Pleas creat either a .kml or .shp file.')
         return []
 
     return st
@@ -128,7 +206,7 @@ def sentinel_check_validity(products=[], destination_folder='', user='', passwor
     invalid_files = []
 
     if not products:
-        print 'Nothing to check'
+        print('Nothing to check')
         return
 
     for product in products:
@@ -183,7 +261,7 @@ def sentinel_download(products=[], xml_only=False,  destination_folder='', proje
     # Download the files which are found by the sentinel_available script.
 
     if not products:
-        print 'No files to download'
+        print('No files to download')
         return
 
     wget_base = 'wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --continue --tries=20 --no-check-certificate --user=' + user + ' --password=' + password + ' '
@@ -285,6 +363,28 @@ def sentinel_download(products=[], xml_only=False,  destination_folder='', proje
                 os.system('rm ' + xml_dir)
                 os.system('rm ' + xml_project)
 
+def sentinel_orbit_gnss_download(products=[], xml_only=False,  destination_folder='', project_folder='', user='', password=''):
+    # Download the files which are found by the sentinel_available script.
+
+    if not products:
+        print('No files to download')
+        return
+
+    wget_base = 'wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --continue --tries=20 --no-check-certificate --user=' + user + ' --password=' + password + ' '
+
+    for product in products:
+        date = str(product.findall('date')[1].text)
+        date = datetime.datetime.strptime(date[:19], '%Y-%m-%dT%H:%M:%S')
+
+        url = str('"'+product.findall('link')[0].attrib['href'][:-6]+ urllib.quote_plus('$value') +'"')
+        name = str(product.find('title').text)
+        #print(url)
+        wget_data = wget_base + url + ' -O ' + destination_folder+'/'+name
+        print('download url is:' + wget_data)
+        os.system(wget_data)
+        #sys.exit()
+        
+
 def sentinel_quality_check(filename, uuid, user, password):
     # Check whether the zip files can be unpacked or not. This is part of the download procedure.
 
@@ -297,7 +397,7 @@ def sentinel_quality_check(filename, uuid, user, password):
     try:
         dat = urllib2.urlopen(request)
     except:
-        print 'not possible to connect this time'
+        print('not possible to connect this time')
         return False
 
     html_dat = ''
@@ -318,6 +418,9 @@ def sentinel_quality_check(filename, uuid, user, password):
     else:
         return False
 
+def download_orbits_1(start_date, end_date, pages=30, precise_folder='', restituted_folder =''):
+    pass
+
 def download_orbits(start_date, end_date, pages=30, precise_folder='', restituted_folder =''):
     # This script downloads all orbits files from the precise orbits website, when pages is set to a very high number.
     # By default only the first page for the last two days (restituted) is checked.
@@ -332,9 +435,11 @@ def download_orbits(start_date, end_date, pages=30, precise_folder='', restitute
     if precise_folder:
         for i in range(pages_poe):
             # First extract the orbitfiles from the page.
-
+            
             url = 'https://qc.sentinel1.eo.esa.int/aux_poeorb/?page=' + str(i + 1)
-            gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            #url = 'https://qc.sentinel1.eo.esa.int/aux_poeorb/?validity_start='+2015+'&page=' + str(i + 1)
+            
+            gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             try:
                 page = urllib2.urlopen(url, context=gcontext)
             except TypeError:
@@ -342,24 +447,28 @@ def download_orbits(start_date, end_date, pages=30, precise_folder='', restitute
 
             html = page.read().split('\n')
             orb_files = []
-
+            
             for line in html:
                 if re.search('<a .*href=.*>', line):
                     if re.search('EOF', line):
                         dat = re.search('<a href=.*>(.*)</a>', line)
                         orb_files.append(dat.group(1))
-
+            
             if not last_precise:
                 last_precise = orb_files[0]
 
             for orb in orb_files:
                 # Download the orbit files
                 filename = os.path.join(precise_folder, orb)
-
+                
                 if int(orb[42:50]) + 1 <= end_num and int(orb[42:50]) + 1 >= start_num:
-                    url = 'https://qc.sentinel1.eo.esa.int/aux_poeorb/' + orb
+                    #url = 'https://qc.sentinel1.eo.esa.int/aux_poeorb/' + orb
+                    url = 'http://aux.sentinel1.eo.esa.int/POEORB/'+orb[25:29]+'/'+orb[29:31]+'/'+orb[31:33]+'/'+orb+'.EOF'
+                    #http://aux.sentinel1.eo.esa.int/POEORB/2019/02/26/S1B_OPER_AUX_POEORB_OPOD_20190226T110623_V20190205T225942_20190207T005942.EOF
                     if not os.path.exists(filename):
                         try:
+                            #print(url, filename)
+                            #sys.exit()
                             urllib.urlretrieve(url, filename, context=gcontext)
                         except TypeError:
                             urllib.urlretrieve(url, filename)
@@ -445,6 +554,7 @@ if __name__ == "__main__":
     level = 'L1'
     sensor_mode = 'IW'
     product = 'SLC'
+    orbit_precice_product = 'AUX_POEORB'
 
     # user settings
     xml_name = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -454,13 +564,12 @@ if __name__ == "__main__":
     settings = tree.getroot()
     user = settings.find('.scihub_username').text
     password = settings.find('.scihub_password').text
-
-    products, links, dates = sentinel_available(start_day=start_date, end_day=end_date, ROI=ROI,
-                                                polarisation=polarisation, sensor_mode=sensor_mode, track=track,
-                                                orbit_direction='', level=level, product=product,user=user,
-                                                password=password)
-
-    sentinel_download(products, destination_folder=archive_folder, user=user, password=password)
+    #products, links, dates = sentinel_available(start_day=start_date, end_day=end_date, ROI=ROI,
+                                                #polarisation=polarisation, sensor_mode=sensor_mode, track=track,
+                                                #orbit_direction='', level=level, product=product,user=user,
+                                                #password=password)
+    
+    #sentinel_download(products, destination_folder=archive_folder, user=user, password=password)
 
     precise_folder = os.path.join(orbit_folder, 'precise')
     if not os.path.exists(precise_folder):
@@ -468,5 +577,10 @@ if __name__ == "__main__":
     restituted_folder = os.path.join(orbit_folder, 'restituted')
     if not os.path.exists(restituted_folder):
         os.makedirs(restituted_folder)
-
-    download_orbits(start_date, end_date, pages=100, precise_folder=precise_folder, restituted_folder=restituted_folder)
+    
+    products_orbits, links_orbits, dates_orbits = sentinel_available_gnss(start_day=start_date, end_day=end_date,product=orbit_precice_product, user = 'gnssguest', password = 'gnssguest')
+    
+    sentinel_orbit_gnss_download(products_orbits, destination_folder=precise_folder, user = 'gnssguest', password = 'gnssguest')
+    #download_orbits(start_date, end_date, pages=300, precise_folder=precise_folder, restituted_folder=restituted_folder)
+    
+    #download_orbits_1(start_date, end_date, pages=300, precise_folder=precise_folder, restituted_folder=restituted_folder)

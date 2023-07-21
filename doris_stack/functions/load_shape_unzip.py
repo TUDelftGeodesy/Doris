@@ -68,7 +68,7 @@ def unzip_folder(zipped_folder, dest_folder, shapefile='', pol='', data=True, sw
 
 def extract_kml_preview(zipped_folder, dir='', kml=True, png=True, overwrite=False):
     # Extracts quicklook and/or .kml files.
-
+    #print(zipped_folder)
     zipdat = zipfile.ZipFile(zipped_folder)
     if not dir:
         dir = os.path.dirname(zipped_folder)
@@ -170,7 +170,7 @@ def load_shape(shapefile, buffer=0.02):
         if isinstance(shapefile, list):  # If the coordinates are already loaded. (for example bounding box)
             shp = Polygon(shapefile)
         else:  # It should be a shape file. We always select the first shape.
-            sh = fiona.open(shapefile).next()
+            sh = next(iter(fiona.open(shapefile)))#fiona.open(shapefile).next()
             shp = shape(sh['geometry'])
 
         # Now we have the shape we add a buffer and simplify first to save computation time.
