@@ -1,10 +1,10 @@
 <paths>
-    <source_path>/home/anurag/Documents/PhDProject/doris</source_path>
-    <doris_path>/usr/local/bin/doris</doris_path>
-    <cpxfiddle_path>/usr/local/bin/cpxfiddle</cpxfiddle_path>
-    <snaphu_path>/usr/local/bin/snaphu</snaphu_path>
-    <scihub_username>annie123</scihub_username>
-    <scihub_password>Annie@123</scihub_password>
-    <usgs_username>annie123</usgs_username>
-    <usgs_password>Annie123</usgs_password>
+    <source_path></source_path>
+    <doris_path></doris_path>
+    <cpxfiddle_path></cpxfiddle_path>
+    <snaphu_path></snaphu_path>
+    <scihub_username></scihub_username>
+    <scihub_password></scihub_password>
+    <usgs_username></usgs_username>
+    <usgs_password></usgs_password>
 </paths>

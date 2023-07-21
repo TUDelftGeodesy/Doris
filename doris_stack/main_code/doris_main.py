@@ -2,10 +2,7 @@ import argparse
 import os
 import xml.etree.ElementTree as ET
 import sys
-sys.path.append('/home/anurag/Documents/PhDProject/')
-sys.path
 from doris.doris_stack.main_code.doris_sentinel_1 import DorisSentinel1
-#from doris_sentinel_1 import DorisSentinel1 
 
 """Doris processing
 argument:  --parameterfilepath, -p

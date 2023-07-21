@@ -77,7 +77,6 @@ class SingleMaster(object):
 
         folders = next(os.walk(self.folder))[1]
         folders = [fold for fold in folders if len(fold) == 8]
-        print(folders)
         self.stack = dict()
 
         for fold in folders:
@@ -797,9 +796,6 @@ class SingleMaster(object):
         for date in self.coreg_dates:
             for burst in self.stack[date].keys():
                 # Insert fake coregistration
-                #print('annnnnnnnnnnnnnnuuuuuuu', date, burst)#inserted by Anurag on 2019-07-15
-                #print(date)
-                #print(burst)
                 if not self.stack[date][burst]['ifgs'].process_control['fine_coreg'] == '1':
                     self.stack[date][burst]['ifgs'].insert(coreg,'fine_coreg')
 
@@ -1060,86 +1056,7 @@ class SingleMaster(object):
         self.fake_master_steps(step='resample')
     
     
-    def oversample_1(self, type=''):
-        # Resample slave bursts
-
-        if len(self.coreg_dates) == 0:
-            return
-
-        jobList1 = []
-        jobList2 = []
-
-        for date in self.coreg_dates:
-            for burst in self.stack[date].keys():
-
-                if self.stack[date][burst]['slave'].process_control['oversample'] != '1':
-                    path = self.burst_path(date, burst, full_path=True)
-                    #res = self.stack[date][burst]['slave']
-                    #print(res.processes['crop'])
-                    #Resample to crop pe cipkaaya
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['resample']['Data_output_file'], 'crop', variable='Data_output_file')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['resample']['Data_output_format'], 'crop', variable='Data_output_format')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['resample']['First_line (w.r.t. original_master)'], 'crop', variable='First_line (w.r.t. original_image)')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['resample']['Last_line (w.r.t. original_master)'], 'crop', variable='Last_line (w.r.t. original_image)')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['resample']['First_pixel (w.r.t. original_master)'], 'crop', variable='First_pixel (w.r.t. original_image)')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['resample']['Last_pixel (w.r.t. original_master)'], 'crop', variable='Last_pixel (w.r.t. original_image)')
-                    #print(res.processes['crop'])
-                    #self.update_res()
-                    #oversample kiya
-                    #self.stack[date][burst]['slave'].write(new_filename = 'slave.res')
-                    #print(self.stack[date][burst]['slave'].processes)
-                    #import sys
-                    #sys.exit()
-                    command1 = self.doris_path + ' ' + os.path.join(self.input_files, 'input.oversample')
-                    command2 = self.doris_path + ' ' + os.path.join(self.input_files, 'input_m.oversample')
-                    
-                    jobList1.append({"path": path, "command": command1})
-                    jobList2.append({"path": path, "command": command2})
-
-                    if not self.parallel:
-                        os.chdir(path)
-                        # oVERSAMPLE
-                        os.system(command1)
-                        os.system(command2)
-                    #resample pe oversample ko chipkaaya
-        self.update_res()
-        if self.parallel:
-            jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
-
-            jobs.run(jobList1)
-            jobs.run(jobList2)
-        self.read_res()
-        
-        for date in self.coreg_dates:
-            for burst in self.stack[date].keys():
-                if self.stack[date][burst]['slave'].process_control['oversample'] == '1':
-                #res = self.stack[date][burst]['slave']
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['oversample']['Data_output_file'], 'resample', variable='Data_output_file')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['oversample']['Data_output_format'], 'resample', variable='Data_output_format')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['oversample']['First_line (w.r.t. ovs_image)'], 'resample', variable='First_line (w.r.t. original_master)')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['oversample']['Last_line (w.r.t. ovs_image)'], 'resample', variable='Last_line (w.r.t. original_master)')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['oversample']['First_pixel (w.r.t. ovs_image)'], 'resample', variable='First_pixel (w.r.t. original_master)')
-                    self.stack[date][burst]['slave'].update(self.stack[date][burst]['slave'].processes['oversample']['Last_pixel (w.r.t. ovs_image)'], 'resample', variable='Last_pixel (w.r.t. original_master)')
-                    
-                    #self.stack[date][burst]['slave'].write(new_filename = 'slave.res')
-                    
-        self.update_res()           
-        ##resample pe oversample ko chipkaaya
-        #res.update(res.processes['oversample']['Data_output_file'], 'resample', variable='Data_output_file')
-        #res.update(res.processes['oversample']['Data_output_format'], 'resample', variable='Data_output_format')
-        #res.update(res.processes['oversample']['First_line (w.r.t. ovs_image)'], 'resample', variable='First_line (w.r.t. original_master)')
-        #res.update(res.processes['oversample']['Last_line (w.r.t. ovs_image)'], 'resample', variable='Last_line (w.r.t. original_master)')
-        #res.update(res.processes['oversample']['First_pixel (w.r.t. ovs_image)'], 'resample', variable='First_pixel (w.r.t. original_master)')
-        #res.update(res.processes['oversample']['Last_pixel (w.r.t. ovs_image)'], 'resample', variable='Last_pixel (w.r.t. original_master)')
-        ##interferogram banaaya
-        ##
-        
-        ##print(res.processes['readfiles'])
-        #res.write(new_filename = 'slave_test_1.res')
     
-    
-    
-                    
 
     def fake_master_resample(self):
         # This script fakes a resample step for the master file (this is of course not really needed)
@@ -2264,7 +2181,7 @@ class SingleMaster(object):
             if not self.parallel:
                 os.chdir(path)
                 os.system(command1)
-        #sys.exit()
+                
         if self.parallel:
             jobs = Jobs(self.nr_of_jobs, self.doris_parameters)
             jobs.run(job_list1)

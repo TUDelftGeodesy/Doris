@@ -588,7 +588,7 @@ class CreateDem:
         filelist['SRTM1'] = dict()
         filelist['SRTM3'] = dict()
         filelist['SRTM30'] = dict()
-        #print('aaya')
+        
         for folder, key_value in zip(folders, keys):
             print(server+'/'+folder)
             conn = requests.get(server + '/' + folder)#, auth=(username, password))

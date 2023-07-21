@@ -10,11 +10,6 @@ from doris.doris_stack.main_code.dorisparameters import DorisParameters
 from doris.doris_stack.main_code.grs_profile import GRS_Profile
 from doris.doris_stack.main_code.single_master_stack import SingleMaster
 
-#from stack import StackData
-#from dorisparameters import DorisParameters
-#from grs_profile import GRS_Profile
-#from single_master_stack import SingleMaster
-
 class DorisSentinel1(object):
 
     def run(self, doris_parameters_path, start_date, end_date, master_date):
@@ -80,7 +75,6 @@ class DorisSentinel1(object):
         # Finally delete unzipped images
         stack.del_unpacked_image()
         
-        #sys.exit()
         
         import single_master_stack
 

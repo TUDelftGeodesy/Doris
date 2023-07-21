@@ -140,7 +140,7 @@ class StackData(object):
         images = list()
 
         top_dir = next(os.walk(track_dir))
-        print(top_dir[1])
+        
         for data in top_dir[2]:
             if data.endswith('.zip'):
                 images.append(os.path.join(track_dir, data))
