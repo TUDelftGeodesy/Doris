@@ -46,7 +46,7 @@ class DorisSentinel1(object):
         profile.log_time_stamp('start')
         # Create a datastack using the stack function
         stack = StackData(track_dir=track_dir, shape_dat=shape_dat, start_date=start_date, end_date=end_date,
-                          polarisation=polarisation, path=stack_path, db_type=2, precise_dir=precise_orbits)
+                          polarisation=polarisation, path=stack_path, db_type=2, precise_dir=precise_orbits, buffer=0.01)
         #profile.log_time_stamp('StackData')
         # Select the images which are new in this datastack.
         stack.select_image()
@@ -74,7 +74,8 @@ class DorisSentinel1(object):
         profile.log_time_stamp('stack preparation finished')
         # Finally delete unzipped images
         stack.del_unpacked_image()
-
+        
+        
         import single_master_stack
 
         # Now we import the script to create a single master interferogram
@@ -86,16 +87,25 @@ class DorisSentinel1(object):
         # Copy the necessary files to start processing
         profile.log_time_stamp('initialize')
         processing.initialize()
-
+        
+                
+        ## The following 3 lines have been added by Anurag on Monday2-10-02-2020 for testing oversampling using doris stack
+        ##updated on 21-03-2020: moved from after network esd to immediately after initialize
+        #if (dorisParameters.do_oversample):
+            #profile.log_time_stamp('oversample')
+            #processing.oversample(master=True)
+        
         # Calculate the coarse orbits of individual bursts
         if(dorisParameters.do_coarse_orbits):
             profile.log_time_stamp('coarse_orbits')
             processing.coarse_orbits()
         # Deramp the data of both slave and master
+        
         if(dorisParameters.do_deramp):
             profile.log_time_stamp('deramp')
             processing.deramp(master=True) # Still needed for coherence...
         # Fake the use of fine window coregistration, which is officially not needed
+        #sys.exit()
         if(dorisParameters.do_fake_fine_coreg_bursts):
             profile.log_time_stamp('fake_fine_coreg_bursts')
             processing.fake_fine_coreg()
@@ -107,14 +117,19 @@ class DorisSentinel1(object):
         if(dorisParameters.do_fake_coreg_bursts):
             profile.log_time_stamp('fake_coreg_bursts')
             processing.fake_coregmp()
-        # Resample individual bursts
+        
+        # Resample individual bursts        
         if(dorisParameters.do_resample):
             profile.log_time_stamp('resample')
-            processing.resample()
+            processing.resample(concatenate=True, ras=True, overwrite=True)
+        
         # Reramp burst
         if(dorisParameters.do_reramp):
             profile.log_time_stamp('reramp')
             processing.reramp()
+        
+        #processing.combine_slave(overwrite=False, ramped=False, deramped=True, ras=True)
+        #processing.combine_master(overwrite=False, ramped=False, deramped=True, ras=True)
 
         # Perform enhanced spectral diversity for full swath
         if(dorisParameters.do_esd):
@@ -123,11 +138,11 @@ class DorisSentinel1(object):
         if (dorisParameters.do_network_esd):
             profile.log_time_stamp('network esd')
             processing.network_esd()
-            
+
         # Make interferograms for individual bursts
         if(dorisParameters.do_interferogram):
             profile.log_time_stamp('interferogram')
-            processing.interferogram()
+            processing.interferogram(concatenate=False, ras=False)
         # Calculate earth reference phase from interferograms and combine for full swath
         if(dorisParameters.do_compref_phase):
             profile.log_time_stamp('compref_phase')
@@ -143,12 +158,11 @@ class DorisSentinel1(object):
         # Remove height effects from interferograms and combine for full swath
         if(dorisParameters.do_ref_dem):
             profile.log_time_stamp('ref_dem')
-            processing.ref_dem(concatenate=True, ras=True)
+            processing.ref_dem(concatenate=True, ras=True, overwrite=True)
         # Geocode data
         if(dorisParameters.do_calc_coordinates):
             profile.log_time_stamp('calc_coordinates')
             processing.calc_coordinates()
-
         # Correct using ramp ifgs based on ESD
         if(dorisParameters.do_ESD_correct):
             profile.log_time_stamp('ESD_correct')
@@ -156,13 +170,11 @@ class DorisSentinel1(object):
         # Compute coherence
         if(dorisParameters.do_coherence):
             profile.log_time_stamp('coherence')
-            processing.coherence(ras=True)
-
+            processing.coherence(ras=True, overwrite=True)
         if(dorisParameters.do_phasefilt):
             profile.log_time_stamp('phasefilt')
             processing.phasefilt(ras=True)
         # Multilook filtered image and coherence image
-
         if(dorisParameters.do_multilooking):
             profile.log_time_stamp('multilooking')
             processing.multilook(step='coherence')

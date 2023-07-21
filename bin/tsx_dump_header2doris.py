@@ -12,16 +12,16 @@ import string, time, sys
 #import types
 
 def usage():
-    print '\nUsage: python tsx_dump_header2doris.py tsx_XML_product > outputfile'
-    print '  where tsx_XML_product is the input filename'
+    print ('\nUsage: python tsx_dump_header2doris.py tsx_XML_product > outputfile')
+    print ('  where tsx_XML_product is the input filename')
 #    print '        outputfile      is the output DORIS resultfile'
 
 try:
     inputFileName  = sys.argv[1]
-#    outputFileName = sys.argv[2]
-#    outStream      = open(outputFileName,'w')
+    #outputFileName = sys.argv[2]
+    #outStream      = open(outputFileName,'w')
 except:
-    print 'Unrecognized input'
+    print ('Unrecognized input')
     usage()
     sys.exit(1)
 
@@ -127,22 +127,23 @@ for key in queryList.keys():
 
 dummyVar = 'DUMMY'
 
-# outStream.write('MASTER RESULTFILE:        %s\n' % outputFileName)
-# outStream.write('\n')
-# outStream.write('\n')
-# outStream.write('Start_process_control\n')
-# outStream.write('readfiles:		1\n')
-# outStream.write('precise_orbits:         0\n')
-# outStream.write('crop:			0\n')
-# outStream.write('sim_amplitude:		0\n')
-# outStream.write('master_timing:		0\n')
-# outStream.write('oversample:		0\n')
-# outStream.write('resample:		0\n')
-# outStream.write('filt_azi:		0\n')
-# outStream.write('filt_range:		0\n')
-# outStream.write('NOT_USED:		0\n')
-# outStream.write('End_process_control\n')
-# outStream.write('\n')
+#print('MASTER RESULTFILE:        %s\n' % outputFileName)
+print('\n')
+print('\n')
+print('Start_process_control')
+print('readfiles:		1')
+print('precise_orbits:         0')
+print('crop:			0')
+print('sim_amplitude:		0')
+print('master_timing:		0')
+print('oversample:		0')
+print('resample:		0')
+print('filt_azi:		0')
+print('filt_range:		0')
+print('NOT_USED:		0')
+print('End_process_control\n')
+print('\n')
+
 print('\ntsx_dump_header2doris.py v1.0, doris software, 2009\n')
 print('*******************************************************************')
 print('*_Start_readfiles:')

@@ -31,7 +31,7 @@ class CreateInputFiles:
 
         self.xml_data = settings.find('.' + sensor)
         self.header_data = self.xml_data.find('.header_settings')
-        dem_info = open(dem_info, 'r')
+        dem_info = open(dem_info, 'rb')
         self.dem_var = pickle.load(dem_info)
 
         self.inputfilenames = ['coarsecorr', 'coarseorb', 'coherence', 'coherence_network', 'comprefdem', 'comprefpha', 'coregpm',

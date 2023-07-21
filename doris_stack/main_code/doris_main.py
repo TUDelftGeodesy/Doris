@@ -1,6 +1,7 @@
 import argparse
 import os
 import xml.etree.ElementTree as ET
+import sys
 from doris.doris_stack.main_code.doris_sentinel_1 import DorisSentinel1
 
 """Doris processing

@@ -76,7 +76,7 @@ class ResData(object):
                         temp[name] = [line]
 
                 except:
-                    print 'Error occurred at line: ' + line
+                    print('Error occurred at line: ' + line)
 
     def process_reader(self,processes = ''):
         # This function reads random processes based on standard buildup of processes in res files.
@@ -84,7 +84,7 @@ class ResData(object):
         # If loc is true, it will only return the locations where different processes start.
 
         if not processes:
-            processes = self.process_control.keys()
+            processes = list(self.process_control.keys())
 
         processes.append('leader_datapoints')
         process = ''
@@ -171,10 +171,9 @@ class ResData(object):
                             row += 1
 
                 except:
-                    print 'Error occurred at line: ' + line
+                    print('Error occurred at line: ' + line)
 
     def process_spacing(self,process=''):
-
         spacing = 0
         table_spacing = [0,0,0,0,0,0,0]
 
@@ -283,10 +282,10 @@ class ResData(object):
                 elif process == 'coarse_orbits':  # the coarse orbits output is different from the others.
                     if 'Control point' in line_key: # Special case coarse orbits...
                         f.write((line_key + ' =').ljust(spacing[0]) + str(self.processes[process][line_key]) + '\n')
-                    elif not isinstance(data[line_key], basestring): # Another special case
+                    elif not isinstance(data[line_key], str): # Another special case
                         f.write(line_key.ljust(spacing_row[0]) + (data[line_key][0]).ljust(spacing_row[1]) +
                                 data[line_key][1].ljust(spacing_row[2]) + ' '.join(data[line_key][2:]) + '\n')
-                    elif isinstance(data[line_key], basestring): # Handle as in normal cases
+                    elif isinstance(data[line_key], str): # Handle as in normal cases
                         f.write((line_key + ':').ljust(spacing[0]) + str(self.processes[process][line_key]) + '\n')
                 else: # If it consists out of two parts
                     f.write((line_key + ':').ljust(spacing[0]) + str(self.processes[process][line_key]) + '\n')
@@ -301,7 +300,7 @@ class ResData(object):
 
     def insert(self,data,process,variable=''):
         # This function inserts a variable or a process which does not exist at the moment
-        processes = self.process_control.keys()
+        processes = list(self.process_control.keys())
         processes.extend(['header','leader_datapoints'])
 
         if process not in processes:

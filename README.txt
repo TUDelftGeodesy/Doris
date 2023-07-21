@@ -16,8 +16,6 @@ The new Doris version consists of 2 parts:
         contain algorithms specific to processing sentinel 1 images and support parallelisation of the processing of the
         bursts. The functionality of these scripts can be further extended to support more sensors and modes.
 
-Note that the python code is developed in python 2.7, so be sure you are not using python 3.
-
 In addition, you will find a stack preparation script, to automatically download the burst you need for your Area of
 Interest which you defined by a shape file, automatically download the SRTM DEM associated with this area, and setup
 your processing structure.
@@ -65,7 +63,7 @@ Run the stack preparation script
 Move to the prepare_stack directory:
 cd prepare_stack
 Run the python script:
-python prepare_datastack_main.py
+python prepare_datastack.py
 
 This code will ask you to define the different folders you created before. The script will ask you whether you want
 to run your code in parallel. Generally, this is recommended as it speeds up your processing speed. Note that either the

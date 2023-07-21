@@ -109,11 +109,11 @@ class Jobs(object):
         self._start_jobs()
         while len(self.jobs_active):
             if(self.verbose):
-                print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs busy"
+                print(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs busy")
             time.sleep(self.between_sleep_time)
             self._check_active_jobs()
             self._start_jobs()
         if (self.verbose):
-            print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs finished"
+            print(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()) + "jobs finished")
         time.sleep(self.end_sleep_time)
         self._cleanup_flag_dir()

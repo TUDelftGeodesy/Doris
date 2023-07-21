@@ -21,7 +21,7 @@ def orbit_read(input_EOF_FileName):
             #import xml.etree.ElementTree as etree
             print 'Failed to load lxml.etree or xml.etree.cElementTree'
             sys.exit(1)
-
+    #print(input_EOF_FileName)
     inTree = etree.parse(input_EOF_FileName)
     queryList = {
                 # orbit inf

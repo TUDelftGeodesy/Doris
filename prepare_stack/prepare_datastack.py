@@ -42,12 +42,13 @@ class PrepareDatastack(object):
         srtm_password = settings_doris.find('.usgs_password').text
         dem_out = os.path.join(doris_input_xml.get_value('dem_folder'), 'dem.raw')
         dem_var = dem_out + '.var'
-
+        #print('1')
         dem = CreateDem()
+        
         if doris_input_xml.get_value('generate_dem'.lower())=='yes':
             dem.create(doris_input_xml.get_value('shape_file_path'), dem_out, dem_var, resample=None,
                                     doris_input=True, rounding=0.1, border=1.5,
-                                    data_folder=doris_input_xml.get_value('dem_processing_folder'), quality='SRTM3',
+                                    data_folder=doris_input_xml.get_value('dem_processing_folder'), quality='SRTM1',
                                     password=srtm_password, username=srtm_username)
 
         ## Then create the inputfiles

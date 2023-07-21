@@ -80,6 +80,8 @@ class DorisParameters():
         self.do_calc_coordinates = self._settings_compare('.do_calc_coordinates', 'yes')
         self.do_multilooking = self._settings_compare('.do_multilooking', 'yes')
         self.do_unwrap = self._settings_compare('.do_unwrap', 'yes')
+        
+        #self.do_oversample = self._settings_compare('.do_oversample', 'yes')
         #
         # used in Jobs
         #
